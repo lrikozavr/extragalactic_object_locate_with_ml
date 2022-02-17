@@ -16,6 +16,25 @@ def M(data,n):
         sum += data[i]
     return sum/float(n)
 
+def D(data,n):
+    m=M(data)
+    sum=0
+    for i in range(n):
+        sum += (data[i] - m)**2
+    return math.sqrt(sum/float(n))
+
+def Gauss_cut(data,n):
+    m=M(data,n)
+    d=D(data,n)
+    #
+    rezult = []
+    
+    for i in range(n):
+        if(math.e**(-((data[i]-m)**2)/(2*d**2))/(d*math.sqrt(2*math.pi)) > 0.05):
+            rezult.append(i)
+            
+    return rezult
+
 def Normali(data,max):
     count = len(data)
     s = []
@@ -46,6 +65,7 @@ def fuzzy_dist(data):
     print("fuzzy_dist complite")
     return r, max
 
+#?????????????????????????????????????????????????????????
 def fuzzy_err(data):
     columns = data.columns.values
     count = len(data)
@@ -153,7 +173,7 @@ def MCD(data,deep_i):
         #if (d[i] > max):
         #    max = d[i]
         #    index = i
-    
+    '''
     ar_i = [i for i in range(n)]
     
     from matplotlib import pyplot as plt
@@ -163,13 +183,19 @@ def MCD(data,deep_i):
     ax.scatter(ar_i,d)
     fig.savefig(f"{deep_i}_d.png")
     plt.close(fig)
-    
-    for i in range(n):
-        if(d[i]>5.5):
-            data = data.drop(i, axis=0)
+    '''
+    index_d = Gauss_cut(d,n)
 
-    data = data.reset_index(drop=True)
-    return data
+    '''
+    rezult = []
+    for i in index_d:
+        rezult.append(data.iloc[i])
+
+    rezult = pd.DataFrame(np.array(rezult),columns=data.columns.values)
+    
+    return rezult
+    '''
+    return index_d
     '''
     t1=T0(data,n-1)
 
@@ -226,21 +252,6 @@ def Ell(data):
     #(x[i]-center[i])^2/coef[i]+...=R^2
     #for(i=1;i<15;i+=1){}
 
-def D(data,n):
-    m=M(data)
-    sum=0
-    for i in range(n):
-        sum += (data[i] - m)**2
-    return math.sqrt(sum/float(n))
 
-def Gauss_cut(data,n):
-    m=M(data,n)
-    d=D(data,n)
-    #
-    rezult = []
-    c=0
-    for i in range(n):
-        if(math.e**(-((data[i]-m)**2)/(2*d**2))/(d*math.sqrt(2*math.pi)) > 0.1):
-            rezult.append(data[i])
-            c+=1
-    return rezult, c
+
+
