@@ -22,9 +22,7 @@ data_qso['Y'] = "2"
 data_gal['Y'] = "1"
 data_star['Y'] = "0"
 
-print(data)
 data.fillna(0)
-#для fuzzy_err
 
 
 def NtoPtoN(data,index):
@@ -34,7 +32,7 @@ def NtoPtoN(data,index):
     res = pd.DataFrame(np.array(res), column=data.columns.values)
     return res
 
-def pocess(data):
+def process(data):
     data_mags = data.drop(['RA','DEC','z','CatName','Class','Y'], axis=1)
     data_dist, data_err = colors(data_mags)
     dfsg = MCD(data_dist,0)
@@ -51,19 +49,9 @@ def pocess(data):
 
     data.to_csv('main_sample.csv', index=False)
 
-data_dist_1 = data_dist[data_dist['Y'] == 1]
-data_dist_0 = data_dist[data_dist['Y'] == 0]
-
-data_dist_1 = data_dist_1.drop(['Y'], axis=1)
-data_dist_0 = data_dist_0.drop(['Y'], axis=1)
-
-data_dist_1, max = fuzzy_dist(data_dist_1)
-dat1 = pd.DataFrame(np.array())
-
-data_dist_0, max = fuzzy_dist(data_dist_0)
-dat0 = pd.DataFrame(np.array(Normali(data_dist_0, max)))
-
-data['fuzzy_dist'] = dat1.append(dat0, ignore_index=True)
+process(data_gal)
+process(data_qso)
+process(data_star)
 
 
 training_data = data.sample(20000, random_state=1)
