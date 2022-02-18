@@ -10,17 +10,17 @@ delta = 1e-4
 
 def M(data,n):
     sum = 0
-    data = data.reset_index(drop=True)
+    #data = data.reset_index(drop=True)
     #print(data)
-    for i in range(n):
-        sum += data[i]
+    for i in data:
+        sum += i
     return sum/float(n)
 
 def D(data,n):
-    m=M(data)
+    m=M(data,n)
     sum=0
-    for i in range(n):
-        sum += (data[i] - m)**2
+    for i in data:
+        sum += (i - m)**2
     return math.sqrt(sum/float(n))
 
 def Gauss_cut(data,n):

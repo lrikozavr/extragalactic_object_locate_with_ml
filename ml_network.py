@@ -42,9 +42,10 @@ def DeepCustomNN(features):
     layer_1 = Dense(features, activation='linear', kernel_initializer='he_uniform')(input_array)
     layer_2 = Dense(16, activation="softsign", kernel_initializer='he_uniform' )(layer_1)
     layer_3 = Dense(8, activation="tanh", kernel_initializer='he_uniform' )(layer_2)
-    layer_4 = Dense(4, activation="exponential", kernel_initializer='he_uniform')(layer_3)
-    layer_last = Dropout(.2)(layer_4)
-    output_array = Dense(1, activation='swish', kernel_initializer='he_uniform')(layer_last)
+    layer_4 = Dense(4, activation="elu", kernel_initializer='he_uniform')(layer_3)
+    #layer_last = Dropout(.2)(layer_4)
+    output_array = Dense(1, activation='sigmoid', kernel_initializer='he_uniform')(layer_4)
+    #output_array = Dense(1, activation='swish', kernel_initializer='he_uniform')(layer_last)
 
     #Выдает прописной вариант названия активатора
     #keras.activations.serialize(keras.activations.hard_sigmoid)
@@ -73,7 +74,7 @@ def DeepLinearNN(features):
     layer_3 = Dense(16, activation='linear', kernel_initializer='he_uniform' )(layer_2)
     layer_4 = Dense(8, activation='linear', kernel_initializer='he_uniform' )(layer_3)
     layer_5 = Dense(4, activation='linear', kernel_initializer='he_uniform' )(layer_4)
-    Label = Dense(1,activation='linear', kernel_initializer='he_uniform' )(layer_5)
+    Label = Dense(1,activation='sigmoid', kernel_initializer='he_uniform' )(layer_5)
     model = Model(input_img, Label)
     return model
 
