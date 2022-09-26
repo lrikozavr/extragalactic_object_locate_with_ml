@@ -9,9 +9,10 @@ import sklearn.metrics as skmetrics
 from matplotlib import pyplot as plt
 import matplotlib.colors as mcolors
 
-legend_size = 10
+legend_size = 20
 
-path_save_eval = '/media/kiril/j_08/ML/extragal'
+#path_save_eval = '/media/kiril/j_08/ML/extragal'
+path_save_eval = 'ml/eval'
 
 #path_classifire = '/home/kiril/github/ML_with_AGN/ML/code/results'
 #name_classifire = os.listdir(path_classifire)
@@ -21,7 +22,9 @@ path_save_eval = '/media/kiril/j_08/ML/extragal'
 fuzzy_options = ['fuzzy_dist']
 
 #name_sample = ['gal','qso','star']
-name_sample = ['gal']
+#name_sample = ['gal']
+name_sample = ['extragal']
+
 
 def Simpson(a,f):
 	n = len(f)
@@ -103,26 +106,29 @@ def i_need_more_eval(ax1_p, ax2_p, ax3_p, ax1_r, ax2_r, ax3_r, index, name, labe
 c=np.append(list(mcolors.TABLEAU_COLORS),list(mcolors.BASE_COLORS))
 
 save_path = path_save_eval
-ml_class = ['custom', 'linear']
+#ml_class = ['custom', 'linear']
+ml_class = ['custom']
 
+fontsize = 20
+'''
 for fuzzy_option in fuzzy_options:
     fig, ((ax1_p, ax2_p, ax3_p), (ax1_r, ax2_r, ax3_r)) = plt.subplots(2,3)		
     fig.suptitle(f'PR_curve and ROC_curve general data')
-    ax1_p.set_xlabel('Thresholds')
-    ax1_p.set_ylabel('Precision')
-    ax2_p.set_xlabel('Thresholds')
-    ax2_p.set_ylabel('Recall')
-    ax3_p.set_xlabel('Recall')
-    ax3_p.set_ylabel('Precision')
-    ax1_r.set_xlabel('Thresholds')
-    ax1_r.set_ylabel('FPR')
-    ax2_r.set_xlabel('Thresholds')
-    ax2_r.set_ylabel('TPR')
-    ax3_r.set_xlabel('FPR')
-    ax3_r.set_ylabel('TPR')
+    ax1_p.set_xlabel('Thresholds',fontsize=fontsize)
+    ax1_p.set_ylabel('Precision',fontsize=fontsize)
+    ax2_p.set_xlabel('Thresholds',fontsize=fontsize)
+    ax2_p.set_ylabel('Recall',fontsize=fontsize)
+    ax3_p.set_xlabel('Recall',fontsize=fontsize)
+    ax3_p.set_ylabel('Precision',fontsize=fontsize)
+    ax1_r.set_xlabel('Thresholds',fontsize=fontsize)
+    ax1_r.set_ylabel('FPR',fontsize=fontsize)
+    ax2_r.set_xlabel('Thresholds',fontsize=fontsize)
+    ax2_r.set_ylabel('TPR',fontsize=fontsize)
+    ax3_r.set_xlabel('FPR',fontsize=fontsize)
+    ax3_r.set_ylabel('TPR',fontsize=fontsize)
     fig.set_size_inches(25,20)
     index=0
-    '''
+    ###
     for name_s in name_sample:
     	for cl in name_classifire:
             nam_clas = "AGN"
@@ -148,7 +154,7 @@ for fuzzy_option in fuzzy_options:
             
             i_need_more_eval(ax1_p, ax2_p, ax3_p, ax1_r, ax2_r, ax3_r, index, f"{name_s}_{cl}_{fuzzy_option}", label, data_general['y_prob_positive_class'])
             index+=1
-    '''
+    ###
     for name_s in name_sample:
         for ml_c in ml_class:
             data_NN = pd.read_csv(f"{path_save_eval}/{name_s}_{ml_c}_{1}_prob.csv",sep=",",header=0)
@@ -174,14 +180,18 @@ for fuzzy_option in fuzzy_options:
     fig.savefig(save_path+'/'+'PR_ROC_curve_all_g_test___.png')	
     plt.close(fig)
 '''
-classif = ['et_not_b_fuzzy_dist', 'rf_not_b_fuzzy_dist', 'normal_1']
-cls_name = ['extremely randomized tree', 'random forest', 'neural network']
+#classif = ['et_not_b_fuzzy_dist', 'rf_not_b_fuzzy_dist', 'normal_1']
+classif = ['custom_1']
+
+#cls_name = ['extremely randomized tree', 'random forest', 'neural network']
+cls_name = ['neural network']
+
 
 fontsize_sub = 50
 fontsize_label = 24
 fontsizr_param = 24
 fontsize_legend = 20
-size = (10,10)
+size = (12,11)
 
 for name_s in name_sample:
 	fig1 = plt.figure()
@@ -197,7 +207,8 @@ for name_s in name_sample:
 	ax2 = fig2.add_subplot(1,1,1)
 	#fig2.suptitle("", fontsize=fontsize_sub)
 	ax2.set_xlabel("Probability thresholds", fontsize=fontsize_label)
-	ax2.set_ylabel("Completeness", fontsize=fontsize_label)
+	#ax2.set_ylabel("Completeness", fontsize=fontsize_label)
+	ax2.set_ylabel("Recall", fontsize=fontsize_label)
 	ax2.tick_params(axis='x', labelsize=fontsizr_param)
 	ax2.tick_params(axis='y', labelsize=fontsizr_param)
 	fig2.set_size_inches(size)
@@ -205,7 +216,8 @@ for name_s in name_sample:
 	fig3 = plt.figure()
 	ax3 = fig3.add_subplot(1,1,1)
 	#fig3.suptitle("", fontsize=fontsize_sub)
-	ax3.set_xlabel("Completeness", fontsize=fontsize_label)
+	#ax3.set_xlabel("Completeness", fontsize=fontsize_label)
+	ax3.set_xlabel("Recall", fontsize=fontsize_label)
 	ax3.set_ylabel("Precision", fontsize=fontsize_label)
 	ax3.tick_params(axis='x', labelsize=fontsizr_param)
 	ax3.tick_params(axis='y', labelsize=fontsizr_param)
@@ -258,7 +270,7 @@ for name_s in name_sample:
 	plt.close(fig2)
 	plt.close(fig3)
 	plt.close(fig4)
-'''
+
 
 '''
 evalu = pd.DataFrame([np.zeros(14)], columns=['Accuracy','AGN_purity','nonAGN_precision','AGN_completness','nonAGN_completness','F1','FPR','TNR','bACC','K','MCC','BinaryBS','name_classifire','name_object'])

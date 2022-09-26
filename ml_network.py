@@ -6,9 +6,7 @@ import os
 import math
 
 from keras.layers import Input, Dense, Dropout
-from keras.layers import experimental, Conv2D, SeparableConv2D, MaxPooling2D, GlobalAveragePooling2D, Activation, add
 from keras.models import Model
-from keras.layers.normalization import BatchNormalization
 import keras
 
 import matplotlib.pyplot as plt
@@ -178,13 +176,13 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval):
     
 		X_test = train[test_index]
 		y_test = label[test_index]
-	
+		'''
 		model = DeepCustomNN(features)	
 		model1 = ml_volume(train,label,X_train,y_train,X_test,y_test,
 		model,optimizer,loss,num_ep,batch_size,validation_split,
 		output_path_predict,path_save_eval,f"custom_{index}")
 		SaveModel(model1,output_path_mod,output_path_weight,f"custom_{index}")
-
+		'''
 		model = DeepLinearNN(features)
 		model2 = ml_volume(train,label,X_train,y_train,X_test,y_test,
 		model,optimizer,loss,num_ep,batch_size,validation_split,

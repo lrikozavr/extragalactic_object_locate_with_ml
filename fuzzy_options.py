@@ -30,7 +30,7 @@ def Gauss_cut(data,n):
     rezult = []
     
     for i in range(n):
-        if(math.e**(-((data[i]-m)**2)/(2*d**2))/(d*math.sqrt(2*math.pi)) > 0.05):
+        if(math.e**(-((data[i]-m)**2)/(2*d**2))/(d*math.sqrt(2*math.pi)) > 0.005):
             rezult.append(i)
             
     return rezult
@@ -169,6 +169,8 @@ def MCD(data,deep_i):
             for j2 in range(count_col):
                 sum += matrix[j2]*s0[j2][j1]
             res += sum*matrix[j1]
+        if(res < 0):
+            continue
         d[i] = math.sqrt(res)
         #if (d[i] > max):
         #    max = d[i]
