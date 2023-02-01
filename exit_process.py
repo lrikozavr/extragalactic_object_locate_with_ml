@@ -77,6 +77,25 @@ def req(cat_name,name,fout):
     h.write(r.text)
     h.close()
 
+def slice(filename,count):
+    import os
+    foldername = filename.split(',')[0]
+    if not os.path.isdir(foldername):
+        os.mkdir(foldername)
+    
+    index = 0
+    index_name = 1
+    fout = open(f"{foldername}/0.csv","w")
+    for line open(filename):
+        index+=1
+        fout.write(line)
+        if(index // count == index_name):
+            fout_name = f"{index_name}.csv"
+            fout.close()
+            fout = open(f"{foldername}/{fout_name}","w")
+            index_name+=1
+    return foldername
+
 #req(gaiadr3,'qso','gaia_qso.csv')
 
 col_allwise = [1,2,3,5,6,10,11,17,18]
