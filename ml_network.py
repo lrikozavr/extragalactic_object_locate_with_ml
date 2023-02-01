@@ -35,12 +35,12 @@ def LoadModel(path_model, path_weights, optimizer, loss):
     loaded_model.compile(optimizer=optimizer, loss=loss)
     return loaded_model
 
-def DeepCustomNN(features):
+def DeepCustomNN(features, l2, l3, l4): #16, 8, 4
     input_array = Input(shape=(features,))
     layer_1 = Dense(features, activation='linear', kernel_initializer='he_uniform')(input_array)
-    layer_2 = Dense(16, activation="softsign", kernel_initializer='he_uniform' )(layer_1)
-    layer_3 = Dense(8, activation="tanh", kernel_initializer='he_uniform' )(layer_2)
-    layer_4 = Dense(4, activation="elu", kernel_initializer='he_uniform')(layer_3)
+    layer_2 = Dense(l2, activation="softsign", kernel_initializer='he_uniform' )(layer_1)
+    layer_3 = Dense(l3, activation="tanh", kernel_initializer='he_uniform' )(layer_2)
+    layer_4 = Dense(l4, activation="elu", kernel_initializer='he_uniform')(layer_3)
     #layer_last = Dropout(.2)(layer_4)
     output_array = Dense(1, activation='sigmoid', kernel_initializer='he_uniform')(layer_4)
     #output_array = Dense(1, activation='swish', kernel_initializer='he_uniform')(layer_last)
@@ -177,11 +177,16 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval):
 		X_test = train[test_index]
 		y_test = label[test_index]
 		'''
-		model = DeepCustomNN(features)	
-		model1 = ml_volume(train,label,X_train,y_train,X_test,y_test,
-		model,optimizer,loss,num_ep,batch_size,validation_split,
-		output_path_predict,path_save_eval,f"custom_{index}")
-		SaveModel(model1,output_path_mod,output_path_weight,f"custom_{index}")
+		
+		for l2 in range(4,16,1):
+			for l3 in range(2,16,1):
+				for l4 in range(1,16,1):
+					custom_index = float(str(index) + "0" + str(l2) + "0" + str(l3) + "0" + str(l4))
+					model = DeepCustomNN(features,l2,l3,l4)	
+					model1 = ml_volume(train,label,X_train,y_train,X_test,y_test,
+					model,optimizer,loss,num_ep,batch_size,validation_split,
+					output_path_predict,path_save_eval,f"custom_{custom_index}")
+					SaveModel(model1,output_path_mod,output_path_weight,f"custom_{custom_index}")
 		'''
 		model = DeepLinearNN(features)
 		model2 = ml_volume(train,label,X_train,y_train,X_test,y_test,
