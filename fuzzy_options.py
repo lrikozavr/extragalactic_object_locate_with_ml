@@ -219,27 +219,31 @@ def Ell(data):
 
     max = 0
     summ = np.zeros(n)
+    matrix = [[0]*count_col for i in range(n)]
     for i in range(n):
         sum=0
         jj=0
         for j in data.columns.values:
-            sum += (data[j].iloc[i] - center[jj])**2
+            matrix[i][jj] = (data[j].iloc[i] - center[jj])**2
+            sum += matrix[i][jj]
             jj+=1
         summ[i]=math.sqrt(sum)
         if (sum>max):
             max = sum
     index = np.argsort(summ)
     #summ = np.sort(summ)
-    
+    #?
     f_i = np.zeros(count_col)
     for i in range(count_col):
         f_i[i] = index[n-i]
     
     R = max
-    mat = []
+    mat = [[0]*count_col for i in range(count_col)]
     for i in f_i:
-        mat.append((data.iloc(i) - center)**2)
-    
+        jj=0
+        for j in data.columns.values:
+            mat[i][jj] = (data[j].iloc(i) - center[jj])**2
+            jj+=1
     mat_inv = np.linalg.inv(mat)
 
     coef = np.zeros(count_col)

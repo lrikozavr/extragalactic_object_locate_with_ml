@@ -158,8 +158,6 @@ def ml_volume(train,label,X_train,y_train,X_test,y_test,
 	ev = eval(Class,label,label.shape[0])
 	ev.to_csv(f'{path_save_eval}_{name}_evaluate.csv', index=False)
 
-	
-	
 	return model
 
 def NN(train,label,test_size,validation_split,batch_size,num_ep,optimizer,loss,

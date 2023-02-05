@@ -15,8 +15,8 @@ def NtoPtoN(data,index):
     return res
 
 def process(data,name,save_path):
-    #data_mags = data.drop(['RA','DEC','z','CatName','Class','Y'], axis=1)
-    data_mags = data.drop(['RA','DEC','z','Y'], axis=1)
+    #data_mags = data.drop(['RA','DEC','z','CatName','Class'], axis=1)
+    data_mags = data.drop(['RA','DEC','z'], axis=1)
     data_dist, data_err = colors(data_mags)
     print(name," complite colors")
     dfsg = MCD(data_dist,0)
@@ -26,9 +26,10 @@ def process(data,name,save_path):
     data_dist = NtoPtoN(data_dist,dfsg)
     data_err = NtoPtoN(data_err,dfsg)
 
-    #data = pd.concat([data[['RA','DEC','z','CatName','Class','Y']],data_dist,data_err], axis=1)
-    data = pd.concat([data[['RA','DEC','z','Y']],data_dist,data_err], axis=1)
+    #data = pd.concat([data[['RA','DEC','z','CatName','Class']],data_dist,data_err], axis=1)
+    data = pd.concat([data[['RA','DEC','z']],data_dist,data_err], axis=1)
 
+    #additional weight
     #data['fuzzy_err'] = fuzzy_err(data_err)
     #print(name," complite fuzzy_err")
     #data_dist_r, max = fuzzy_dist(data_dist)
@@ -38,74 +39,40 @@ def process(data,name,save_path):
     data.to_csv(f'{save_path}/{name}_main_sample.csv', index=False)
     return data
 
-#def data_concat(data1,data2,data3,i,j,k):
 def data_concat(data1,data2,i,j):
     data1['Y'] = i
     data2['Y'] = j
-    #data3['Y'] = k
     data12 = data1.append(data2, ignore_index=True)
-    #data123 = data12.append(data3, ignore_index=True)
-    #return data123
     return data12
 
 def data_begin(save_path,path_sample):
-    #path_sample = "/media/kiril/j_08/ML/extragal"
+    data_exgal = pd.read_csv(f"{path_sample}/exgal.csv", header=0, sep=',')
+    data_star = pd.read_csv(f"{path_sample}/star.csv", header=0, sep=',')
 
-    #data_qso = pd.read_csv(f"{path_sample}/qso_main_sample.csv", header=0, sep=',')
-    #data_gal = pd.read_csv(f"{path_sample}/gal_main_sample.csv", header=0, sep=',')
-    #data_star = pd.read_csv(f"{path_sample}/star_main_sample.csv", header=0, sep=',')
-
-    
-    #path_sample = '/home/kiril/github/z'
-
-#    data_qso = pd.read_csv(f"{path_sample}/qso_sample.csv", header=0, sep=',')
-    #data_gal = pd.read_csv(f"{path_sample}/sample_gal.csv", header=0, sep=',')
-#    data_star = pd.read_csv(f"{path_sample}/star_sample.csv", header=0, sep=',')
-
-#    data_qso['Y'] = "1"
-    #data_gal['Y'] = "1"
-#    data_star['Y'] = "0"
     #Check variable zero value
-    #data.fillna(0)
+    data_exgal = data_exgal.fillna(0)
+    data_star = data_star.fillna(0)
     
-    #l = [len(data_gal), len(data_qso), len(data_star)]
-    #l = [len(data_qso), len(data_star)]
-    #min=1e+9
-    #for i in l:
-    #    if(i < min):
-    #        min=i
-    #print('MIN.....',min)   
-#    min = 377679
-    #data_gal = data_gal.sample(min, random_state=1)
-    #data_qso = data_qso.sample(min, random_state=1)
-    #data_star = data_star.sample(min, random_state=1)
+    data_exgal = data_exgal.sample(min, random_state=1)
+    data_star = data_star.sample(min, random_state=1)
 
-    #data_gal = data_gal.reset_index(drop=True)
-    #data_qso = data_qso.reset_index(drop=True)
-    #data_star = data_star.reset_index(drop=True)
+    data_exgal = data_exgal.reset_index(drop=True)
+    data_star = data_star.reset_index(drop=True)
 
-    #print(data_qso)
-    #data_qso.to_csv(f'{save_path}/data_qso.csv', index = False)
-    #data_star.to_csv(f'{save_path}/data_star.csv', index = False)
+    print(data_exgal)
+    data_exgal.to_csv(f'{save_path}/data_exgal.csv', index = False)
+    data_star.to_csv(f'{save_path}/data_star.csv', index = False)
     
-    data_qso = pd.read_csv(f"{save_path}/qso_main_sample.csv", header=0, sep=',')
-    data_star = pd.read_csv(f"{save_path}/star_main_sample.csv", header=0, sep=',')
+    #data_exgal = pd.read_csv(f"{save_path}/data_exgal.csv", header=0, sep=',')
+    #data_star = pd.read_csv(f"{save_path}/data_star.csv", header=0, sep=',')
 
+    data_exgal = process(data_exgal,"exgal",save_path)
+    data_star = process(data_star,"star",save_path)
 
+    #data_exgal = pd.read_csv(f"{save_path}/exgal_main_sample.csv", header=0, sep=',')
+    #data_star = pd.read_csv(f"{save_path}/star_main_sample.csv", header=0, sep=',')
 
-    #data_gal = process(data_gal,"gal",save_path)
-    
-    #data_qso = process(data_qso,"qso",save_path)
-    #data_star = process(data_star,"star",save_path)
-    
-
-    #data_1_0_0 = data_concat(data_gal,data_qso,data_star,1,0,0)
-    #data_0_1_0 = data_concat(data_gal,data_qso,data_star,0,1,0)
-    #data_0_0_1 = data_concat(data_gal,data_qso,data_star,0,0,1)
-    
-    #return data_1_0_0, data_0_1_0, data_0_0_1
-
-    delta_1_0 = data_concat(data_qso,data_star,1,0)
-    delta_0_1 = data_concat(data_qso,data_star,0,1)
+    delta_1_0 = data_concat(data_exgal,data_star,1,0)
+    delta_0_1 = data_concat(data_exgal,data_star,0,1)
     
     return delta_1_0, delta_0_1
