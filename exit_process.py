@@ -2,16 +2,19 @@
 
 import pandas as pd
 import numpy as np
+save_path = '/home/lrikozavr/catalogs/elewen'
+#save_path = r'C:\Users\lrikozavr\github\extragalactic_object_locate_with_ml'
+filepath = f'{save_path}/exit.sort'
 
-save_path = r'C:\Users\lrikozavr\github\extragalactic_object_locate_with_ml'
-filepath = f'{save_path}\exit.sort'
-'''
+general_path = '/home/lrikozavr/ML_work/des_pro'
+sample_path = f'{general_path}/sample'
+
 #create file for class obj exgal and star
 f_exgal = open('exgal.csv','w')
 f_star = open('star.csv','w')
 #write header for VizieR
-f_exgal.write('RA,DEC,z\n')
-f_star.write('RA,DEC,z\n')
+#f_exgal.write('RA,DEC,z\n')
+#f_star.write('RA,DEC,z\n')
 
 #extract exgal and star obj from file exit.sort
 count_exgal = 0
@@ -37,7 +40,7 @@ for line in open(filepath):
         count_star += 1
 print(count_star)
 print(count_exgal)
-'''
+
 #koef_star = 1e5 / index_star
 #koef_exgal = 1e5 / index_exgal
 #cut out define % line from file 
@@ -62,42 +65,61 @@ def out(line,col,fout):
     index = 0    
     for i in col:
         if index == len(col)-1 :
-            line_out += n[i] + '\n'
+            if(len(n[i].split('\n')) == 1):
+                line_out += n[i] + '\n'
+            else:
+                line_out += n[i]
         else: line_out += n[i] + ','
         index += 1
     fout.write(line_out)
 
-#kill duplicate algorithm
+
 def cut_cut(col,filein,fileout):
     fout = open(fileout,'w')
-    head = 1
-    i=1
-    z=0
-    l=""
     gc1 = col[0]
     gc2 = col[1]
-    for line in open(filein):
-        n = line.split(',')
-        #duplicate algorithm
-        if (i>1):
-            if (decn!=n[gc2]) or (ran!=n[gc1]):
+    #kill duplicate algorithm
+    def f1():
+        i=1
+        z=0
+        l=""
+        for line in open(filein):
+            n = line.split(',')
+            #duplicate algorithm
+            if (i>1):
+                if (decn!=n[gc2]) or (ran!=n[gc1]):
+                    ran=n[gc1]
+                    decn=n[gc2]
+                    if (z==1):
+                        out(str(l),col,fout)
+                    l=str(line)
+                    z=1                    
+                else:
+                    z+=1
+            else:
                 ran=n[gc1]
                 decn=n[gc2]
-                if (z==1):
-                    out(str(l),col,fout)
+                i=2
+                z=1
                 l=str(line)
-                z=1                    
+        if (z==1):
+            out(str(l),col,fout)    
+    def f2():
+        i=1
+        l=""
+        for line in open(filein):   
+            n=line.split(',')    
+            if (i>1):
+                if (decn!=n[gc2]) or (ran!=n[gc1]):
+                    ran=n[gc1]
+                    decn=n[gc2]
+                    out(str(line),col,fout)
             else:
-                z+=1
-        else:
-            ran=n[gc1]
-            decn=n[gc2]
-            i=2
-            z=1
-            l=str(line)
-    if (z==1):
-        out(str(l),col,fout)    
-
+                ran=n[gc1]
+                decn=n[gc2]
+                i=2
+                out(str(line),col,fout)
+    f1()
 #VizieR path
 allwise = 'II/328/allwise'
 gaiadr3 = 'I/350/gaiaedr3'
@@ -106,7 +128,7 @@ des_dr2 = 'II/371/des_dr2'
 col_allwise = [1,2,3,5,6,10,11,17,18]
 #col_gaiadr3 = [1,2,3,4,5,6,7,8,9,16,18,41,44,46,58,59,60]
 col_gaiadr3 = [1,2,3,6,8,7,9,41,58,44,59,46,60]
-col_des_dr2 = [1,2,3,11,12,18,19,20,21,22,23,24,25,26,27]
+col_des_dr2 = [1,2,3,11,12,18,23,19,24,20,25,21,26,22,27]
 
 #request to VizieR X-match
 def req(cat_name,name,fout):
@@ -134,10 +156,9 @@ def req(cat_name,name,fout):
 #division into pieces of define count
 def slice(filename,count):
     import os
-    foldername = filename.split(',')[0]
+    foldername = filename.split('.')[0]
     if not os.path.isdir(foldername):
         os.mkdir(foldername)
-    
     index = 0
     index_name = 1
     fout = open(f"{foldername}/0.csv","w")
@@ -151,7 +172,7 @@ def slice(filename,count):
             fout.close()
             fout = open(f"{foldername}/{fout_name}","w")
             index_name+=1
-    return foldername
+    #return foldername
 
 def download(catalogs_name,filepath):
     import os
@@ -164,6 +185,22 @@ def download(catalogs_name,filepath):
         cut_cut(globals()[f'col_{name}'],temp,filepath)
         os.remove(temp)
 
+def multi_thr_slice_download(catalogs_name,filename):
+    MAX_WORKERS = 16
+    WAIT_UNTIL_REPEAT_ACCESS = 3
+    NUM_URL_ACCESS_ATTEMPTS = 4
+    import time
+    import os   
+    from concurrent.futures import ThreadPoolExecutor
+    attempts = 0
+    while attempts < NUM_URL_ACCESS_ATTEMPTS:
+        try:
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                for name in os.listdir(filename):
+                    executor.submit(download,catalogs_name,f"{filename}/{name}")
+            break
+        except:
+            time.sleep(WAIT_UNTIL_REPEAT_ACCESS)
         
 def slice_download(catalogs_name,filename):
     import os
@@ -183,13 +220,31 @@ def unslice(filename,fout):
                     f.write(line)
                 flag_1 = 0
                 continue
+            if (line=='\n'):
+                continue
             f.write(line)
         flag = 1
         os.remove(f"{filename}/{name}")
-    os.remove(f"{filename}")
+    os.rmdir(f"{filename}")
     f.close()
 
-req(des_dr2,'ml/qso_sample','des_qso.csv')
+def clas(name,sample_path):
+    slice(f'{name}.csv',1e5)
+    #multi_thr_slice_download(['des_dr2'],name)
+    slice_download(['des_dr2'],name)
+    unslice(name,f'{sample_path}/{name}.csv')
+    os.remove(f'{name}.csv')
+
+import os 
+
+if not os.path.isdir('sample'):
+    os.mkdir('sample')
+
+clas('exgal',sample_path)
+clas('star',sample_path)
+#req(des_dr2,'ml/qso_sample','des_qso.csv')
+
+
 
 '''
 def flag_z(name):

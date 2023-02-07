@@ -1,4 +1,3 @@
-#!/home/kiril/python_env_iron_ment/new_proj/bin/python
 # -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
@@ -8,6 +7,43 @@ import sklearn.metrics as skmetrics
 
 from matplotlib import pyplot as plt
 import matplotlib.colors as mcolors
+'''
+def max_accuracy_check(path,names):
+	max = -1
+	max_name = ''
+	for name in names:
+		if(name == 10130209.0):
+			break
+		data = pd.read_csv(f"{path}/extragal_custom_{name}_evaluate.csv", header=0, sep=',')
+		if(data['Accuracy'].iloc[0] > max):
+			max = data['Accuracy'].iloc[0]
+			max_name = name
+	print(max_name, max)
+
+names = []
+for l2 in range(4,16,1):
+	for l3 in range(2,16,1):
+		for l4 in range(1,16,1):
+			names.append(float(str(1) + "0" + str(l2) + "0" + str(l3) + "0" + str(l4)))
+
+max_accuracy_check('ml/eval',names)
+'''
+data = pd.read_csv('ml/eval/extragal_custom_15015012.0_prob.csv',header=0, sep=',')
+precision, recall, thresholds = skmetrics.precision_recall_curve(data['Y'], data['y_prob'])
+pr_curve_df = pd.DataFrame({"precision": precision, "recall": recall, 
+								"thresholds": np.append(thresholds, 1)})
+pr_curve_df = pr_curve_df[pr_curve_df['thresholds'] < 0.99]
+max,inde=0,0
+for ii in range(len(pr_curve_df)):
+	s = math.sqrt(pr_curve_df["recall"].iloc[ii]**2 + pr_curve_df["precision"].iloc[ii]**2)
+	if(max < s):
+		max = s
+		inde = ii
+print("thresholds....",pr_curve_df["thresholds"].iloc[inde],"recall....",pr_curve_df["recall"].iloc[inde],"precision....",pr_curve_df["precision"].iloc[inde])
+
+
+exit()
+
 
 legend_size = 20
 
@@ -283,4 +319,6 @@ for fuzzy_option in fuzzy_options:
             data_ev['name_object'] = name_s
             evalu = evalu.append(data_ev,ignore_index=True)
 evalu.to_csv(f"{path_save_eval}/table1.csv",index=False)
-'''			
+'''
+
+

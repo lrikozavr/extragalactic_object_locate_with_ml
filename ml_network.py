@@ -169,27 +169,54 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval):
 	kfold = KFold(n_splits=5, shuffle=False)
 	index=0
 	for train_index, test_index in kfold.split(train):
+		#print("train len ",len(train_index),"test len ",len(test_index))
+		#train len  358845 test len  89712
 		X_train = train[train_index]
 		y_train = label[train_index]
     
 		X_test = train[test_index]
 		y_test = label[test_index]
-		'''
 		
+		#add multithread resolve
+		custom_index = []
+		'''
 		for l2 in range(4,16,1):
 			for l3 in range(2,16,1):
 				for l4 in range(1,16,1):
-					custom_index = float(str(index) + "0" + str(l2) + "0" + str(l3) + "0" + str(l4))
-					model = DeepCustomNN(features,l2,l3,l4)	
-					model1 = ml_volume(train,label,X_train,y_train,X_test,y_test,
-					model,optimizer,loss,num_ep,batch_size,validation_split,
-					output_path_predict,path_save_eval,f"custom_{custom_index}")
-					SaveModel(model1,output_path_mod,output_path_weight,f"custom_{custom_index}")
+					custom_index.append(str(index) + "n" + str(l2) + "n" + str(l3) + "n" + str(l4))
+		'''
+		for l2 in range(4,17,1):
+			custom_index.append(str(index) + "n" + str(l2) + "n" + str(8) + "n" + str(4))
+		for name in custom_index:
+			n = name.split("n")
+			l2,l3,l4 = n[1],n[2],n[3]
+			model = DeepCustomNN(features,l2,l3,l4)	
+			model1 = ml_volume(train,label,X_train,y_train,X_test,y_test,
+			model,optimizer,loss,num_ep,batch_size,validation_split,
+			output_path_predict,path_save_eval,f"custom_{custom_index}")
+			SaveModel(model1,output_path_mod,output_path_weight,f"custom_{custom_index}")
+		'''
+		def cust_multi(name):
+			n = name.split("n")
+			l2,l3,l4 = n[1],n[2],n[3]
+			model = DeepCustomNN(features,l2,l3,l4)	
+			model1 = ml_volume(train,label,X_train,y_train,X_test,y_test,
+			model,optimizer,loss,num_ep,batch_size,validation_split,
+			output_path_predict,path_save_eval,f"custom_{name}")
+			SaveModel(model1,output_path_mod,output_path_weight,f"custom_{name}")
+
+		MAX_WORKERS = 16
+		from concurrent.futures import ThreadPoolExecutor
+		attempts = 0
+		with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+			for name in custom_index:
+				executor.submit(cust_multi,name)
+		'''
 		'''
 		model = DeepLinearNN(features)
 		model2 = ml_volume(train,label,X_train,y_train,X_test,y_test,
 		model,optimizer,loss,num_ep,batch_size,validation_split,
 		output_path_predict,path_save_eval,f"linear_{index}")
 		SaveModel(model2,output_path_mod,output_path_weight,f"linear_{index}")
-
+		'''
 		index+=1
