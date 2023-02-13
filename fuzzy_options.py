@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import math
 
-delta = 1e-4
+delta = 1e-7
 
 def M(data,n):
     sum = 0
@@ -62,7 +62,7 @@ def fuzzy_dist(data):
         r.append(math.sqrt(ev_sum))
         if(r[i] > max):
             max = r[i]
-    print("fuzzy_dist complite")
+    #print("fuzzy_dist complite")
     return r, max
 
 #?????????????????????????????????????????????????????????
@@ -88,7 +88,7 @@ def fuzzy_err(data):
             sum += (1 - data[col].iloc[i]/(max[index]+delta))**2
             index += 1
         summ.append(math.sqrt(sum/float(index)))
-    print("fuzzy_err complite")
+    #print("fuzzy_err complite")
     return summ
 
 def colors(data):
@@ -219,13 +219,11 @@ def Ell(data):
 
     max = 0
     summ = np.zeros(n)
-    matrix = [[0]*count_col for i in range(n)]
     for i in range(n):
         sum=0
         jj=0
         for j in data.columns.values:
-            matrix[i][jj] = (data[j].iloc[i] - center[jj])**2
-            sum += matrix[i][jj]
+            sum += (data[j].iloc[i] - center[jj])**2
             jj+=1
         summ[i]=math.sqrt(sum)
         if (sum>max):
@@ -233,31 +231,50 @@ def Ell(data):
     index = np.argsort(summ)
     #summ = np.sort(summ)
     #?
+    print('max was found')
     f_i = np.zeros(count_col)
     for i in range(count_col):
-        f_i[i] = index[n-i]
+        f_i[i] = index[n-i-1]
     
     R = max
     mat = [[0]*count_col for i in range(count_col)]
+    ii=0
     for i in f_i:
         jj=0
         for j in data.columns.values:
-            mat[i][jj] = (data[j].iloc(i) - center[jj])**2
+            mat[ii][jj] = (data[j].iloc[int(i)] - center[jj])**2
             jj+=1
+        ii+=1
     mat_inv = np.linalg.inv(mat)
-
+    print('inv matrix was found')
     coef = np.zeros(count_col)
 
     for i in range(count_col):
         sum = 0
         for j in range(count_col):
-            sum += mat_inv[i][j]*(R**2)
+            sum += mat_inv[i][j]*R
         coef[i] = sum
     
     return center, coef
     #(x[i]-center[i])^2/coef[i]+...=R^2
     #for(i=1;i<15;i+=1){}
 
-
-
-
+def redded_des(data):
+    def dust_SFD(ra,dec):
+        from dustmaps.config import config
+        config['data_dir'] = '/home/lrikozavr/catalogs/dustmaps/'
+        from astropy.coordinates import SkyCoord
+        from astropy import units as u
+        from dustmaps.sfd import SFDQuery
+        coords = SkyCoord(ra=ra, dec=dec, unit=(u.degree,u.degree))
+        coords.galactic
+        sfd = SFDQuery()
+        rezult = sfd(coords)
+        return rezult
+    data['E(B-V)'] = dust_SFD(data['RA'],data['DEC'])
+    data['gmag'] -= 3.186*data['E(B-V)']
+    data['rmag'] -= 2.140*data['E(B-V)']
+    data['imag'] -= 1.5689*data['E(B-V)']
+    data['zmag'] -= 1.1959*data['E(B-V)']
+    data['Ymag'] -= 1.048*data['E(B-V)']
+    

@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import os
 
-from fuzzy_options import fuzzy_dist,fuzzy_err, Normali, colors, MCD
+from fuzzy_options import fuzzy_dist,fuzzy_err, Normali, colors, MCD, redded_des
 
 def NtoPtoN(data,index):
     res = []
@@ -16,6 +16,8 @@ def NtoPtoN(data,index):
 
 def process(data,name,save_path):
     #data_mags = data.drop(['RA','DEC','z','CatName','Class'], axis=1)
+    redded_des(data)
+    print(name, 'deredded complite')
     data_mags = data.drop(['RA','DEC','z'], axis=1)
     data_dist, data_err = colors(data_mags)
     print(name," complite colors")
@@ -27,7 +29,7 @@ def process(data,name,save_path):
     data_err = NtoPtoN(data_err,dfsg)
 
     #data = pd.concat([data[['RA','DEC','z','CatName','Class']],data_dist,data_err], axis=1)
-    data = pd.concat([data[['RA','DEC','z']],data_dist,data_err], axis=1)
+    data = pd.concat([data[['RA','DEC','z','gmag','rmag','imag','zmag','Ymag']],data_dist,data_err], axis=1)
 
     #additional weight
     data['fuzzy_err'] = fuzzy_err(data_err)

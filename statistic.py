@@ -28,6 +28,7 @@ for l2 in range(4,16,1):
 
 max_accuracy_check('ml/eval',names)
 '''
+'''
 data = pd.read_csv('ml/eval/extragal_custom_15015012.0_prob.csv',header=0, sep=',')
 precision, recall, thresholds = skmetrics.precision_recall_curve(data['Y'], data['y_prob'])
 pr_curve_df = pd.DataFrame({"precision": precision, "recall": recall, 
@@ -40,8 +41,30 @@ for ii in range(len(pr_curve_df)):
 		max = s
 		inde = ii
 print("thresholds....",pr_curve_df["thresholds"].iloc[inde],"recall....",pr_curve_df["recall"].iloc[inde],"precision....",pr_curve_df["precision"].iloc[inde])
+'''
+path_save_eval = '/home/lrikozavr/ML_work/des_pro/ml/eval/extragal'
+mass_model_name = []
 
+max_Ac, max_F1 = 0, 0
+name_max_Ac, name_max_F1 = '', ''
+for l2 in range(4,17,1):
+	sum_Ac, sum_F1 = 0, 0
+	name = str(l2) + "n" + str(8) + "n" + str(4)
+	for i in range(5):
+		sub_name = str(i) + "n" + name
+		file_eval = pd.read_csv(f"{path_save_eval}_custom_{sub_name}_evaluate.csv", header=0, sep=',')
+		sum_Ac += file_eval['Accuracy'].iloc[0]
+		sum_F1 += file_eval['F1'].iloc[0]
+	
+	if( sum_Ac/5. > max_Ac):
+		max_Ac = sum_Ac/5.
+		name_max_Ac = name
+	if( sum_F1/5. > max_F1):
+		max_F1 = sum_F1/5.
+		name_max_F1 = name
 
+print(name_max_Ac, max_Ac)
+print(name_max_F1, max_F1)
 exit()
 
 

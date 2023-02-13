@@ -43,7 +43,7 @@ def DeepCustomNN(features, l2, l3, l4): #16, 8, 4
     layer_4 = Dense(l4, activation="elu", kernel_initializer='he_uniform')(layer_3)
     #layer_last = Dropout(.2)(layer_4)
     output_array = Dense(1, activation='sigmoid', kernel_initializer='he_uniform')(layer_4)
-    #output_array = Dense(1, activation='swish', kernel_initializer='he_uniform')(layer_last)
+	#output_array = Dense(1, activation='swish', kernel_initializer='he_uniform')(layer_last)
 
     #Выдает прописной вариант названия активатора
     #keras.activations.serialize(keras.activations.hard_sigmoid)
@@ -51,7 +51,7 @@ def DeepCustomNN(features, l2, l3, l4): #16, 8, 4
     model = Model(input_array, output_array)
     return model
 
-def DeepCustomZNN(features):
+def DeepCustomZNN(features, l2, l3, l4):
     input_array = Input(shape=(features,))
     layer_1 = Dense(features, activation='linear', kernel_initializer='he_uniform')(input_array)
     layer_2 = Dense(16, activation="softsign", kernel_initializer='he_uniform' )(layer_1)
@@ -139,6 +139,7 @@ def ml_volume(train,label,X_train,y_train,X_test,y_test,
 	model.fit(X_train, y_train,
 		epochs=num_ep,
 		verbose=1,
+		#verbose=0,
 		batch_size=batch_size,
 		validation_split=validation_split
 		#&&&????????????????????????????????????????????????????????????????????
@@ -185,16 +186,19 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval):
 				for l4 in range(1,16,1):
 					custom_index.append(str(index) + "n" + str(l2) + "n" + str(l3) + "n" + str(l4))
 		'''
-		for l2 in range(4,17,1):
-			custom_index.append(str(index) + "n" + str(l2) + "n" + str(8) + "n" + str(4))
+		for l2 in range(12,17,1):
+			line = str(index) + "n" + str(l2) + "n" + str(8) + "n" + str(4)
+			custom_index.append(line)
+			
 		for name in custom_index:
 			n = name.split("n")
 			l2,l3,l4 = n[1],n[2],n[3]
 			model = DeepCustomNN(features,l2,l3,l4)	
+			#model = DeepCustomZNN(features,l2,l3,l4)	
 			model1 = ml_volume(train,label,X_train,y_train,X_test,y_test,
 			model,optimizer,loss,num_ep,batch_size,validation_split,
-			output_path_predict,path_save_eval,f"custom_{custom_index}")
-			SaveModel(model1,output_path_mod,output_path_weight,f"custom_{custom_index}")
+			output_path_predict,path_save_eval,f"custom_{name}")
+			SaveModel(model1,output_path_mod,output_path_weight,f"custom_{name}")
 		'''
 		def cust_multi(name):
 			n = name.split("n")

@@ -16,6 +16,7 @@ def dir(save_path,name):
 #save_path = "/media/kiril/j_08/ML/extragal/"
 
 general_path='/home/lrikozavr/ML_work/des_pro'
+#general_path='/home/lrikozavr/ML_work/des_z'
 save_path = f'{general_path}/ml/data'
 #path_ml = "/media/kiril/j_08/ML/extragal"
 path_ml = f'{general_path}/ml'
@@ -44,7 +45,8 @@ def body(data, name_sample):
     features = ['gmag&rmag', 'gmag&imag', 'gmag&zmag', 'gmag&Ymag', 
     'rmag&imag', 'rmag&zmag', 'rmag&Ymag', 
     'imag&zmag', 'imag&Ymag', 
-    'zmag&Ymag']
+    'zmag&Ymag',
+    'gmag','rmag','imag','zmag','Ymag']
 #['e_gmag&e_rmag', 'e_gmag&e_imag', 'e_gmag&e_zmag', 'e_gmag&e_Ymag', 'e_rmag&e_imag', 'e_rmag&e_zmag', 'e_rmag&e_Ymag', 'e_imag&e_zmag', 'e_imag&e_Ymag', 'e_zmag&e_Ymag']
     
     '''

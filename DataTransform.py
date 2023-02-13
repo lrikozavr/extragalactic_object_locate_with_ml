@@ -18,7 +18,8 @@ def Diff(data,flag_color):
 				index += 1
 	if(not flag_color):
 		print("data && colors")
-		Result = np.append(data,colours, axis=1)
+		#Result = np.append(data,colours, axis=1)
+		Result = np.append(colours,data, axis=1)
 	else:
 		print("colors")
 		Result = colours
