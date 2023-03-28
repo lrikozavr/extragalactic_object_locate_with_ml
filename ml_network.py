@@ -43,13 +43,28 @@ def DeepCustomNN(features, l2, l3, l4): #16, 8, 4
     layer_4 = Dense(l4, activation="elu", kernel_initializer='he_uniform')(layer_3)
     #layer_last = Dropout(.2)(layer_4)
     output_array = Dense(1, activation='sigmoid', kernel_initializer='he_uniform')(layer_4)
-	#output_array = Dense(1, activation='swish', kernel_initializer='he_uniform')(layer_last)
 
     #Выдает прописной вариант названия активатора
     #keras.activations.serialize(keras.activations.hard_sigmoid)
 
     model = Model(input_array, output_array)
     return model
+
+def DeepCustomNN_sm(features, l2, l3, l4, output): #16, 8, 4
+    input_array = Input(shape=(features,))
+    layer_1 = Dense(features, activation='linear', kernel_initializer='he_uniform')(input_array)
+    layer_2 = Dense(l2, activation="softsign", kernel_initializer='he_uniform' )(layer_1)
+    layer_3 = Dense(l3, activation="tanh", kernel_initializer='he_uniform' )(layer_2)
+    layer_4 = Dense(l4, activation="elu", kernel_initializer='he_uniform')(layer_3)
+    #layer_last = Dropout(.2)(layer_4)
+    output_array = Dense(output, activation='softmax', kernel_initializer='he_uniform')(layer_4)
+
+    #Выдает прописной вариант названия активатора
+    #keras.activations.serialize(keras.activations.hard_sigmoid)
+
+    model = Model(input_array, output_array)
+    return model
+
 
 def DeepCustomZNN(features, l2, l3, l4):
     input_array = Input(shape=(features,))
@@ -76,7 +91,7 @@ def DeepLinearNN(features):
     model = Model(input_img, Label)
     return model
 
-def eval(y,y_pred,n):
+def eval(y,y_pred,n,name):
 	count = 0
 	TP, FP, TN, FN = 0,0,0,0
 	for i in range(n):
@@ -111,14 +126,14 @@ def eval(y,y_pred,n):
 
 	print(np.array([Acc,pur_a,pur_not_a,com_a,com_not_a,f1,fpr,tnr,bAcc,k,mcc,BinBs]))
 	ev = pd.DataFrame([np.array([Acc,pur_a,pur_not_a,com_a,com_not_a,f1,fpr,tnr,bAcc,k,mcc,BinBs])], 
-    columns=['Accuracy','AGN_purity','nonAGN_precision','AGN_completness','nonAGN_completness','F1',
+    columns=['Accuracy',f'{name}_purity',f'non{name}_precision',f'{name}_completness',f'non{name}_completness','F1',
     'FPR','TNR','bACC','K','MCC','BinaryBS'])
 
 	print("Accuracy 				[worst: 0; best: 1]:",              Acc)
-	print("AGN purity 				[worst: 0; best: 1]:",     pur_a)
-	print("nonAGN precision 			[worst: 0; best: 1]:",    pur_not_a)
-	print("AGN completness 			[worst: 0; best: 1]:",       com_a)
-	print("nonAGN completness 			[worst: 0; best: 1]:",     com_not_a)
+	print(f"{name} purity 				[worst: 0; best: 1]:",     pur_a)
+	print(f"non{name} precision 			[worst: 0; best: 1]:",    pur_not_a)
+	print(f"{name} completness 			[worst: 0; best: 1]:",       com_a)
+	print(f"non{name} completness 			[worst: 0; best: 1]:",     com_not_a)
 	print("F1  					[worst: 0; best: 1]:",		f1)
 	#print("AGN_F:",     2*(Tq/(Tq+Fq)*Tq/(Tq+Fs))/(Tq/(Tq+Fq)+Tq/(Tq+Fs)) )
 	#print("non_AGN_F:",     2*(Ts/(Ts+Fs)*Ts/(Ts+Fq))/(Ts/(Ts+Fq)+Ts/(Ts+Fs)) )
@@ -130,6 +145,27 @@ def eval(y,y_pred,n):
 	print("BinaryBS (Brierscore) 			[worst: 1; best: 0]:", BinBs)
 
 	return ev
+
+def before_ev(path_save_eval,filename):
+	name_col = ['star_cls','gal_cls','qso_cls']
+	data = pd.read_csv(f'{path_save_eval}_{filename}_prob.csv', header=0, sep=',')
+	for i in range(data.shape[0]):
+		max = 0
+		for name in name_col:
+			if(data[f'{name}_prob'].iloc[i] > max):
+				max = data[f'{name}_prob'].iloc[i]
+		for name in name_col:
+			if(not data[f'{name}_prob'].iloc[i] == max):
+				data[f'{name}_prob'].iloc[i] = 0
+			else:
+				data[f'{name}_prob'].iloc[i] = 1
+		#print(data.iloc[i])
+
+	for name in name_col:
+		ev = eval(np.array(data[name]),np.array(data[f'{name}_prob']),data.shape[0],name)
+		ev.to_csv(f'{path_save_eval}_{filename}_{name}_evaluate.csv', index=False)
+
+
 
 def ml_volume(train,label,X_train,y_train,X_test,y_test,
 	model,optimizer,loss,num_ep,batch_size,validation_split,
@@ -152,12 +188,16 @@ def ml_volume(train,label,X_train,y_train,X_test,y_test,
 
 	Class = model.predict(train, batch_size)
 	#print(Class)
-	res = pd.DataFrame(np.array(Class), columns=['y_prob'])
-	res['Y'] = np.array(label)
+	res = pd.DataFrame(np.array(Class), columns=["star_cls_prob","qso_cls_prob","gal_cls_prob"])
+	#res['Y'] = np.array(label)
+	pd_label = pd.DataFrame(np.array(label), columns=["star_cls","qso_cls","gal_cls"])
+	print(pd_label)
+	res = pd.concat([res, pd_label], axis=1)
+ # type: ignore	print(res)
 	res.to_csv(f'{path_save_eval}_{name}_prob.csv', index=False)
-
-	ev = eval(Class,label,label.shape[0])
-	ev.to_csv(f'{path_save_eval}_{name}_evaluate.csv', index=False)
+	
+	#ev = eval(Class,label,label.shape[0])
+	#ev.to_csv(f'{path_save_eval}_{name}_evaluate.csv', index=False)
 
 	return model
 
@@ -166,6 +206,7 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval):
 
 	features = train.shape[1]
 	print(features)
+	#print(label)
 	train = np.array(train)
 	kfold = KFold(n_splits=5, shuffle=False)
 	index=0
@@ -180,25 +221,25 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval):
 		
 		#add multithread resolve
 		custom_index = []
-		'''
-		for l2 in range(4,16,1):
-			for l3 in range(2,16,1):
-				for l4 in range(1,16,1):
+		
+		for l2 in range(12,16,1):
+			for l3 in range(8,12,1):
+				for l4 in range(4,8,1):
 					custom_index.append(str(index) + "n" + str(l2) + "n" + str(l3) + "n" + str(l4))
 		'''
 		for l2 in range(12,17,1):
 			line = str(index) + "n" + str(l2) + "n" + str(8) + "n" + str(4)
 			custom_index.append(line)
-			
+		'''	
 		for name in custom_index:
 			n = name.split("n")
 			l2,l3,l4 = n[1],n[2],n[3]
-			model = DeepCustomNN(features,l2,l3,l4)	
+			model = DeepCustomNN_sm(features,l2,l3,l4,3)	
 			#model = DeepCustomZNN(features,l2,l3,l4)	
 			model1 = ml_volume(train,label,X_train,y_train,X_test,y_test,
 			model,optimizer,loss,num_ep,batch_size,validation_split,
-			output_path_predict,path_save_eval,f"custom_{name}")
-			SaveModel(model1,output_path_mod,output_path_weight,f"custom_{name}")
+			output_path_predict,path_save_eval,f"custom_sm_{name}")
+			SaveModel(model1,output_path_mod,output_path_weight,f"custom_sm_{name}")
 		'''
 		def cust_multi(name):
 			n = name.split("n")

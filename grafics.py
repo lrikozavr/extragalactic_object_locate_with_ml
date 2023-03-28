@@ -377,3 +377,38 @@ def test_ML(a,b,c,model):
     ax.legend(loc=1,prop={'size': 20})
     fig.savefig('save_path.jpg')
     plt.close(fig)
+
+def g3d(data):
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    ax = plt.figure().add_subplot(projection='3d')
+
+    # Plot a sin curve using the x and y axes.
+    x = data['gmag']
+    y = data['rmag']
+    z = data['imag']
+    
+
+    # Plot scatterplot data (20 2D points per colour) on the x and z axes.
+    #colors = ('r', 'g', 'b', 'k')
+
+    #for c in colors:
+    #    c_list.extend([c] * 20)
+
+    ax.scatter(x, y, z, c='r', label='points')
+
+    # Make legend, set axes limits and labels
+    ax.legend()
+    #ax.set_xlim(0, 1)
+    #ax.set_ylim(0, 1)
+    #ax.set_zlim(0, 1)
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    # Customize the view angle so it's easier to see that the scatter points lie
+    # on the plane y=0
+    ax.view_init(elev=20., azim=-35, roll=0)
+
+    plt.show()

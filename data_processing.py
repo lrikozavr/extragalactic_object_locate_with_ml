@@ -48,6 +48,18 @@ def data_concat(data1,data2,i,j):
     return data12
 
 def data_begin(save_path,path_sample):
+    def ff(name):
+        '''
+        data = pd.read_csv(f"{path_sample}/{name}.csv", header=0, sep=',')
+        data = data.drop(['ExtClsCoad','ExtClsWavg'], axis=1)
+        data = data.fillna(0)
+        print(data)
+        data.to_csv(f'{save_path}/data_{name}.csv', index = False)
+        #data_exgal = pd.read_csv(f"{save_path}/data_exgal.csv", header=0, sep=',')
+        data = process(data,name,save_path)
+        '''
+        data = pd.read_csv(f"{save_path}/{name}_main_sample.csv", header=0, sep=',')
+        return data
     '''
     data_exgal = pd.read_csv(f"{path_sample}/exgal.csv", header=0, sep=',')
     data_star = pd.read_csv(f"{path_sample}/star.csv", header=0, sep=',')
@@ -81,10 +93,24 @@ def data_begin(save_path,path_sample):
     data_exgal = process(data_exgal,"exgal",save_path)
     data_star = process(data_star,"star",save_path)
     '''
-    data_exgal = pd.read_csv(f"{save_path}/exgal_main_sample.csv", header=0, sep=',')
-    data_star = pd.read_csv(f"{save_path}/star_main_sample.csv", header=0, sep=',')
+    data1 = ff('star')
+    data2 = ff('qso')
+    data3 = ff('gal')
 
-    delta_1_0 = data_concat(data_exgal,data_star,1,0)
-    delta_0_1 = data_concat(data_exgal,data_star,0,1)
+    #data_exgal = pd.read_csv(f"{save_path}/exgal_main_sample.csv", header=0, sep=',')
+    #data_star = pd.read_csv(f"{save_path}/star_main_sample.csv", header=0, sep=',')
+
     
-    return delta_1_0, delta_0_1
+    data1['star_cls'], data1['qso_cls'], data1['gal_cls'] = 1,0,0
+    data2['star_cls'], data2['qso_cls'], data2['gal_cls'] = 0,1,0
+    data3['star_cls'], data3['qso_cls'], data3['gal_cls'] = 0,0,1
+
+    data12 = data1.append(data2, ignore_index=True)
+    data123 = data12.append(data3, ignore_index=True)
+    data123 = data123.sample(data123.shape[0], random_state=1)
+
+    #delta_1_0 = data_concat(data_exgal,data_star,1,0)
+    #delta_0_1 = data_concat(data_exgal,data_star,0,1)
+    
+    #return delta_1_0, delta_0_1
+    return data123

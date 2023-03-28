@@ -42,54 +42,71 @@ for ii in range(len(pr_curve_df)):
 		inde = ii
 print("thresholds....",pr_curve_df["thresholds"].iloc[inde],"recall....",pr_curve_df["recall"].iloc[inde],"precision....",pr_curve_df["precision"].iloc[inde])
 '''
+"""
 path_save_eval = '/home/lrikozavr/ML_work/des_pro/ml/eval/extragal'
 mass_model_name = []
-
+from ml_network import before_ev
 max_Ac, max_F1 = 0, 0
+min_Ac, min_F1 = 1, 1
 name_max_Ac, name_max_F1 = '', ''
-for l2 in range(4,17,1):
-	sum_Ac, sum_F1 = 0, 0
-	name = str(l2) + "n" + str(8) + "n" + str(4)
-	for i in range(5):
-		sub_name = str(i) + "n" + name
-		file_eval = pd.read_csv(f"{path_save_eval}_custom_{sub_name}_evaluate.csv", header=0, sep=',')
-		sum_Ac += file_eval['Accuracy'].iloc[0]
-		sum_F1 += file_eval['F1'].iloc[0]
-	
-	if( sum_Ac/5. > max_Ac):
-		max_Ac = sum_Ac/5.
-		name_max_Ac = name
-	if( sum_F1/5. > max_F1):
-		max_F1 = sum_F1/5.
-		name_max_F1 = name
+name_min_Ac, name_min_F1 = '', ''
+for l2 in range(12,16,1):
+	for l3 in range(8,12,1):
+		for l4 in range(4,8,1):
+			sum_Ac, sum_F1 = 0, 0
+			name = str(l2) + "n" + str(l3) + "n" + str(l4)
+			for i in range(5):
+				sub_name = str(i) + "n" + name
+				#before_ev(path_save_eval,f'custom_sm_{sub_name}')
+				name_col = ['star_cls','gal_cls','qso_cls']
+				for cls_name in name_col:
+					file_eval = pd.read_csv(f"{path_save_eval}_custom_sm_{sub_name}_{cls_name}_evaluate.csv", header=0, sep=',')
+					sum_Ac += file_eval['Accuracy'].iloc[0]/3.
+					sum_F1 += file_eval['F1'].iloc[0]/3.
+
+			if( sum_Ac/5. > max_Ac):
+				max_Ac = sum_Ac/5.
+				name_max_Ac = name
+			if( sum_F1/5. > max_F1):
+				max_F1 = sum_F1/5.
+				name_max_F1 = name
+			if( sum_Ac/5. < min_Ac):
+				min_Ac = sum_Ac/5.
+				name_min_Ac = name
+			if( sum_F1/5. < min_F1):
+				min_F1 = sum_F1/5.
+				name_min_F1 = name
+
 
 print(name_max_Ac, max_Ac)
 print(name_max_F1, max_F1)
+print(name_min_Ac, min_Ac)
+print(name_min_F1, min_F1)
 exit()
+"""
 
-
-legend_size = 20
+#legend_size = 20
 
 #path_save_eval = '/media/kiril/j_08/ML/extragal'
-path_save_eval = 'ml/eval'
+#path_save_eval = 'ml/eval'
 
 #path_classifire = '/home/kiril/github/ML_with_AGN/ML/code/results'
 #name_classifire = os.listdir(path_classifire)
 
 #fuzzy_options = ['normal']
 #fuzzy_options = ['normal', 'fuzzy_err', 'fuzzy_dist']
-fuzzy_options = ['fuzzy_dist']
+#fuzzy_options = ['fuzzy_dist']
 
 #name_sample = ['gal','qso','star']
 #name_sample = ['gal']
-name_sample = ['extragal']
+#name_sample = ['extragal']
 
 
 def Simpson(a,f):
 	n = len(f)
 	s=0
 	for i in range(1,n):
-		s += (a[i]-a[i-1])*(f[i]+f[i-1])
+		s += (abs(a[i]-a[i-1]))*(f[i]+f[i-1])
 	s*=0.5
 	return s
 
@@ -129,8 +146,9 @@ def eval(y,y_pred,n):
 
 	return ev
 
-def i_need_more_eval(ax1_p, ax2_p, ax3_p, ax1_r, ax2_r, ax3_r, index, name, label, data_general_label):
-	fpr, tpr, thresholds = skmetrics.roc_curve(label, data_general_label, pos_label=1)
+#def i_need_more_eval(ax1_p, ax2_p, ax3_p, ax1_r, ax2_r, ax3_r, index, name, label, data_general_label):
+def i_need_more_eval(path_save_eval, name, label, data_prob):
+	fpr, tpr, thresholds = skmetrics.roc_curve(label, data_prob, pos_label=1)
 	roc_curve_df = pd.DataFrame({"fpr": fpr, "tpr": tpr,
 									"thresholds": thresholds})
 	roc_curve_df = roc_curve_df[roc_curve_df['thresholds'] < 0.99]									
@@ -138,7 +156,7 @@ def i_need_more_eval(ax1_p, ax2_p, ax3_p, ax1_r, ax2_r, ax3_r, index, name, labe
 	print("ROC_CURVE......",name,":.......",Simpson(np.array(roc_curve_df["fpr"]),np.array(roc_curve_df["tpr"])))
 	#print("ROC_CURVE......",name,":.......",Simpson(tpr,fpr))
 
-	precision, recall, thresholds = skmetrics.precision_recall_curve(label, data_general_label)
+	precision, recall, thresholds = skmetrics.precision_recall_curve(label, data_prob)
 	pr_curve_df = pd.DataFrame({"precision": precision, "recall": recall, 
                                     "thresholds": np.append(thresholds, 1)})
 	pr_curve_df = pr_curve_df[pr_curve_df['thresholds'] < 0.99]	
@@ -153,22 +171,22 @@ def i_need_more_eval(ax1_p, ax2_p, ax3_p, ax1_r, ax2_r, ax3_r, index, name, labe
 			inde = ii
 	print("thresholds....",pr_curve_df["thresholds"].iloc[inde],"recall....",pr_curve_df["recall"].iloc[inde],"precision....",pr_curve_df["precision"].iloc[inde])
 
-	ax1_r.plot(roc_curve_df['thresholds'],roc_curve_df['fpr'],c=c[index],label=name)
-	ax2_r.plot(roc_curve_df['thresholds'],roc_curve_df['tpr'],c=c[index],label=name)
-	ax3_r.plot(roc_curve_df['fpr'],roc_curve_df['tpr'],c=c[index],label=name)
+	#ax1_r.plot(roc_curve_df['thresholds'],roc_curve_df['fpr'],c=c[index],label=name)
+	#ax2_r.plot(roc_curve_df['thresholds'],roc_curve_df['tpr'],c=c[index],label=name)
+	#ax3_r.plot(roc_curve_df['fpr'],roc_curve_df['tpr'],c=c[index],label=name)
 
-	ax1_p.plot(pr_curve_df['thresholds'],pr_curve_df['precision'],c=c[index],label=name)
-	ax2_p.plot(pr_curve_df['thresholds'],pr_curve_df['recall'],c=c[index],label=name)
-	ax3_p.plot(pr_curve_df['recall'],pr_curve_df['precision'],c=c[index],label=name)
+	#ax1_p.plot(pr_curve_df['thresholds'],pr_curve_df['precision'],c=c[index],label=name)
+	#ax2_p.plot(pr_curve_df['thresholds'],pr_curve_df['recall'],c=c[index],label=name)
+	#ax3_p.plot(pr_curve_df['recall'],pr_curve_df['precision'],c=c[index],label=name)
 
 #c=list(mcolors.TABLEAU_COLORS)
 c=np.append(list(mcolors.TABLEAU_COLORS),list(mcolors.BASE_COLORS))
 
-save_path = path_save_eval
+#save_path = path_save_eval
 #ml_class = ['custom', 'linear']
-ml_class = ['custom']
+#ml_class = ['custom']
 
-fontsize = 20
+#fontsize = 20
 '''
 for fuzzy_option in fuzzy_options:
     fig, ((ax1_p, ax2_p, ax3_p), (ax1_r, ax2_r, ax3_r)) = plt.subplots(2,3)		
@@ -240,19 +258,20 @@ for fuzzy_option in fuzzy_options:
     plt.close(fig)
 '''
 #classif = ['et_not_b_fuzzy_dist', 'rf_not_b_fuzzy_dist', 'normal_1']
-classif = ['custom_1']
+#classif = ['custom_1']
 
 #cls_name = ['extremely randomized tree', 'random forest', 'neural network']
-cls_name = ['neural network']
+#cls_name = ['neural network']
 
 
-fontsize_sub = 50
-fontsize_label = 24
-fontsizr_param = 24
-fontsize_legend = 20
-size = (12,11)
+#for name_s in name_sample:
+def ROC_picture(path_save_eval,name,classif):
+	fontsize_sub = 50
+	fontsize_label = 24
+	fontsizr_param = 24
+	fontsize_legend = 20
+	size = (12,11)
 
-for name_s in name_sample:
 	fig1 = plt.figure()
 	ax1 = fig1.add_subplot(1,1,1)
 	#fig1.suptitle("", fontsize=fontsize_sub)
@@ -293,26 +312,27 @@ for name_s in name_sample:
 	
 	index=1
 	for cl in classif:
-		data_pr = pd.read_csv(f"{path_save_eval}/{name_s}_{cl}_pr.csv", sep=",", header=0)
-		ax1.plot(data_pr['thresholds'],data_pr['precision'],c=c[index],label=cls_name[index-1])
+		data_pr = pd.read_csv(f"{path_save_eval}/{name}_{cl}_pr.csv", sep=",", header=0)
+		#ax1.plot(data_pr['thresholds'],data_pr['precision'],c=c[index],label=cls_name[index-1])
+		ax1.plot(data_pr['thresholds'],data_pr['precision'],c=c[index],label=cl)
 		index+=1
 
 	index=1
 	for cl in classif:
-		data_pr = pd.read_csv(f"{path_save_eval}/{name_s}_{cl}_pr.csv", sep=",", header=0)		
-		ax2.plot(data_pr['thresholds'],data_pr['recall'],c=c[index],label=cls_name[index-1])
+		data_pr = pd.read_csv(f"{path_save_eval}/{name}_{cl}_pr.csv", sep=",", header=0)		
+		ax2.plot(data_pr['thresholds'],data_pr['recall'],c=c[index],label=cl)
 		index+=1
 
 	index=1
 	for cl in classif:
-		data_pr = pd.read_csv(f"{path_save_eval}/{name_s}_{cl}_pr.csv", sep=",", header=0)
-		ax3.plot(data_pr['recall'],data_pr['precision'],c=c[index],label=cls_name[index-1])
+		data_pr = pd.read_csv(f"{path_save_eval}/{name}_{cl}_pr.csv", sep=",", header=0)
+		ax3.plot(data_pr['precision'],data_pr['recall'],c=c[index],label=cl)
 		index+=1
 
 	index=1
 	for cl in classif:
-		data_roc = pd.read_csv(f"{path_save_eval}/{name_s}_{cl}_roc.csv", sep=",", header=0)
-		ax4.plot(data_roc['fpr'],data_roc['tpr'],c=c[index],label=cls_name[index-1])
+		data_roc = pd.read_csv(f"{path_save_eval}/{name}_{cl}_roc.csv", sep=",", header=0)
+		ax4.plot(data_roc['fpr'],data_roc['tpr'],c=c[index],label=cl)
 		index+=1
 
 
@@ -321,15 +341,25 @@ for name_s in name_sample:
 	ax2.legend(loc=3,prop={'size': fontsize_legend})
 	ax3.legend(loc=3,prop={'size': fontsize_legend})
 	ax4.legend(loc=4,prop={'size': fontsize_legend})
-	fig1.savefig(f"{path_save_eval}/{name_s}_pr_th.png")
-	fig2.savefig(f"{path_save_eval}/{name_s}_rc_th.png")
-	fig3.savefig(f"{path_save_eval}/{name_s}_pr_rc.png")
-	fig4.savefig(f"{path_save_eval}/{name_s}_roc.png")
+	fig1.savefig(f"{path_save_eval}/{name}_pr_th.png")
+	fig2.savefig(f"{path_save_eval}/{name}_rc_th.png")
+	fig3.savefig(f"{path_save_eval}/{name}_pr_rc.png")
+	fig4.savefig(f"{path_save_eval}/{name}_roc.png")
 	plt.close(fig1)
 	plt.close(fig2)
 	plt.close(fig3)
 	plt.close(fig4)
 
+path_save_eval = '/home/lrikozavr/ML_work/des_pro/ml/eval'
+pre_name = 'extragal_custom_sm'
+#name = '3n15n11n7'
+name = '3n14n10n7'
+#name = '3n12n9n4'
+cls_name_mass = ['star_cls','gal_cls','qso_cls']
+data = pd.read_csv(f'{path_save_eval}/{pre_name}_{name}_prob.csv',header=0,sep=',')
+for cls_name in cls_name_mass:
+	i_need_more_eval(path_save_eval,f'{pre_name}_{name}_{cls_name}',data[cls_name],data[f'{cls_name}_prob'])
+ROC_picture(path_save_eval,f'{pre_name}_{name}',cls_name_mass)
 
 '''
 evalu = pd.DataFrame([np.zeros(14)], columns=['Accuracy','AGN_purity','nonAGN_precision','AGN_completness','nonAGN_completness','F1','FPR','TNR','bACC','K','MCC','BinaryBS','name_classifire','name_object'])

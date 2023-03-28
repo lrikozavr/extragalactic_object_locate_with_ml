@@ -7,11 +7,13 @@ save_path = '/home/lrikozavr/catalogs/elewen'
 filepath = f'{save_path}/exit.sort'
 
 general_path = '/home/lrikozavr/ML_work/des_pro'
-sample_path = f'{general_path}/sample'
+sample_path = f'{general_path}/sample_3'
 
 #create file for class obj exgal and star
 f_exgal = open('exgal.csv','w')
 f_star = open('star.csv','w')
+
+f_gal = open('gal.csv','w')
 #write header for VizieR
 #f_exgal.write('RA,DEC,z\n')
 #f_star.write('RA,DEC,z\n')
@@ -19,6 +21,7 @@ f_star = open('star.csv','w')
 #extract exgal and star obj from file exit.sort
 count_exgal = 0
 count_star = 0
+count_gal = 0
 for line in open(filepath):
     n = line.split(',')
     #if(len(n[4].split('_')) == 1 and (n[4] == 'lamost' or n[4] == 'sdss')):
@@ -32,14 +35,18 @@ for line in open(filepath):
         else:
             break
         index += 1
-    if not int(n[3]) == 0:
+    if(int(n[3]) == 1):
         count_exgal += 1
         f_exgal.write(line_out)
+    elif(int(n[3]) == 2):
+        count_gal += 1
+        f_gal.write(line_out)
     else: 
         f_star.write(line_out)
         count_star += 1
 print(count_star)
 print(count_exgal)
+print(count_gal)
 
 #koef_star = 1e5 / index_star
 #koef_exgal = 1e5 / index_exgal
@@ -186,7 +193,7 @@ def download(catalogs_name,filepath):
         os.remove(temp)
 
 def multi_thr_slice_download(catalogs_name,filename):
-    MAX_WORKERS = 16
+    MAX_WORKERS = 6
     WAIT_UNTIL_REPEAT_ACCESS = 3
     NUM_URL_ACCESS_ATTEMPTS = 4
     import time
@@ -242,6 +249,7 @@ if not os.path.isdir('sample'):
 
 clas('exgal',sample_path)
 clas('star',sample_path)
+clas('gal',sample_path)
 #req(des_dr2,'ml/qso_sample','des_qso.csv')
 
 
