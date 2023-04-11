@@ -1,4 +1,3 @@
-#!/home/kiril/python_env_iron_ment/new_proj/bin/python
 # -*- coding: utf-8 -*-
 
 import pandas as pd
@@ -194,7 +193,8 @@ def ml_volume(train,label,X_train,y_train,X_test,y_test,
 	print(pd_label)
 	res = pd.concat([res, pd_label], axis=1)
  # type: ignore	print(res)
-	res.to_csv(f'{path_save_eval}_{name}_prob.csv', index=False)
+	
+	#res.to_csv(f'{path_save_eval}_{name}_prob.csv', index=False)
 	
 	#ev = eval(Class,label,label.shape[0])
 	#ev.to_csv(f'{path_save_eval}_{name}_evaluate.csv', index=False)
@@ -204,6 +204,14 @@ def ml_volume(train,label,X_train,y_train,X_test,y_test,
 def NN(train,label,test_size,validation_split,batch_size,num_ep,optimizer,loss,
 output_path_predict,output_path_mod,output_path_weight,path_save_eval):
 
+	#gpu_devices = tf.config.experimental.list_physical_devices('GPU')
+	#for device in gpu_devices:
+	#	tf.config.experimental.set_memory_growth(device, True)
+	from tensorflow.python.client import device_lib
+	print(device_lib.list_local_devices())
+	
+	print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+	
 	features = train.shape[1]
 	print(features)
 	#print(label)
@@ -222,9 +230,12 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval):
 		#add multithread resolve
 		custom_index = []
 		
-		for l2 in range(12,16,1):
-			for l3 in range(8,12,1):
-				for l4 in range(4,8,1):
+		#for l2 in range(12,16,1):
+		for l2 in range(3200,3600,1):
+			#for l3 in range(8,12,1):
+			for l3 in range(10200,10600,1):
+				#for l4 in range(4,8,1):
+				for l4 in range(3200,3800,1):
 					custom_index.append(str(index) + "n" + str(l2) + "n" + str(l3) + "n" + str(l4))
 		'''
 		for l2 in range(12,17,1):
@@ -239,7 +250,8 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval):
 			model1 = ml_volume(train,label,X_train,y_train,X_test,y_test,
 			model,optimizer,loss,num_ep,batch_size,validation_split,
 			output_path_predict,path_save_eval,f"custom_sm_{name}")
-			SaveModel(model1,output_path_mod,output_path_weight,f"custom_sm_{name}")
+			
+			#SaveModel(model1,output_path_mod,output_path_weight,f"custom_sm_{name}")
 		'''
 		def cust_multi(name):
 			n = name.split("n")

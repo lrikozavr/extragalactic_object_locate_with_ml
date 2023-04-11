@@ -42,7 +42,7 @@ for ii in range(len(pr_curve_df)):
 		inde = ii
 print("thresholds....",pr_curve_df["thresholds"].iloc[inde],"recall....",pr_curve_df["recall"].iloc[inde],"precision....",pr_curve_df["precision"].iloc[inde])
 '''
-"""
+'''
 path_save_eval = '/home/lrikozavr/ML_work/des_pro/ml/eval/extragal'
 mass_model_name = []
 from ml_network import before_ev
@@ -83,7 +83,7 @@ print(name_max_F1, max_F1)
 print(name_min_Ac, min_Ac)
 print(name_min_F1, min_F1)
 exit()
-"""
+'''
 
 #legend_size = 20
 

@@ -105,6 +105,9 @@ clf_best = clf_gs.best_estimator_
 # generalization:
 general_data["y_pred"] = clf_best.predict(general_X)
 #general_data["y_prob_positive_class"] = clf_best.predict_proba(general_X)[:, 1] 
+from matplotlib import pyplot as plt
+plt.scatter(general_data['z'],general_data['y_pred'])
+plt.show()
 from fuzzy_options import M,D
 mass = general_data['z'] - general_data['y_pred']
 m = M(mass,mass.shape[0])

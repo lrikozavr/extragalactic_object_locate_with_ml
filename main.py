@@ -1,4 +1,3 @@
-#!/home/kiril/python_env_iron_ment/new_proj/bin/python
 # -*- coding: utf-8 -*-
 
 import pandas as pd
@@ -23,7 +22,6 @@ path_ml = f'{general_path}/ml'
 #path_sample = f'{general_path}/sample'
 path_sample = f'{general_path}/sample_3'
 
-
 dir(general_path,'ml')
 dir(path_ml,'data')
 dir(path_ml,'model')
@@ -32,9 +30,6 @@ dir(path_ml,'prediction')
 
 #data_1_0, data_0_1 = data_begin(save_path,path_sample)
 data = data_begin(save_path,path_sample)
-import grafics
-#grafics.g3d(data)
-#exit()
 
 def body(data, name_sample):
     print(name_sample)

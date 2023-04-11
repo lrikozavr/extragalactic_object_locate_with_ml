@@ -1,4 +1,3 @@
-#!/home/kiril/python_env_iron_ment/new_proj/bin/python
 # -*- coding: utf-8 -*-
 
 import os

@@ -1,4 +1,3 @@
-#!/home/kiril/python_env_iron_ment/new_proj/bin/python
 # -*- coding: utf-8 -*-
 
 import pandas as pd
@@ -105,8 +104,8 @@ def data_begin(save_path,path_sample):
     data2['star_cls'], data2['qso_cls'], data2['gal_cls'] = 0,1,0
     data3['star_cls'], data3['qso_cls'], data3['gal_cls'] = 0,0,1
 
-    data12 = data1.append(data2, ignore_index=True)
-    data123 = data12.append(data3, ignore_index=True)
+    data12 = pd.concat([data1,data2], ignore_index=True)
+    data123 = pd.concat([data12,data3], ignore_index=True)
     data123 = data123.sample(data123.shape[0], random_state=1)
 
     #delta_1_0 = data_concat(data_exgal,data_star,1,0)
@@ -127,4 +126,4 @@ def data_phot_hist(path_sample = '/home/lrikozavr/ML_work/des_pro/ml/data', save
         data = pd.read_csv(f"{path_sample}/{name}_main_sample.csv", header=0, sep=',')
         for name_phot in features:
             Hist1(data[name_phot],save_path,f'{name}_{name_phot}',name_phot)
-data_phot_hist()
+#data_phot_hist()
