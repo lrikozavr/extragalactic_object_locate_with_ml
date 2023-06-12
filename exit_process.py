@@ -6,20 +6,23 @@ save_path = '/home/lrikozavr/catalogs/elewen'
 #save_path = r'C:\Users\lrikozavr\github\extragalactic_object_locate_with_ml'
 filepath = f'{save_path}/exit.sort'
 
-general_path = '/home/lrikozavr/ML_work/des_pro'
-sample_path = f'{general_path}/sample_3'
+#general_path = '/home/lrikozavr/ML_work/des_pro'
+general_path = '/home/lrikozavr/ML_work/allwise_gaiadr3'
+#sample_path = f'{general_path}/sample_3'
+sample_path = f'{general_path}/sample'
 
 #create file for class obj exgal and star
-f_exgal = open('exgal.csv','w')
-f_star = open('star.csv','w')
 
+f_exgal = open('qso.csv','w')
+f_star = open('star.csv','w')
 f_gal = open('gal.csv','w')
+
 #write header for VizieR
 #f_exgal.write('RA,DEC,z\n')
 #f_star.write('RA,DEC,z\n')
 
 #extract exgal and star obj from file exit.sort
-count_exgal = 0
+count_qso = 0
 count_star = 0
 count_gal = 0
 for line in open(filepath):
@@ -36,7 +39,7 @@ for line in open(filepath):
             break
         index += 1
     if(int(n[3]) == 1):
-        count_exgal += 1
+        count_qso += 1
         f_exgal.write(line_out)
     elif(int(n[3]) == 2):
         count_gal += 1
@@ -45,9 +48,9 @@ for line in open(filepath):
         f_star.write(line_out)
         count_star += 1
 print(count_star)
-print(count_exgal)
+print(count_qso)
 print(count_gal)
-
+exit()
 #koef_star = 1e5 / index_star
 #koef_exgal = 1e5 / index_exgal
 #cut out define % line from file 
@@ -69,8 +72,11 @@ def cut_out(filepath,filename,koef):
 def out(line,col,fout):
     n = line.split(',')
     line_out = ''
-    index = 0    
+    index = 0
+    empty_count = 1
     for i in col:
+        if(n[i] == ''):
+            empty_count = 0
         if index == len(col)-1 :
             if(len(n[i].split('\n')) == 1):
                 line_out += n[i] + '\n'
@@ -78,13 +84,15 @@ def out(line,col,fout):
                 line_out += n[i]
         else: line_out += n[i] + ','
         index += 1
-    fout.write(line_out)
+    if(empty_count):
+        fout.write(line_out)
 
-
+#cut dublicate
 def cut_cut(col,filein,fileout):
     fout = open(fileout,'w')
     gc1 = col[0]
     gc2 = col[1]
+    decn,ran = '',''
     #kill duplicate algorithm
     def f1():
         i=1
@@ -110,7 +118,8 @@ def cut_cut(col,filein,fileout):
                 z=1
                 l=str(line)
         if (z==1):
-            out(str(l),col,fout)    
+            out(str(l),col,fout)
+    #1-st of dublicate
     def f2():
         i=1
         l=""
@@ -132,26 +141,27 @@ allwise = 'II/328/allwise'
 gaiadr3 = 'I/350/gaiaedr3'
 des_dr2 = 'II/371/des_dr2'
 #usful column index for each catalogs
-col_allwise = [1,2,3,5,6,10,11,17,18]
+col_allwise = [1,2,3,5,6,10,11,12,17,18,19]
 #col_gaiadr3 = [1,2,3,4,5,6,7,8,9,16,18,41,44,46,58,59,60]
-col_gaiadr3 = [1,2,3,6,8,7,9,41,58,44,59,46,60]
+col_gaiadr3 = [1,2,3,6,9,7,10,8,11,43,60,46,61,48,62]
 col_des_dr2 = [1,2,3,11,12,18,23,19,24,20,25,21,26,22,27]
 
 #request to VizieR X-match
-def req(cat_name,name,fout):
+def req(cat_name,name,fout,R = 1):
     from astropy.table import Table
     from astropy.io.votable import from_table, writeto
 
     t = Table.read(f'{name}.csv', format = 'ascii.csv') 
     votable = from_table(t)
     writeto(votable, f'{name}.vot')
+    #catalog_name = globals()[cat_name]
 
     import requests
 
     r = requests.post(
             'http://cdsxmatch.u-strasbg.fr/xmatch/api/v1/sync',
-            data={'request': 'xmatch', 'distMaxArcsec': 3, 'RESPONSEFORMAT': 'csv',
-            'cat2': f'vizier:{cat_name}', 'colRA1': 'RA', 'colDec1': 'DEC'},
+            data={'request': 'xmatch', 'distMaxArcsec': R, 'RESPONSEFORMAT': 'csv',
+            'cat2': f'vizier:{globals()[cat_name]}', 'colRA1': 'RA', 'colDec1': 'DEC'},
             files={'cat1': open(f'{name}.vot', 'r')})
 
     import os
@@ -181,6 +191,7 @@ def slice(filename,count):
             index_name+=1
     #return foldername
 
+#download from VizieR
 def download(catalogs_name,filepath):
     import os
     for name in catalogs_name:
@@ -208,7 +219,7 @@ def multi_thr_slice_download(catalogs_name,filename):
             break
         except:
             time.sleep(WAIT_UNTIL_REPEAT_ACCESS)
-        
+
 def slice_download(catalogs_name,filename):
     import os
     for name in os.listdir(filename):
@@ -234,22 +245,28 @@ def unslice(filename,fout):
         os.remove(f"{filename}/{name}")
     os.rmdir(f"{filename}")
     f.close()
-
-def clas(name,sample_path):
+'''
+def dir(save_path,name):
+    dir_name = f"{save_path}/{name}"
+    if not os.path.isdir(dir_name):
+        os.mkdir(dir_name)
+'''
+def clas(name,catalogs_names,sample_path):
     slice(f'{name}.csv',1e5)
-    #multi_thr_slice_download(['des_dr2'],name)
-    slice_download(['des_dr2'],name)
+        #multi_thr_slice_download(['des_dr2'],name)
+    slice_download(catalogs_names,name)
     unslice(name,f'{sample_path}/{name}.csv')
     os.remove(f'{name}.csv')
 
-import os 
+import os
 
-if not os.path.isdir('sample'):
-    os.mkdir('sample')
+if not os.path.isdir(sample_path):
+    os.mkdir(sample_path)
 
-clas('exgal',sample_path)
-clas('star',sample_path)
-clas('gal',sample_path)
+clas('qso',['allwise','gaiadr3'],sample_path)
+clas('star',['allwise','gaiadr3'],sample_path)
+clas('gal',['allwise','gaiadr3'],sample_path)
+
 #req(des_dr2,'ml/qso_sample','des_qso.csv')
 
 

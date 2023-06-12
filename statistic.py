@@ -113,16 +113,21 @@ def Simpson(a,f):
 def eval(y,y_pred,n):
 	count = 0
 	TP, FP, TN, FN = 0,0,0,0
+	Y = 0
 	for i in range(n):
-		if(y[i]==y_pred[i]):
+		if(y[i]<0.5):
+			Y = 0
+		if(y[i]>=0.5):
+			Y = 1
+		if(Y==y_pred[i]):
 			count+=1
-		if(y[i]==1):
-			if(y[i]==y_pred[i]):
+		if(Y==1):
+			if(Y==y_pred[i]):
 				TP += 1
 			else:
 				FP += 1
-		if(y[i]==0):
-			if(y[i]==y_pred[i]):
+		if(Y==0):
+			if(Y==y_pred[i]):
 				TN += 1
 			else:
 				FN += 1
@@ -350,15 +355,22 @@ def ROC_picture(path_save_eval,name,classif):
 	plt.close(fig3)
 	plt.close(fig4)
 
-path_save_eval = '/home/lrikozavr/ML_work/des_pro/ml/eval'
-pre_name = 'extragal_custom_sm'
+#path_save_eval = '/home/lrikozavr/ML_work/des_pro/ml/eval'
+path_save_eval = '/home/lrikozavr/ML_work/allwise_gaiadr3/ml/eval'
+pre_name = 'qso_gal_star_w12_custom_sm'
+#pre_name = 'extragal_custom_sm'
+name = '3n64n64n64'
 #name = '3n15n11n7'
-name = '3n14n10n7'
+#
+#name = '3n14n10n7'
+#
 #name = '3n12n9n4'
 cls_name_mass = ['star_cls','gal_cls','qso_cls']
 data = pd.read_csv(f'{path_save_eval}/{pre_name}_{name}_prob.csv',header=0,sep=',')
 for cls_name in cls_name_mass:
+	print(cls_name)
 	i_need_more_eval(path_save_eval,f'{pre_name}_{name}_{cls_name}',data[cls_name],data[f'{cls_name}_prob'])
+	print(eval(data[f'{cls_name}_prob'],data[cls_name],371016))
 ROC_picture(path_save_eval,f'{pre_name}_{name}',cls_name_mass)
 
 '''

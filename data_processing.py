@@ -15,7 +15,8 @@ def NtoPtoN(data,index):
 
 def process(data,name,save_path):
     #data_mags = data.drop(['RA','DEC','z','CatName','Class'], axis=1)
-    redded_des(data)
+    
+    #redded_des(data)
     print(name, 'deredded complite')
     data_mags = data.drop(['RA','DEC','z'], axis=1)
     data_dist, data_err = colors(data_mags)
@@ -28,7 +29,9 @@ def process(data,name,save_path):
     data_err = NtoPtoN(data_err,dfsg)
 
     #data = pd.concat([data[['RA','DEC','z','CatName','Class']],data_dist,data_err], axis=1)
-    data = pd.concat([data[['RA','DEC','z','gmag','rmag','imag','zmag','Ymag']],data_dist,data_err], axis=1)
+    data = pd.concat([data[['RA','DEC','z','W1mag','W2mag','W3mag','phot_g_mean_mag','phot_bp_mean_mag','phot_rp_mean_mag']],data_dist,data_err], axis=1)
+
+    #data = pd.concat([data[['RA','DEC','z','gmag','rmag','imag','zmag','Ymag']],data_dist,data_err], axis=1)
 
     #additional weight
     data['fuzzy_err'] = fuzzy_err(data_err)
@@ -50,14 +53,18 @@ def data_begin(save_path,path_sample):
     def ff(name):
         '''
         data = pd.read_csv(f"{path_sample}/{name}.csv", header=0, sep=',')
-        data = data.drop(['ExtClsCoad','ExtClsWavg'], axis=1)
+        #data = data.drop(['ExtClsCoad','ExtClsWavg'], axis=1)
         data = data.fillna(0)
         print(data)
-        data.to_csv(f'{save_path}/data_{name}.csv', index = False)
+        #data.to_csv(f'{save_path}/data_{name}.csv', index = False)
         #data_exgal = pd.read_csv(f"{save_path}/data_exgal.csv", header=0, sep=',')
         data = process(data,name,save_path)
         '''
+        #data = pd.read_csv(f"{save_path}/{name}_main_sample.csv", header=0, sep=',')
         data = pd.read_csv(f"{save_path}/{name}_main_sample.csv", header=0, sep=',')
+        if(not name == 'qso'):
+            count_qso = 371016
+            data = data.sample(count_qso, random_state = 1)
         return data
     '''
     data_exgal = pd.read_csv(f"{path_sample}/exgal.csv", header=0, sep=',')
@@ -92,6 +99,7 @@ def data_begin(save_path,path_sample):
     data_exgal = process(data_exgal,"exgal",save_path)
     data_star = process(data_star,"star",save_path)
     '''
+    
     data1 = ff('star')
     data2 = ff('qso')
     data3 = ff('gal')
@@ -110,8 +118,9 @@ def data_begin(save_path,path_sample):
 
     #delta_1_0 = data_concat(data_exgal,data_star,1,0)
     #delta_0_1 = data_concat(data_exgal,data_star,0,1)
-    
+
     #return delta_1_0, delta_0_1
+    data123.to_csv(f'{save_path}/all.csv',index = False)
     return data123
 
 def data_phot_hist(path_sample = '/home/lrikozavr/ML_work/des_pro/ml/data', save_path = '/home/lrikozavr/ML_work/des_pro/ml/pictures/hist'):
