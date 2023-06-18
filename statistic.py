@@ -357,7 +357,7 @@ def ROC_picture(path_save_eval,name,classif):
 
 #path_save_eval = '/home/lrikozavr/ML_work/des_pro/ml/eval'
 path_save_eval = '/home/lrikozavr/ML_work/allwise_gaiadr3/ml/eval'
-pre_name = 'qso_gal_star_w12_custom_sm'
+pre_name = 'qso_gal_star_w123_wol_full_phot_1021_custom_sm'
 #pre_name = 'extragal_custom_sm'
 name = '3n64n64n64'
 #name = '3n15n11n7'
@@ -370,7 +370,7 @@ data = pd.read_csv(f'{path_save_eval}/{pre_name}_{name}_prob.csv',header=0,sep='
 for cls_name in cls_name_mass:
 	print(cls_name)
 	i_need_more_eval(path_save_eval,f'{pre_name}_{name}_{cls_name}',data[cls_name],data[f'{cls_name}_prob'])
-	print(eval(data[f'{cls_name}_prob'],data[cls_name],371016))
+	print(eval(data[f'{cls_name}_prob'],data[cls_name],184879))
 ROC_picture(path_save_eval,f'{pre_name}_{name}',cls_name_mass)
 
 '''

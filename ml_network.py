@@ -6,7 +6,7 @@ import math
 
 from keras.layers import Input, Dense, Dropout
 from keras.models import Model
-import keras
+from tensorflow import keras
 
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split,KFold
@@ -15,6 +15,27 @@ from keras import backend as K
 import numpy as np
 
 import sklearn.metrics as skmetrics
+
+METRICS = [
+      keras.metrics.TruePositives(name='tp'),
+      keras.metrics.FalsePositives(name='fp'),
+      keras.metrics.TrueNegatives(name='tn'),
+      keras.metrics.FalseNegatives(name='fn'), 
+      keras.metrics.BinaryAccuracy(name='accuracy'),
+      keras.metrics.Precision(name='precision'),
+      keras.metrics.Recall(name='recall'),
+      keras.metrics.AUC(name='auc'),
+      keras.metrics.AUC(name='prc', curve='PR'), # precision-recall curve
+]
+
+early_stopping = keras.callbacks.EarlyStopping(
+    monitor='val_prc', 
+    verbose=1,
+    patience=10,
+    mode='max',
+    restore_best_weights=True)
+
+
 
 def SaveModel(model, path_model, path_weights, name):
     model_json = model.to_json()
@@ -167,16 +188,19 @@ def before_ev(path_save_eval,filename):
 
 
 def ml_volume(train,label,X_train,y_train,X_test,y_test,
-	model,optimizer,loss,num_ep,batch_size,validation_split,
+	model,optimizer,loss,class_weights,num_ep,batch_size,validation_split,
 	output_path_predict,path_save_eval,name):
 	
-	model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
+	model.compile(optimizer=optimizer, loss=loss, metrics=METRICS)
+	#model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
+
 	model.fit(X_train, y_train,
 		epochs=num_ep,
-		verbose=1,
-		#verbose=0,
+		#verbose=1,
+		verbose=0,
 		batch_size=batch_size,
 		validation_split=validation_split
+		#class_weight=class_weights
 		#&&&????????????????????????????????????????????????????????????????????
         #sample_weight=
 		)
@@ -184,12 +208,13 @@ def ml_volume(train,label,X_train,y_train,X_test,y_test,
 	model.summary()
 
 	
-
-	Class = model.predict(train, batch_size)
+	Class = model.predict(X_test, batch_size)
+	#Class = model.predict(train, batch_size)
 	#print(Class)
 	res = pd.DataFrame(np.array(Class), columns=["star_cls_prob","qso_cls_prob","gal_cls_prob"])
 	#res['Y'] = np.array(label)
-	pd_label = pd.DataFrame(np.array(label), columns=["star_cls","qso_cls","gal_cls"])
+	#pd_label = pd.DataFrame(np.array(label), columns=["star_cls","qso_cls","gal_cls"])
+	pd_label = pd.DataFrame(np.array(y_test), columns=["star_cls","qso_cls","gal_cls"])
 	print(pd_label)
 	res = pd.concat([res, pd_label], axis=1)
  # type: ignore	print(res)
@@ -201,7 +226,7 @@ def ml_volume(train,label,X_train,y_train,X_test,y_test,
 
 	return model
 
-def NN(train,label,test_size,validation_split,batch_size,num_ep,optimizer,loss,
+def NN(train,label,test_size,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
 output_path_predict,output_path_mod,output_path_weight,path_save_eval):
 
 	#gpu_devices = tf.config.experimental.list_physical_devices('GPU')
@@ -237,7 +262,10 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval):
 				for l4 in range(3200,3800,1):
 					custom_index.append(str(index) + "n" + str(l2) + "n" + str(l3) + "n" + str(l4))
 		'''
-		custom_index.append(str(index) + "n" + str(64) + "n" + str(64) + "n" + str(64))
+		for i in range(11):
+			custom_index.append(str(index) + "n" + str(int(2**i)) + "n" + str(int(2**i)) + "n" + str(int(2**i)))
+
+		#custom_index.append(str(index) + "n" + str(64) + "n" + str(64) + "n" + str(64))
 
 		'''
 		for l2 in range(12,17,1):
@@ -250,7 +278,7 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval):
 			model = DeepCustomNN_sm(features,l2,l3,l4,3)	
 			#model = DeepCustomZNN(features,l2,l3,l4)	
 			model1 = ml_volume(train,label,X_train,y_train,X_test,y_test,
-			model,optimizer,loss,num_ep,batch_size,validation_split,
+			model,optimizer,loss,class_weights,num_ep,batch_size,validation_split,
 			output_path_predict,path_save_eval,f"custom_sm_{name}")
 			
 			SaveModel(model1,output_path_mod,output_path_weight,f"custom_sm_{name}")

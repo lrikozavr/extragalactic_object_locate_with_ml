@@ -4,7 +4,10 @@ import pandas as pd
 import numpy as np
 save_path = '/home/lrikozavr/catalogs/elewen'
 #save_path = r'C:\Users\lrikozavr\github\extragalactic_object_locate_with_ml'
-filepath = f'{save_path}/exit.sort'
+
+#filepath = f'{save_path}/exit.sort'
+filepath = f'{save_path}/exit_single_notlamost.csv'
+
 
 #general_path = '/home/lrikozavr/ML_work/des_pro'
 general_path = '/home/lrikozavr/ML_work/allwise_gaiadr3'
@@ -50,7 +53,7 @@ for line in open(filepath):
 print(count_star)
 print(count_qso)
 print(count_gal)
-exit()
+
 #koef_star = 1e5 / index_star
 #koef_exgal = 1e5 / index_exgal
 #cut out define % line from file 
@@ -75,7 +78,8 @@ def out(line,col,fout):
     index = 0
     empty_count = 1
     for i in col:
-        if(n[i] == ''):
+        if(n[i] == ""):
+            #empty_count = 1
             empty_count = 0
         if index == len(col)-1 :
             if(len(n[i].split('\n')) == 1):
@@ -255,7 +259,7 @@ def clas(name,catalogs_names,sample_path):
     slice(f'{name}.csv',1e5)
         #multi_thr_slice_download(['des_dr2'],name)
     slice_download(catalogs_names,name)
-    unslice(name,f'{sample_path}/{name}.csv')
+    unslice(name,f'{sample_path}/{name}_without_lamost.csv')
     os.remove(f'{name}.csv')
 
 import os
@@ -263,9 +267,9 @@ import os
 if not os.path.isdir(sample_path):
     os.mkdir(sample_path)
 
-clas('qso',['allwise','gaiadr3'],sample_path)
+#clas('qso',['allwise','gaiadr3'],sample_path)
 clas('star',['allwise','gaiadr3'],sample_path)
-clas('gal',['allwise','gaiadr3'],sample_path)
+#clas('gal',['allwise','gaiadr3'],sample_path)
 
 #req(des_dr2,'ml/qso_sample','des_qso.csv')
 

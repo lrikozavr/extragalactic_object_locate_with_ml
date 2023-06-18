@@ -35,19 +35,7 @@ data = pd.read_csv(f'{save_path}/all.csv', header = 0, sep = ',')
 
 def body(data, name_sample, features):
     print(name_sample)
-    import matplotlib.pyplot as plt
 
-    f = plt.figure(figsize=(25, 21))
-    plt.matshow(data[features].corr(),fignum=f.number)
-    plt.xticks(range(data[features].shape[1]),data[features].columns.values, fontsize=14, rotation=90)
-    plt.yticks(range(data[features].shape[1]),data[features].columns.values, fontsize=14)
-    cb = plt.colorbar()
-    cb.ax.tick_params(labelsize=14)
-    plt.title('Correlation Matrix', fontsize=16)
-    plt.savefig('/home/lrikozavr/ML_work/allwise_gaiadr3/ml/data/w123_phot.png')
-    #plt.show()
-    
-    exit()
     #print(data['Y'])
 
     '''
@@ -68,10 +56,12 @@ def body(data, name_sample, features):
     batch_size = 1024
     num_ep = 20
     optimazer = 'adam'
-    loss = 'binary_crossentropy'
+    loss = 'categorical_crossentropy'
     
+    from sklearn.utils import class_weight
+    class_weights = {}
     print(data)
-    NN(data[features].values,data[["star_cls","qso_cls","gal_cls"]].values,0.3,0.3,batch_size,num_ep,optimazer,loss,
+    NN(data[features].values,data[["star_cls","qso_cls","gal_cls"]].values,0.3,0.3,batch_size,num_ep,optimazer,loss,class_weights,
     f"{path_ml}/prediction/{name_sample}",
     f"{path_ml}/model/mod_{name_sample}",
     f"{path_ml}/model/weight_{name_sample}",
@@ -82,12 +72,12 @@ features = ['W1mag&W2mag', 'W1mag&W3mag', 'W1mag&phot_g_mean_mag', 'W1mag&phot_b
     'W2mag&W3mag', 'W2mag&phot_g_mean_mag', 'W2mag&phot_bp_mean_mag', 'W2mag&phot_rp_mean_mag', 
     'W3mag&phot_g_mean_mag', 'W3mag&phot_bp_mean_mag', 'W3mag&phot_rp_mean_mag', 
     'phot_g_mean_mag&phot_bp_mean_mag', 'phot_g_mean_mag&phot_rp_mean_mag', 
-    'phot_bp_mean_mag&phot_rp_mean_mag',
-    'W1mag','W2mag','W3mag','phot_g_mean_mag','phot_bp_mean_mag','phot_rp_mean_mag']
-body(data,'qso_gal_star_w123',features)
+    'phot_bp_mean_mag&phot_rp_mean_mag']
+    #'W1mag','W2mag','W3mag','phot_g_mean_mag','phot_bp_mean_mag','phot_rp_mean_mag']
+body(data,'qso_gal_star_w123_wol_full_phot_1021',features)
 features = ['W1mag&W2mag', 'W1mag&phot_g_mean_mag', 'W1mag&phot_bp_mean_mag', 'W1mag&phot_rp_mean_mag', 
     'W2mag&phot_g_mean_mag', 'W2mag&phot_bp_mean_mag', 'W2mag&phot_rp_mean_mag',  
     'phot_g_mean_mag&phot_bp_mean_mag', 'phot_g_mean_mag&phot_rp_mean_mag', 
     'phot_bp_mean_mag&phot_rp_mean_mag']
-body(data,'qso_gal_star_w12',features)
+body(data,'qso_gal_star_w12_wol_full_phot_1021',features)
 

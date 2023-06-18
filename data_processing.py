@@ -21,16 +21,18 @@ def process(data,name,save_path):
     data_mags = data.drop(['RA','DEC','z'], axis=1)
     data_dist, data_err = colors(data_mags)
     print(name," complite colors")
-    dfsg = MCD(data_dist,0)
+    mcd_d, gauss_d, outlire = MCD(data_dist,0)
     print(name," complite MCD")
 
-    data = NtoPtoN(data,dfsg)
-    data_dist = NtoPtoN(data_dist,dfsg)
-    data_err = NtoPtoN(data_err,dfsg)
+    #data = data.drop(index=outlire)
+    #data_dist = data_dist.drop(index=outlire)
+    #data_err = data_err.drop(index = outlire)
 
+    mcd_g = pd.DataFrame(np.array(gauss_d), columns = ['mcd_g'])
+    mcd_d = pd.DataFrame(np.array(mcd_d), columns = ['mcd_d'])
     #data = pd.concat([data[['RA','DEC','z','CatName','Class']],data_dist,data_err], axis=1)
-    data = pd.concat([data[['RA','DEC','z','W1mag','W2mag','W3mag','phot_g_mean_mag','phot_bp_mean_mag','phot_rp_mean_mag']],data_dist,data_err], axis=1)
-
+    data = pd.concat([data[['RA','DEC','z','W1mag','W2mag','W3mag','phot_g_mean_mag','phot_bp_mean_mag','phot_rp_mean_mag']],data_dist,data_err,mcd_d,mcd_g], axis=1)
+    print(data)
     #data = pd.concat([data[['RA','DEC','z','gmag','rmag','imag','zmag','Ymag']],data_dist,data_err], axis=1)
 
     #additional weight
@@ -51,20 +53,22 @@ def data_concat(data1,data2,i,j):
 
 def data_begin(save_path,path_sample):
     def ff(name):
-        '''
-        data = pd.read_csv(f"{path_sample}/{name}.csv", header=0, sep=',')
+        
+        data = pd.read_csv(f"{path_sample}/{name}_wol_full_phot_1021.csv", header=0, sep=',')
+        #data = pd.read_csv(f"{path_sample}/{name}.csv", header=0, sep=',')
         #data = data.drop(['ExtClsCoad','ExtClsWavg'], axis=1)
         data = data.fillna(0)
         print(data)
         #data.to_csv(f'{save_path}/data_{name}.csv', index = False)
         #data_exgal = pd.read_csv(f"{save_path}/data_exgal.csv", header=0, sep=',')
         data = process(data,name,save_path)
-        '''
+        '''     
         #data = pd.read_csv(f"{save_path}/{name}_main_sample.csv", header=0, sep=',')
         data = pd.read_csv(f"{save_path}/{name}_main_sample.csv", header=0, sep=',')
         if(not name == 'qso'):
-            count_qso = 371016
+            count_qso = 372097 #371016
             data = data.sample(count_qso, random_state = 1)
+        '''
         return data
     '''
     data_exgal = pd.read_csv(f"{path_sample}/exgal.csv", header=0, sep=',')
@@ -103,7 +107,7 @@ def data_begin(save_path,path_sample):
     data1 = ff('star')
     data2 = ff('qso')
     data3 = ff('gal')
-
+    
     #data_exgal = pd.read_csv(f"{save_path}/exgal_main_sample.csv", header=0, sep=',')
     #data_star = pd.read_csv(f"{save_path}/star_main_sample.csv", header=0, sep=',')
 

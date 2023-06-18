@@ -22,23 +22,27 @@ def D(data,n):
         sum += (i - m)**2
     return math.sqrt(sum/float(n))
 
-def Gauss_cut(data,n):
+def Gauss_cut(data,n,threshold = 0.005):
     m=M(data,n)
     d=D(data,n)
     #
-    rezult = []
+    gauss = np.zeros(n)
+    for i in range(n):
+        gauss[i] = math.e**(-((data[i]-m)**2)/(2*d**2))/(d*math.sqrt(2*math.pi))
+    #
+    outlire = []
     
     for i in range(n):
-        if(math.e**(-((data[i]-m)**2)/(2*d**2))/(d*math.sqrt(2*math.pi)) > 0.005):
-            rezult.append(i)
-            
-    return rezult
+        if(gauss[i] < threshold):
+            outlire.append(i)
+
+    return gauss, outlire
 
 def Normali(data,max):
     count = len(data)
-    s = []
+    s = np.zeros(count)
     for i in range(count):
-        s.append(1 - data[i] / (max + delta))
+        s[i] = 1 - data[i] / (max + delta)
     return s
 
 def fuzzy_dist(data):
@@ -70,7 +74,6 @@ def fuzzy_err(data):
     count = len(data)
     #print(count,columns)
 
-    summ = []
     max = np.zeros(len(columns))
     index=0
     for col in columns:
@@ -78,15 +81,15 @@ def fuzzy_err(data):
             if(data[col].iloc[i] > max[index]):
                 max[index]=data[col].iloc[i]
         index+=1
-    np.zeros((count,))
 
+    summ = np.zeros(count)
     for i in range(count):
         sum = 0
         index = 0
         for col in columns:
             sum += (1 - data[col].iloc[i]/(max[index]+delta))**2
             index += 1
-        summ.append(math.sqrt(sum/float(index)))
+        summ[i] = math.sqrt(sum/float(index))
     #print("fuzzy_err complite")
     return summ
 
@@ -185,7 +188,7 @@ def MCD(data,deep_i):
     fig.savefig(f"{deep_i}_d.png")
     plt.close(fig)
     '''
-    index_d = Gauss_cut(d,n)
+    gauss, outlire = Gauss_cut(d,n)
 
     '''
     rezult = []
@@ -196,7 +199,7 @@ def MCD(data,deep_i):
     
     return rezult
     '''
-    return index_d
+    return d, gauss, outlire
     '''
     t1=T0(data,n-1)
 
