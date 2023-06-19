@@ -55,14 +55,14 @@ def fuzzy_dist(data):
         #print(rc[col])
         #print("M        ", M(data[col],count))
     #print("rc           ",rc)
-    r = []
+    r = np.zeros(data.shape[0])
     max = -1
     for i in range(count):
         ev_sum = 0
         for col in columns:
             ev_sum += (rc[col].iloc[0] - data[col].iloc[i])**2
         #print(ev_sum)    
-        r.append(math.sqrt(ev_sum))
+        r[i] = math.sqrt(ev_sum)
         if(r[i] > max):
             max = r[i]
     #print("fuzzy_dist complite")
@@ -154,14 +154,13 @@ def MCD(data,deep_i):
     #print(t0)
     s0 = S0(data,t0,n)
     
-    #print("s0000000000",s0)
     if (np.linalg.det(s0) == 0):
         print("det S0 = 0. MCD Complite")
         print(deep_i)
         return data
     d = np.zeros(n)
 
-    max, index = 0, 0
+    #max, index = 0, 0
     for i in range(n):
         x = np.array(data.iloc[i])
         matrix = x - t0
@@ -190,15 +189,6 @@ def MCD(data,deep_i):
     '''
     gauss, outlire = Gauss_cut(d,n)
 
-    '''
-    rezult = []
-    for i in index_d:
-        rezult.append(data.iloc[i])
-
-    rezult = pd.DataFrame(np.array(rezult),columns=data.columns.values)
-    
-    return rezult
-    '''
     return d, gauss, outlire
     '''
     t1=T0(data,n-1)
@@ -210,9 +200,9 @@ def MCD(data,deep_i):
         print(deep_i)
         return data
     else:
-        MCD(data,deep_i)
+        data = data.drop([index])
+        return MCD(data,deep_i)
     '''
-    #MCD(data,deep_i)
 
 def Ell(data):
     n = data.shape[0]

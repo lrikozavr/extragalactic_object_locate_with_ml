@@ -77,12 +77,13 @@ batch_size = 1024
 num_ep = 20
 optimazer = 'adam'
 loss = 'categorical_crossentropy'
+validation_split = 0.3
 #balanced class
 from sklearn.utils import class_weight
 class_weights = {}
 
 print(data)
-NN(data[features].values,data[["star_cls","qso_cls","gal_cls"]].values,0.3,0.3,batch_size,num_ep,optimazer,loss,class_weights,
+NN(data[features].values,data[["star_cls","qso_cls","gal_cls"]].values,validation_split,batch_size,num_ep,optimazer,loss,class_weights,
 f"{path_ml}/prediction/{name_sample}",
 f"{path_ml}/model/mod_{name_sample}",
 f"{path_ml}/model/weight_{name_sample}",

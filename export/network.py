@@ -122,7 +122,7 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
     
     return model
 
-def NN(train,label,test_size,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
+def NN(train,label,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
 output_path_predict,output_path_mod,output_path_weight,path_save_eval):
     
     features = train.shape[1]
