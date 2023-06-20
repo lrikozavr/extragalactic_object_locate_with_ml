@@ -90,3 +90,16 @@ def plot_metrics(axs, name, history):
       axs[i,j].ylim([0,1])
 
     axs[i,j].legend()
+
+def data_phot_hist(path_sample = '/home/lrikozavr/ML_work/des_pro/ml/data', save_path = '/home/lrikozavr/ML_work/des_pro/ml/pictures/hist'):
+    features = ['gmag&rmag', 'gmag&imag', 'gmag&zmag', 'gmag&Ymag', 
+    'rmag&imag', 'rmag&zmag', 'rmag&Ymag', 
+    'imag&zmag', 'imag&Ymag', 
+    'zmag&Ymag',
+    'gmag','rmag','imag','zmag','Ymag']
+    class_name_mass = ['star','qso','gal']
+    from grafics import Hist1
+    for name in class_name_mass:
+        data = pd.read_csv(f"{path_sample}/{name}_main_sample.csv", header=0, sep=',')
+        for name_phot in features:
+            Hist1(data[name_phot],save_path,f'{name}_{name_phot}',name_phot)

@@ -5,6 +5,9 @@ from numpy.core.defchararray import count
 import pandas as pd
 import numpy as np
 import math
+import os
+
+from main import flags,features
 
 DELTA = 1e-7
 
@@ -49,7 +52,7 @@ def Normali(data,max):
 def fuzzy_dist(data):
     columns = data.columns.values
     count = data.shape[0]
-    rc = pd.DataFrame(np.array(['fuf']), columns=['word'])
+    rc = pd.DataFrame()
     #
     for col in columns:
         rc[col] = M(data[col],count)
@@ -78,9 +81,7 @@ def fuzzy_err(data):
     max = np.zeros(len(columns))
     index=0
     for col in columns:
-        for i in range(count):
-            if(data[col].iloc[i] > max[index]):
-                max[index]=data[col].iloc[i]
+        max[index] = data[col].max()
         index+=1
 
     summ = np.zeros(count)
@@ -150,7 +151,7 @@ def MCD(data,deep_i):
     print(deep_i)
     deep_i+=1
     count = data.shape[0]
-    count_col = len(data.columns.values)
+    count_col = data.shape[1]
     t0 = T0(data,count)
     #print(t0)
     s0 = S0(data,t0,count)
@@ -175,7 +176,7 @@ def MCD(data,deep_i):
             continue
         d[i] = math.sqrt(res)
 
-    gauss, outlire = Gauss_cut(d,count)
+    gauss, outlire = Gauss_cut(d,count,threshold=flags['data_preprocessing']['main_sample']['outlire']['add_param']['additional_parametr'])
 
     return d, gauss, outlire
 
@@ -209,78 +210,122 @@ def NtoPtoN(data,index):
     res = pd.DataFrame(np.array(res), columns=data.columns.values)
     return res
 
-def process(data,name,save_path):
+def process(path_sample,name,save_path):
     #data_mags = data.drop(['RA','DEC','z','CatName','Class'], axis=1)
-    
+    data = pd.read_csv(f"{path_sample}/{name}.csv", header=0, sep=',')
+    print(f"read data {name}")
+
+    #Check variable zero value
+    data = data.fillna(0)
+    base = ['RA','DEC','z']
+    def data_issue(check):
+        match check:
+            case 'err':
+                if(flags['data_preprocessin']['main_sample']['color']['work']):
+                    return data_err
+                else:
+                    raise Exception('cant made outlire by err, \ncheck flags["data_preprocessin"]["main_sample"]["color"]["work"] in config')
+            case 'color':
+                if(flags['data_preprocessin']['main_sample']['color']['work']):
+                    return data_color
+                else:
+                    raise Exception('cant made outlire by color, \ncheck flags["data_preprocessin"]["main_sample"]["color"]["work"] in config')
+            case 'features':
+                return data[features]
+            case _:
+                raise Exception('wrong value flags["data_preprocessin"]["main_sample"]["weight"]["value"]')
+
     #redded_des(data)
     #print(name, 'deredded complite')
-    data_mags = data.drop(['RA','DEC','z'], axis=1)
-    data_color, data_err = colors(data_mags)
-    print(name," complite colors")
-    mcd_d, gauss_d, outlire = MCD(data_color,0)
-    print(name," complite MCD")
-
-    if():
-        data = data.drop(outlire)
-        data_color = data_color.drop(outlire)
-        data_err = data_err.drop(outlire)
-
-    mcd_g = pd.DataFrame(np.array(gauss_d), columns = ['mcd_g'])
-    mcd_d = pd.DataFrame(np.array(mcd_d), columns = ['mcd_d'])
-    #data = pd.concat([data[['RA','DEC','z','CatName','Class']],data_dist,data_err], axis=1)
-    #parametr from config
-    data = pd.concat([data[['RA','DEC','z','W1mag','W2mag','W3mag','phot_g_mean_mag','phot_bp_mean_mag','phot_rp_mean_mag']],data_color,data_err,mcd_d,mcd_g], axis=1)
-    print(data)
-    #data = pd.concat([data[['RA','DEC','z','gmag','rmag','imag','zmag','Ymag']],data_dist,data_err], axis=1)
-
+    if(flags['data_preprocessin']['main_sample']['color']['work']):
+        data_color, data_err = colors(data[features])
+        print(name," complite colors")
+        if(flags['data_preprocessin']['main_sample']['color']['mags']):
+            data = pd.concat([data,data_color],axis=1)
+        if(flags['data_preprocessin']['main_sample']['color']['err']):
+            data = pd.concat([data,data_err],axis=1)
+        
+    if(flags['data_preprocessin']['main_sample']['outlire']['cut']):
+        if( "MCD" in flags['data_preprocessin']['main_sample']['outlire']['method'] ):
+            mcd_d, gauss_d, outlire = MCD(data_issue(flags['data_preprocessin']['main_sample']['outlire']['value']),0)
+            print(name," complite MCD")
+            if(flags['data_preprocessin']['main_sample']['outlire']['add_param']['add']):
+                mcd_d = pd.DataFrame(np.array(mcd_d), columns = ['mcd_d'])
+                mcd_g = pd.DataFrame(np.array(gauss_d), columns = ['mcd_g'])
+                data = pd.concat([data,mcd_d,mcd_g], axis=1)
+            if(flags['data_preprocessin']['main_sample']['outlire']['cut']):
+                data = data.drop(outlire)
+    
+    
     #additional weight
-    data['fuzzy_err'] = fuzzy_err(data_err)
-    print(name," complite fuzzy_err")
-    data_dist, max = fuzzy_dist(data_color)
-    data['fuzzy_dist'] = Normali(data_dist, max)
-    print(name," complite fuzzy_dist")
+    if('fuzzy_err' in flags['data_preprocessin']['main_sample']['weight']['method']):        
+        index = flags['data_preprocessin']['main_sample']['weight']['method'].index('fuzzy_err')
+        data['fuzzy_err'] = fuzzy_err(data_issue(flags['data_preprocessin']['main_sample']['weight']['value'][index]))
+        print(name," complite fuzzy_err")
+
+    if('fuzzy_dist' in flags['data_preprocessin']['main_sample']['weight']['method']):    
+        index = flags['data_preprocessin']['main_sample']['weight']['method'].index('fuzzy_dist')
+        data_dist, max = fuzzy_dist(data_issue(flags['data_preprocessin']['main_sample']['weight']['value'][index]))
+        data['fuzzy_dist'] = Normali(data_dist, max)
+        print(name," complite fuzzy_dist")
 
     data.to_csv(f'{save_path}/{name}_main_sample.csv', index=False)
     return data
 
-def data_begin(save_path,path_sample):
-    def ff(name):
-        
-        data = pd.read_csv(f"{path_sample}/{name}_wol_full_phot_1021.csv", header=0, sep=',')
-        #data = pd.read_csv(f"{path_sample}/{name}.csv", header=0, sep=',')
-        #data = data.drop(['ExtClsCoad','ExtClsWavg'], axis=1)
-        
-        #Check variable zero value
-        data = data.fillna(0)
-        print(data)
-        #data.to_csv(f'{save_path}/data_{name}.csv', index = False)
-        #data_exgal = pd.read_csv(f"{save_path}/data_exgal.csv", header=0, sep=',')
-        data = process(data,name,save_path)
-        '''     
-        #data = pd.read_csv(f"{save_path}/{name}_main_sample.csv", header=0, sep=',')
-        data = pd.read_csv(f"{save_path}/{name}_main_sample.csv", header=0, sep=',')
-        if(not name == 'qso'):
-            count_qso = 372097 #371016
-            data = data.sample(count_qso, random_state = 1)
-        '''
+def data_preparation(save_path,path_sample,name_class):
+
+    def preparation(name):
+        data = pd.DataFrame()
+        if(not flags['data_preprocessing']['main_sample']['work']):
+            if(os.path.isfile(f"{save_path}/{name}_main_sample.csv")):   
+                data = pd.read_csv(f"{save_path}/{name}_main_sample.csv", header=0, sep=',')
+            else:
+                data = process(path_sample,name,save_path)
+                data.to_csv(f'{save_path}/{name}_main_sample.csv', index=False)
+        else:
+            data = process(path_sample,name,save_path)
+            data.to_csv(f'{save_path}/{name}_main_sample.csv', index=False)
+
         return data
     
-    def balanced_sample(count):
-        min=1e9
-        for i in range(len(count)):
-            count[i]
-            if (count[i] < min):
-                min = count[i]
-        return min    
+    count = np.zeros(len(name_class))
+    data_mass = []
     
-    data1 = ff('star')
-    data2 = ff('qso')
-    data3 = ff('gal')
+    data = pd.DataFrame()
+    
+    for n, name in enumerate(name_class):
+        data_temp = preparation(name)
+        for n_, name_ in enumerate(name_class):
+            if(n_ == n):
+                data_temp[f'{name_}_cls'] = 1
+            else:
+                data_temp[f'{name_}_cls'] = 0
+        count[n] = data_temp.shape[0]
+        if(flags['data_preprocessing']['balanced']):
+            data_mass.append(data_temp)
+        else:
+            data = pd.concat([data,data_temp], ignore_index=True)
+
+    if(flags['data_preprocessing']['balanced']):
+        for i in range(name_class):
+            data_temp = data_mass[i].sample(count.min(), random_state = 1)
+            data = pd.concat([data,data_temp], ignore_index=True)
+        
+    del data_mass
+    
+    for i in range(len(name_class)):
+        print(f"{name_class[i]} count:\t---\t", count[i])
+
+    data.to_csv(f'{save_path}/all.csv',index = False)
+
+    '''
+    data1 = preparation('star')
+    data2 = preparation('qso')
+    data3 = preparation('gal')
     
     #data_exgal = pd.read_csv(f"{save_path}/exgal_main_sample.csv", header=0, sep=',')
     #data_star = pd.read_csv(f"{save_path}/star_main_sample.csv", header=0, sep=',')
 
-    
     data1['star_cls'], data1['qso_cls'], data1['gal_cls'] = 1,0,0
     data2['star_cls'], data2['qso_cls'], data2['gal_cls'] = 0,1,0
     data3['star_cls'], data3['qso_cls'], data3['gal_cls'] = 0,0,1
@@ -288,24 +333,8 @@ def data_begin(save_path,path_sample):
     data12 = pd.concat([data1,data2], ignore_index=True)
     data123 = pd.concat([data12,data3], ignore_index=True)
     data123 = data123.sample(data123.shape[0], random_state=1)
-
-    #delta_1_0 = data_concat(data_exgal,data_star,1,0)
-    #delta_0_1 = data_concat(data_exgal,data_star,0,1)
-
-    #return delta_1_0, delta_0_1
+    
     data123.to_csv(f'{save_path}/all.csv',index = False)
-    return data123
-
-def data_phot_hist(path_sample = '/home/lrikozavr/ML_work/des_pro/ml/data', save_path = '/home/lrikozavr/ML_work/des_pro/ml/pictures/hist'):
-    features = ['gmag&rmag', 'gmag&imag', 'gmag&zmag', 'gmag&Ymag', 
-    'rmag&imag', 'rmag&zmag', 'rmag&Ymag', 
-    'imag&zmag', 'imag&Ymag', 
-    'zmag&Ymag',
-    'gmag','rmag','imag','zmag','Ymag']
-    class_name_mass = ['star','qso','gal']
-    from grafics import Hist1
-    for name in class_name_mass:
-        data = pd.read_csv(f"{path_sample}/{name}_main_sample.csv", header=0, sep=',')
-        for name_phot in features:
-            Hist1(data[name_phot],save_path,f'{name}_{name_phot}',name_phot)
-#data_phot_hist()
+    '''
+    
+    return data

@@ -7,7 +7,8 @@ import sys
 import argparse
 
 from network import NN
-from data_processing import data_preparation
+from data_process import data_preparation
+from data_download import class_download, diff_class
 
 #argument parse
 def parse_arg():
@@ -24,23 +25,24 @@ def parse_arg():
     return parser.parse_args()
 args = parse_arg()
 
-general_path = '/home/lrikozavr/ML_work/allwise_gaiadr3'
+#general_path = '/home/lrikozavr/ML_work/allwise_gaiadr3'
 
 import json
 fconfig = open(args.config)
 def parse_config(fconfig):
     config = json.load(fconfig)
+    name_sample = config['name_sample']
     general_path = config['general_path']
     data_path = config['data_path']
     prediction_path = config['prediction_path']
     flags = config['flags']
     hyperparam = config['hyperparam']
     features = config['features']
+    name_class = config['name_class']
+    return name_sample, general_path, data_path, prediction_path, flags, hyperparam, features, name_class
 
-    return general_path
-
-general_path = parse_config(fconfig)
-
+name_sample, general_path, data_path, prediction_path, flags, hyperparam, features, name_class = parse_config(fconfig)
+fconfig.close()
 
 def dir(save_path,name):
     dir_name = f"{save_path}/{name}"
@@ -59,31 +61,39 @@ dir(path_ml,'eval')
 dir(path_ml,'prediction')
 dir(path_ml,'picture')
 
+#data download
+diff_class(data_path,name_class,path_sample)
+for name in name_class:
+    class_download(name, path_sample)
+
+
+data = pd.DataFrame()
 #data preparation
-if(os.path.isfile(f'{path_data}/all.csv')):
-    data = pd.read_csv(f'{path_data}/all.csv', header = 0, sep = ',')
+if(not flags['data_preprocessing']['work']):
+    if(os.path.isfile(f'{path_data}/all.csv')):
+        data = pd.read_csv(f'{path_data}/all.csv', header = 0, sep = ',')
+    else:
+        data = data_preparation(path_data,path_sample,name_class)
 else:
-    data = data_preparation(path_data,path_sample)
+    data = data_preparation(path_data,path_sample,name_class)    
 
 #network training
 #features from config
 #name from config
-name_sample = ''
-features = ''
 print('Sample name: ', name_sample)
 print('Features: ', features)
 #hyperparams from config
-batch_size = 1024
-num_ep = 20
-optimazer = 'adam'
-loss = 'categorical_crossentropy'
-validation_split = 0.3
+batch_size = hyperparam['batch_size']
+num_ep = hyperparam['num_ep']
+optimazer = hyperparam['optimizer']
+loss = hyperparam['loss']
+validation_split = hyperparam['validation_split']
 #balanced class
 from sklearn.utils import class_weight
 class_weights = {}
 
 print(data)
-NN(data[features].values,data[["star_cls","qso_cls","gal_cls"]].values,validation_split,batch_size,num_ep,optimazer,loss,class_weights,
+NN(data[features].values,data[name_class].values,validation_split,batch_size,num_ep,optimazer,loss,class_weights,
 f"{path_ml}/prediction/{name_sample}",
 f"{path_ml}/model/mod_{name_sample}",
 f"{path_ml}/model/weight_{name_sample}",

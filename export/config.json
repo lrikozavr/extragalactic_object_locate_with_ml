@@ -1,0 +1,68 @@
+{
+    "name_sample": "",
+    "general_path": "",
+    "data_path": "",
+    "prediction_path": "",
+    "flags":{
+        "data_downloading":{
+            "radius": 1,
+            "slice_count": 100000,
+            "multi_thr":{
+                "work": false,
+                "MAX_WORKERS": 3,
+                "WAIT_UNTIL_REPEAT_ACCESS": 3,
+                "NUM_URL_ACCESS_ATTEMPTS": 4
+            },
+            "duplicate": false,
+            "filter": ["", 0],
+            "catalogs":{
+                "name": ["allwise","gaiaedr3"],
+                "VizieR": ["II/328/allwise","I/350/gaiaedr3"],
+                "columns": [[1,2,3,5,6,10,11,12,17,18,19],
+                            [1,2,3,6,9,7,10,8,11,43,60,46,61,48,62]]
+            }
+        },
+        "data_preprocessing":{
+            "work": true,
+            "main_sample":{
+                "work": true,
+                "color":{
+                    "work": true,
+                    "mags": true,
+                    "err": true
+                },
+                "outlire": {
+                    "cut": false,
+                    "method": ["MCD"],
+                    "value": "color",
+                    "//comment_value": "[color,err,features]",
+                    "add_param": {
+                        "add": true,
+                        "method": "gauss",
+                        "additional_parametr": 0.005
+                    }
+                },
+                "weight":{
+                    "method": ["fuzzy_err","fuzzy_dist"],
+                    "//comment_method": "[fuzzy_err,fuzzy_dist]",
+                    "value": ["err","color"],
+                    "//comment_value": "[color,err,features]"
+            },
+            "balanced": true
+        },
+        "system": "cpu"
+    },
+    "hyperparam":{
+        "batch_size": 1024,
+        "num_ep": 20,
+        "optimizer": "adam",
+        "loss": "categorical_crossentropy",
+        "validation_split": 0.3,
+        "model_variable":{
+
+        }
+    },
+    "base": ["RA","DEC","z"],
+    "features": ["W1mag","W2mag","W3mag","phot_g_mean_mag","phot_bp_mean_mag","phot_rp_mean_mag"],
+    "name_class": ["star","qso","gal"]
+}
