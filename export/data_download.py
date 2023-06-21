@@ -174,14 +174,20 @@ def slice(filename,count):
 #download from VizieR
 def download(catalogs_name,filepath):
     import os
+    filepath_temp = filepath
     for n, name in enumerate(catalogs_name):
-        fin = filepath.split(".")[0]
+        fin = filepath_temp.split(".")[0]
         temp = f"{fin}_{name}.csv"
         req(flags["data_downloading"]["catalogs"]["VizieR"][n],fin,temp)
-        os.remove(filepath)
-        filepath = f"{temp.split('.')[0]}_cut.csv"
-        cut_cut(flags["data_downloading"]["catalogs"]["columns"][n],temp,filepath)
+        if(n==0 and flags["data_downloading"]["remove"]["slice"]):
+            os.remove(filepath_temp)
+        if(not n==0 and flags["data_downloading"]["remove"]["catalogs_cross"][n-1]):
+            os.remove(filepath_temp)
+        filepath_temp = f"{temp.split('.')[0]}_cut.csv"
+        cut_cut(flags["data_downloading"]["catalogs"]["columns"][n],temp,filepath_temp)
         os.remove(temp)
+        os.rename(filepath_temp,temp)
+        
 
 def multi_thr_slice_download(catalogs_name,filename):
     MAX_WORKERS = flags["data_downloading"]["multi_thr"]["MAX_WORKERS"]
@@ -222,8 +228,12 @@ def unslice(filename,fout):
                 continue
             f.write(line)
         flag = 1
-        os.remove(f"{filename}/{name}")
-    os.rmdir(f"{filename}")
+        
+        if(flags["data_downloading"]["remove"]["catalogs_cross"][-1]):
+            os.remove(f"{filename}/{name}")
+    if(flags["data_downloading"]["remove"]["dir"]):
+        os.rmdir(f"{filename}")
+    
     f.close()
 '''
 def dir(save_path,name):
@@ -239,4 +249,5 @@ def class_download(name,path_sample):
     else:
         slice_download(catalogs_names,f'{path_sample}/{name}')
     unslice(name,f'{path_sample}/{name}.csv')
-    #os.remove(f'{name}.csv')
+    if(flags["data_downloading"]["remove"]["origin"]):
+        os.remove(f'{path_sample}/{name}_origin.csv')

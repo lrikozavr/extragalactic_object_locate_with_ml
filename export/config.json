@@ -20,6 +20,12 @@
                 "VizieR": ["II/328/allwise","I/350/gaiaedr3"],
                 "columns": [[1,2,3,5,6,10,11,12,17,18,19],
                             [1,2,3,6,9,7,10,8,11,43,60,46,61,48,62]]
+            },
+            "remove":{
+                "origin": false,
+                "slice": false,
+                "catalogs_cross": [false, false],
+                "dir": false
             }
         },
         "data_preprocessing":{
