@@ -24,7 +24,8 @@
             "remove":{
                 "origin": false,
                 "slice": false,
-                "catalogs_cross": [false, false],
+                "catalog_cross_origin": [false, false],
+                "catalogs_cross_cut_duplicate": [false, false],
                 "dir": false
             }
         },
@@ -53,10 +54,11 @@
                     "//comment_method": "[fuzzy_err,fuzzy_dist]",
                     "value": ["err","color"],
                     "//comment_value": "[color,err,features]"
-            },
+                },
             "balanced": true
-        },
+            },
         "system": "cpu"
+        }
     },
     "hyperparam":{
         "batch_size": 1024,

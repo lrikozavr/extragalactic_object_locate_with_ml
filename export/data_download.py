@@ -79,6 +79,7 @@ def cut_cut(col,filein,fileout):
     gc2 = col[1]
     #kill duplicate algorithm
     def f1():
+        index_in,index_out = 0,0
         i=1
         z=0
         l=""
@@ -91,6 +92,7 @@ def cut_cut(col,filein,fileout):
                     decn=n[gc2]
                     if (z==1):
                         out(str(l),col,fout)
+                        index_out+=1
                     l=str(line)
                     z=1                    
                 else:
@@ -101,10 +103,14 @@ def cut_cut(col,filein,fileout):
                 i=2
                 z=1
                 l=str(line)
+            index_in+=1
         if (z==1):
             out(str(l),col,fout)
+            index_out+=1
+        return index_in, index_out
     #1-st of dublicate
     def f2():
+        index_in,index_out = 0,0
         i=1
         l=""
         for line in open(filein):   
@@ -114,16 +120,20 @@ def cut_cut(col,filein,fileout):
                     ran=n[gc1]
                     decn=n[gc2]
                     out(str(line),col,fout)
+                    index_out+=1
             else:
                 ran=n[gc1]
                 decn=n[gc2]
                 i=2
                 out(str(line),col,fout)
+                index_out+=1
+            index_in+=1
+        return index_in, index_out
     
     if (flags["data_downloading"]["duplicate"]):
-        f2()
+        return f2()
     else:
-        f1()
+        return f1()
 
 #request to VizieR X-match
 def req(cat_name,name,fout,R = flags["data_downloading"]["radius"]):
@@ -155,6 +165,7 @@ def slice(filename,count):
     foldername = filename.split('.')[0]
     if not os.path.isdir(foldername):
         os.mkdir(foldername)
+    stat = []
     index = 0
     index_name = 1
     fout = open(f"{foldername}/0.csv","w")
@@ -164,29 +175,46 @@ def slice(filename,count):
             fout.write('RA,DEC,z\n')
         fout.write(line)
         if(index // count == index_name):
+            stat.append(count)
             fout_name = f"{index_name}.csv"
             fout.close()
             fout = open(f"{foldername}/{fout_name}","w")
             index_name+=1
+    stat.append(index - (len(stat) + 1)*count)
     fout.close()
     #return foldername
+    return stat
 
 #download from VizieR
 def download(catalogs_name,filepath):
     import os
     filepath_temp = filepath
+    count_mass = np.zeros(len(catalogs_name)*2)
+    columns = []
     for n, name in enumerate(catalogs_name):
         fin = filepath_temp.split(".")[0]
         temp = f"{fin}_{name}.csv"
         req(flags["data_downloading"]["catalogs"]["VizieR"][n],fin,temp)
+        
         if(n==0 and flags["data_downloading"]["remove"]["slice"]):
             os.remove(filepath_temp)
-        if(not n==0 and flags["data_downloading"]["remove"]["catalogs_cross"][n-1]):
+        if(not n==0 and flags["data_downloading"]["remove"]["catalogs_cross_cut_duplicate"][n-1]):
             os.remove(filepath_temp)
+        
         filepath_temp = f"{temp.split('.')[0]}_cut.csv"
-        cut_cut(flags["data_downloading"]["catalogs"]["columns"][n],temp,filepath_temp)
-        os.remove(temp)
-        os.rename(filepath_temp,temp)
+        
+        count_mass[n*2],count_mass[n*2+1] = cut_cut(flags["data_downloading"]["catalogs"]["columns"][n],temp,filepath_temp)
+        
+        if(flags["data_downloading"]["remove"]["catalogs_cross_origin"][n]):
+            os.remove(temp)
+            #os.rename(filepath_temp,temp)
+            #filepath_temp = temp
+        columns.append(name)
+        columns.append(f'{name}_cut')
+    
+    count_mass = pd.DataFrame(np.array(count_mass), columns=columns)
+
+    return count_mass
         
 
 def multi_thr_slice_download(catalogs_name,filename):
@@ -196,26 +224,37 @@ def multi_thr_slice_download(catalogs_name,filename):
     import time
     import os   
     from concurrent.futures import ThreadPoolExecutor
+    count_mass = []
+    count_mass_temp = pd.DataFrame()
     attempts = 0
     while attempts < NUM_URL_ACCESS_ATTEMPTS:
         try:
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
                 for name in os.listdir(filename):
-                    executor.submit(download,catalogs_name,f"{filename}/{name}")
+                    count_mass_temp = executor.submit(download,catalogs_name,f"{filename}/{name}")
+                    count_mass.append(count_mass_temp)
             break
         except:
             time.sleep(WAIT_UNTIL_REPEAT_ACCESS)
+    
+    count_mass = pd.DataFrame(np.array(count_mass),columns=count_mass_temp.columns.values)
+    
+    return count_mass
 
 def slice_download(catalogs_name,filename):
     import os
+    count_mass = pd.DataFrame()
     for name in os.listdir(filename):
-        download(catalogs_name,f"{filename}/{name}")
+        count_mass_temp = download(catalogs_name,f"{filename}/{name}")
+        count_mass = pd.concat([count_mass,count_mass_temp],ignore_index=True)
+    
+    return count_mass
 
-def unslice(filename,fout):
+def unslice(filename_list,filename,fout):
     import os
     f = open(fout,"w")
     flag_2 = 1
-    for name in os.listdir(filename):
+    for name in filename_list:
         flag_1 = 1
         for line in open(f"{filename}/{name}"):
             if flag_1:
@@ -229,25 +268,36 @@ def unslice(filename,fout):
             f.write(line)
         flag = 1
         
-        if(flags["data_downloading"]["remove"]["catalogs_cross"][-1]):
+        if(flags["data_downloading"]["remove"]["catalogs_cross_cut_duplicate"][-1]):
             os.remove(f"{filename}/{name}")
     if(flags["data_downloading"]["remove"]["dir"]):
         os.rmdir(f"{filename}")
     
     f.close()
-'''
-def dir(save_path,name):
-    dir_name = f"{save_path}/{name}"
-    if not os.path.isdir(dir_name):
-        os.mkdir(dir_name)
-'''
+
 def class_download(name,path_sample):
     catalogs_names = flags["data_downloading"]["catalogs"]["name"]
-    slice(f'{path_sample}/{name}_origin.csv', flags["data_downloading"]["slice_count"])
+    #differentiation origin catalog to slice
+    stat_count = slice(f'{path_sample}/{name}_origin.csv', flags["data_downloading"]["slice_count"])
+    stat_count = pd.DataFrame(np.array(stat_count),columns=['origin'])
+    #cross-match feat. VizieR
     if(flags["data_downloading"]["multi_thr"]["work"]):
-        multi_thr_slice_download(['des_dr2'],f'{path_sample}/{name}')
+        count_cat = multi_thr_slice_download(['des_dr2'],f'{path_sample}/{name}')
+        stat_count = pd.concat([stat_count,count_cat],axis=1)
     else:
-        slice_download(catalogs_names,f'{path_sample}/{name}')
-    unslice(name,f'{path_sample}/{name}.csv')
+        count_cat = slice_download(catalogs_names,f'{path_sample}/{name}')
+        stat_count = pd.concat([stat_count,count_cat],axis=1)
+    #
+    filename_list = []
+    for i in range(stat_count.shape[0]):
+        line = str(i)
+        for j in range(2,stat_count.shape[1],2):
+            line += "_" + stat_count.columns.values[j]
+        filename_list.append(f'{line}.csv')
+    #
+    unslice(filename_list,f'{path_sample}/{name}',f'{path_sample}/{name}.csv')
+    #    
     if(flags["data_downloading"]["remove"]["origin"]):
         os.remove(f'{path_sample}/{name}_origin.csv')
+
+    return stat_count

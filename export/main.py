@@ -54,6 +54,10 @@ path_ml = f'{general_path}/ml'
 path_sample = f'{general_path}/sample'
 path_pic = f'{general_path}/ml/picture'
 
+path_stat = f'{general_path}/statistic'
+
+dir(general_path,'sample')
+dir(general_path,'statistic')
 dir(general_path,'ml')
 dir(path_ml,'data')
 dir(path_ml,'model')
@@ -62,9 +66,17 @@ dir(path_ml,'prediction')
 dir(path_ml,'picture')
 
 #data download
+stat_mass = []
+sum_mass = pd.DataFrame()
 diff_class(data_path,name_class,path_sample)
 for name in name_class:
-    class_download(name, path_sample)
+    stat = class_download(name, path_sample)
+    stat.to_csv(f'{path_stat}/{name}.log', index=False)
+    sum = pd.DataFrame(stat.sum(axis=0), columns = name, index = stat.columns.values)
+    sum_mass = pd.concat([sum_mass,sum], axis=1)
+    stat_mass.append(stat)
+sum_mass.to_csv(f'{path_stat}/classes.log')
+print(sum_mass)
 
 
 data = pd.DataFrame()
