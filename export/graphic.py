@@ -119,13 +119,6 @@ def data_hist(config,data=None):
             fig.savefig(f"{config.path_pic}/{col}_hist.png")
             plt.close(fig)
 
-
-    #from grafics import Hist1
-    for name in data.columns.values:
-        data = pd.read_csv(f"{path_sample}/{name}_main_sample.csv", header=0, sep=',')
-        for name_phot in features:
-            Hist1(data[name_phot],save_path,f'{name}_{name_phot}',name_phot)
-
 def picture_loss(optimizer,loss,config):
 
   def plot_loss(ax, history, label, n):
