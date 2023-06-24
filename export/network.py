@@ -18,6 +18,8 @@ import numpy as np
 
 import sklearn.metrics as skmetrics
 
+#from main import hyperparam, flags, name_class
+
 METRICS = [
       keras.metrics.TruePositives(name='tp'),
       keras.metrics.FalsePositives(name='fp'),
@@ -55,19 +57,13 @@ def LoadModel(path_model, path_weights, optimizer, loss):
     loaded_model.compile(optimizer=optimizer, loss=loss)
     return loaded_model
 
-def somemodel(features):
-    if output_bias is not None:
-        output_bias = tf.keras.initializers.Constant(output_bias)
-    input_array = Input(shape=(features,))
 
-    return
-
-def DeepCustomNN_sm(features, l2, l3, l4, output): #16, 8, 4
+def DeepCustomNN_sm(features, l2, l3, l4, a2, a3, a4, output): #16, 8, 4
     input_array = Input(shape=(features,))
     layer_1 = Dense(features, activation='linear', kernel_initializer='he_uniform')(input_array)
-    layer_2 = Dense(l2, activation="softsign", kernel_initializer='he_uniform' )(layer_1)
-    layer_3 = Dense(l3, activation="tanh", kernel_initializer='he_uniform' )(layer_2)
-    layer_4 = Dense(l4, activation="elu", kernel_initializer='he_uniform')(layer_3)
+    layer_2 = Dense(l2, activation=a2, kernel_initializer='he_uniform' )(layer_1)
+    layer_3 = Dense(l3, activation=a3, kernel_initializer='he_uniform' )(layer_2)
+    layer_4 = Dense(l4, activation=a4, kernel_initializer='he_uniform' )(layer_3)
     #layer_last = Dropout(.2)(layer_4)
     output_array = Dense(output, activation='softmax', kernel_initializer='he_uniform')(layer_4)
 
@@ -77,12 +73,19 @@ def DeepCustomNN_sm(features, l2, l3, l4, output): #16, 8, 4
     model = Model(input_array, output_array)
     return model
 
+def somemodel(features):
+    if output_bias is not None:
+        output_bias = tf.keras.initializers.Constant(output_bias)
+    input_array = Input(shape=(features,))
+
+    return
+
 def reconstruct_NN():
     return
 
 def model_volume(train,label,X_train,y_train,X_test,y_test,
 	model,optimizer,loss,class_weights,num_ep,batch_size,validation_split,
-	output_path_predict,path_save_eval,name):
+	output_path_predict,path_save_eval,name,config):
 	
     model.compile(optimizer=optimizer, loss=loss, metrics=METRICS) #!
     #model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
@@ -107,14 +110,16 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
     #model.evaluate(X_test, y_test, verbose=1)
     #model.summary()
 
-    if():
+
+
+    if(config.hyperparam["model_variable"]["metric_culc"] == "test"):
         Class = model.predict(X_test, batch_size)
-        pd_label = pd.DataFrame(np.array(y_test), columns=["star_cls","qso_cls","gal_cls"])
+        pd_label = pd.DataFrame(np.array(y_test), columns=config.name_class_cls)
     else:
         Class = model.predict(train, batch_size)
-        pd_label = pd.DataFrame(np.array(label), columns=["star_cls","qso_cls","gal_cls"])
+        pd_label = pd.DataFrame(np.array(label), columns=config.name_class_cls)
     #param from config (columns)
-    res = pd.DataFrame(np.array(Class), columns=["star_cls_prob","qso_cls_prob","gal_cls_prob"])
+    res = pd.DataFrame(np.array(Class), columns=config.name_class_cls_prob)
     #print(pd_label)
     res = pd.concat([res, pd_label], axis=1)
     
@@ -122,8 +127,17 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
     
     return model
 
+def make_custom_index(index,list):
+    name = f'{index}n'
+    for i in range(len(list)):
+        if(i+1 == len(list)):
+            name += str(list[i])
+        else:
+            name += str(list[i]) + 'n'
+    return name
+
 def NN(train,label,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
-output_path_predict,output_path_mod,output_path_weight,path_save_eval):
+output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
     
     features = train.shape[1]
     initial_weights = os.path.join(tempfile.mkdtemp(), 'initial_weights')
@@ -131,11 +145,12 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval):
     def cust_model(name,X_train,y_train,X_test,y_test):
         n = name.split("n")
         l2,l3,l4 = n[1],n[2],n[3]
-        model = DeepCustomNN_sm(features,l2,l3,l4,3)	
-            
+        a = config.hyperparam["model_variable"]["activation"]
+        model = DeepCustomNN_sm(features,l2,l3,l4,a[0],a[1],a[2],3)	
+        
         model1 = model_volume(train,label,X_train,y_train,X_test,y_test,
         model,optimizer,loss,class_weights,num_ep,batch_size,validation_split,
-        output_path_predict,path_save_eval,f"custom_sm_{name}")
+        output_path_predict,path_save_eval,f"custom_sm_{name}",config)
         SaveModel(model1,output_path_mod,output_path_weight,f"custom_sm_{name}")
     
     def model_activate(flag,custom_index,X_train,y_train,X_test,y_test):
@@ -151,34 +166,34 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval):
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
                 for name in custom_index:
                     executor.submit(cust_model,name,X_train,y_train,X_test,y_test)
+    
+
 
     #print(features)
     #print(label)
     #train = np.array(train)
-    if():
-        #hyperparam from config
-        kfold = KFold(n_splits=5, shuffle=False)
-        index=0
-        for train_index, test_index in kfold.split(train):
-            #print("train len ",len(train_index),"test len ",len(test_index))
-            #train len  358845 test len  89712
-            X_train = train[train_index]
-            y_train = label[train_index]
+
+    #hyperparam from config
+    kfold = KFold(n_splits=config.hyperparam["model_variable"]["kfold"], shuffle=False)
+    index=0
+    for train_index, test_index in kfold.split(train):
+        #print("train len ",len(train_index),"test len ",len(test_index))
+        #train len  358845 test len  89712
+        X_train = train[train_index]
+        y_train = label[train_index]
+    
+        X_test = train[test_index]
+        y_test = label[test_index]
         
-            X_test = train[test_index]
-            y_test = label[test_index]
-            
-            custom_index = []
-            #for i in range(11):
-            #	custom_index.append(str(index) + "n" + str(int(2**i)) + "n" + str(int(2**i)) + "n" + str(int(2**i)))
-            
-            #hyperparam from config
-            custom_index.append(str(index) + "n" + str(64) + "n" + str(64) + "n" + str(64))
-            flag=''
-            model_activate(flag,custom_index,X_train,y_train,X_test,y_test)
-        index+=1
-    else:
         custom_index = []
+        
         #hyperparam from config
-        custom_index.append(str(index) + "n" + str(64) + "n" + str(64) + "n" + str(64))
-        model_activate(flag,custom_index,train,label,[],[])
+        custom_index.append(make_custom_index(index,config.hyperparam["model_variable"]["neuron_count"]))
+        model_activate(config.flags["system"],custom_index,X_train,y_train,X_test,y_test)
+    index+=1
+    #
+    index = '00'
+    custom_index = []
+    #hyperparam from config
+    custom_index.append(make_custom_index(index,config.hyperparam["model_variable"]["neuron_count"]))
+    model_activate(config.flags["system"],custom_index,train,label,train,label)

@@ -7,8 +7,6 @@ import numpy as np
 import math
 import os
 
-from main import flags,features
-
 DELTA = 1e-7
 
 def M(data,n):
@@ -147,7 +145,7 @@ def S0(data,t0,n):
     
 
 
-def MCD(data,deep_i):
+def MCD(data,deep_i,config):
     print(deep_i)
     deep_i+=1
     count = data.shape[0]
@@ -176,7 +174,7 @@ def MCD(data,deep_i):
             continue
         d[i] = math.sqrt(res)
 
-    gauss, outlire = Gauss_cut(d,count,threshold=flags['data_preprocessing']['main_sample']['outlire']['add_param']['additional_parametr'])
+    gauss, outlire = Gauss_cut(d,count,threshold=config.flags['data_preprocessing']['main_sample']['outlire']['add_param']['additional_parametr'])
 
     return d, gauss, outlire
 
@@ -210,7 +208,7 @@ def NtoPtoN(data,index):
     res = pd.DataFrame(np.array(res), columns=data.columns.values)
     return res
 
-def process(path_sample,name,save_path):
+def process(path_sample,name,save_path, config):
     #data_mags = data.drop(['RA','DEC','z','CatName','Class'], axis=1)
     data = pd.read_csv(f"{path_sample}/{name}.csv", header=0, sep=',')
     print(f"read data {name}")
@@ -221,69 +219,69 @@ def process(path_sample,name,save_path):
     def data_issue(check):
         match check:
             case 'err':
-                if(flags['data_preprocessin']['main_sample']['color']['work']):
+                if(config.flags['data_preprocessin']['main_sample']['color']['work']):
                     return data_err
                 else:
                     raise Exception('cant made outlire by err, \ncheck flags["data_preprocessin"]["main_sample"]["color"]["work"] in config')
             case 'color':
-                if(flags['data_preprocessin']['main_sample']['color']['work']):
+                if(config.flags['data_preprocessin']['main_sample']['color']['work']):
                     return data_color
                 else:
                     raise Exception('cant made outlire by color, \ncheck flags["data_preprocessin"]["main_sample"]["color"]["work"] in config')
             case 'features':
-                return data[features]
+                return data[config.features]
             case _:
                 raise Exception('wrong value flags["data_preprocessin"]["main_sample"]["weight"]["value"]')
 
     #redded_des(data)
     #print(name, 'deredded complite')
-    if(flags['data_preprocessin']['main_sample']['color']['work']):
-        data_color, data_err = colors(data[features])
+    if(config.flags['data_preprocessin']['main_sample']['color']['work']):
+        data_color, data_err = colors(data[config.features])
         print(name," complite colors")
-        if(flags['data_preprocessin']['main_sample']['color']['mags']):
+        if(config.flags['data_preprocessin']['main_sample']['color']['mags']):
             data = pd.concat([data,data_color],axis=1)
-        if(flags['data_preprocessin']['main_sample']['color']['err']):
+        if(config.flags['data_preprocessin']['main_sample']['color']['err']):
             data = pd.concat([data,data_err],axis=1)
         
-    if(flags['data_preprocessin']['main_sample']['outlire']['cut']):
-        if( "MCD" in flags['data_preprocessin']['main_sample']['outlire']['method'] ):
-            mcd_d, gauss_d, outlire = MCD(data_issue(flags['data_preprocessin']['main_sample']['outlire']['value']),0)
+    if(config.flags['data_preprocessin']['main_sample']['outlire']['cut']):
+        if( "MCD" in config.flags['data_preprocessin']['main_sample']['outlire']['method'] ):
+            mcd_d, gauss_d, outlire = MCD(data_issue(config.flags['data_preprocessin']['main_sample']['outlire']['value']),0,config)
             print(name," complite MCD")
-            if(flags['data_preprocessin']['main_sample']['outlire']['add_param']['add']):
+            if(config.flags['data_preprocessin']['main_sample']['outlire']['add_param']['add']):
                 mcd_d = pd.DataFrame(np.array(mcd_d), columns = ['mcd_d'])
                 mcd_g = pd.DataFrame(np.array(gauss_d), columns = ['mcd_g'])
                 data = pd.concat([data,mcd_d,mcd_g], axis=1)
-            if(flags['data_preprocessin']['main_sample']['outlire']['cut']):
+            if(config.flags['data_preprocessin']['main_sample']['outlire']['cut']):
                 data = data.drop(outlire)
     
     
     #additional weight
-    if('fuzzy_err' in flags['data_preprocessin']['main_sample']['weight']['method']):        
-        index = flags['data_preprocessin']['main_sample']['weight']['method'].index('fuzzy_err')
-        data['fuzzy_err'] = fuzzy_err(data_issue(flags['data_preprocessin']['main_sample']['weight']['value'][index]))
+    if('fuzzy_err' in config.flags['data_preprocessin']['main_sample']['weight']['method']):        
+        index = config.flags['data_preprocessin']['main_sample']['weight']['method'].index('fuzzy_err')
+        data['fuzzy_err'] = fuzzy_err(data_issue(config.flags['data_preprocessin']['main_sample']['weight']['value'][index]))
         print(name," complite fuzzy_err")
 
-    if('fuzzy_dist' in flags['data_preprocessin']['main_sample']['weight']['method']):    
-        index = flags['data_preprocessin']['main_sample']['weight']['method'].index('fuzzy_dist')
-        data_dist, max = fuzzy_dist(data_issue(flags['data_preprocessin']['main_sample']['weight']['value'][index]))
+    if('fuzzy_dist' in config.flags['data_preprocessin']['main_sample']['weight']['method']):    
+        index = config.flags['data_preprocessin']['main_sample']['weight']['method'].index('fuzzy_dist')
+        data_dist, max = fuzzy_dist(data_issue(config.flags['data_preprocessin']['main_sample']['weight']['value'][index]))
         data['fuzzy_dist'] = Normali(data_dist, max)
         print(name," complite fuzzy_dist")
 
     data.to_csv(f'{save_path}/{name}_main_sample.csv', index=False)
     return data
 
-def data_preparation(save_path,path_sample,name_class):
+def data_preparation(save_path,path_sample,name_class,config):
 
     def preparation(name):
         data = pd.DataFrame()
-        if(not flags['data_preprocessing']['main_sample']['work']):
+        if(not config.flags['data_preprocessing']['main_sample']['work']):
             if(os.path.isfile(f"{save_path}/{name}_main_sample.csv")):   
                 data = pd.read_csv(f"{save_path}/{name}_main_sample.csv", header=0, sep=',')
             else:
-                data = process(path_sample,name,save_path)
+                data = process(path_sample,name,save_path,config)
                 data.to_csv(f'{save_path}/{name}_main_sample.csv', index=False)
         else:
-            data = process(path_sample,name,save_path)
+            data = process(path_sample,name,save_path,config)
             data.to_csv(f'{save_path}/{name}_main_sample.csv', index=False)
 
         return data
@@ -301,12 +299,12 @@ def data_preparation(save_path,path_sample,name_class):
             else:
                 data_temp[f'{name_}_cls'] = 0
         count[n] = data_temp.shape[0]
-        if(flags['data_preprocessing']['balanced']):
+        if(config.flags['data_preprocessing']['balanced']):
             data_mass.append(data_temp)
         else:
             data = pd.concat([data,data_temp], ignore_index=True)
 
-    if(flags['data_preprocessing']['balanced']):
+    if(config.flags['data_preprocessing']['balanced']):
         for i in range(name_class):
             data_temp = data_mass[i].sample(count.min(), random_state = 1)
             data = pd.concat([data,data_temp], ignore_index=True)

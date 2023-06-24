@@ -28,7 +28,7 @@
                 "catalogs_cross_cut_duplicate": [false, false],
                 "dir": false
             }
-        },
+            },
         "data_preprocessing":{
             "work": true,
             "main_sample":{
@@ -37,7 +37,7 @@
                     "work": true,
                     "mags": true,
                     "err": true
-                },
+                    },
                 "outlire": {
                     "cut": false,
                     "method": ["MCD"],
@@ -47,19 +47,22 @@
                         "add": true,
                         "method": "gauss",
                         "additional_parametr": 0.005
-                    }
-                },
+                        }
+                    },
                 "weight":{
                     "method": ["fuzzy_err","fuzzy_dist"],
                     "//comment_method": "[fuzzy_err,fuzzy_dist]",
                     "value": ["err","color"],
                     "//comment_value": "[color,err,features]"
+                    },
+                "deredded": {
+                    "work": false
+                    }
                 },
             "balanced": true
             },
         "system": "cpu"
-        }
-    },
+        },
     "hyperparam":{
         "batch_size": 1024,
         "num_ep": 20,
@@ -67,10 +70,24 @@
         "loss": "categorical_crossentropy",
         "validation_split": 0.3,
         "model_variable":{
+                "work": true,
+                "kfold": 5,
+                "neuron_count": [64,64,64],
+                "activation": ["softsign","tanh","elu"],
+                "metric_culc": "test",
+                "//comment_metric_culc": ["test","train"]
+            }
+        },
+    "picture":{
+            "roc_prc": [1],
+            "loss": true,
+            "cm": true,
+            "hist": true
+    },
+    "statistic":{
 
-        }
     },
     "base": ["RA","DEC","z"],
-    "features": ["W1mag","W2mag","W3mag","phot_g_mean_mag","phot_bp_mean_mag","phot_rp_mean_mag"],
+    "features": ["W1mag","e_W1mag","W2mag","e_W2mag","W3mag","e_W3mag","phot_g_mean_mag","phot_g_mean_mag_error","phot_bp_mean_mag","phot_bp_mean_mag_error","phot_rp_mean_mag","phot_rp_mean_mag_error"],
     "name_class": ["star","qso","gal"]
 }

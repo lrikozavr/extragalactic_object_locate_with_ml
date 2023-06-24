@@ -13,12 +13,12 @@ def metric_stat(data):
         max = data[name].max()
         min = data[name].min()
         df = pd.DataFrame(np.array([average,dispersion,max,min]), columns=data.columns.values, index=["average","dispersion","max","min"])
-        res = pd.concat([res,df], axis = 1)
+        res = pd.concat([res,df], ignore_index=True)
         '''
         if (index < 1):
             res = df
         else:
             res = pd.concat([res,df], axis = 1)
         '''
+    res = pd.DataFrame(res, index=data.columns.values).transpose()
     return res
-
