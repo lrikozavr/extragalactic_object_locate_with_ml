@@ -47,31 +47,64 @@ def picture_cm(config):
   for i in range(config.hyperparam["model_variable"]["kfold"]):
     plot_cm(i,f"{config.name_sample}_{i}_kfold")
   #
-  plot_cm('00',f"{config.name_sample}_main")
+  if(config.picture["main"]["work"]):
+    plot_cm('00',f"{config.name_sample}_main")
   #
 
-def plot_metrics(axs, name, history):
-  metrics = ['loss', 'auc', 'precision', 'recall']
-  #fig, axs = plt.subplots(2,2)
+def picture_metrics(config):
+    def plot_metrics(axs, name, history):
+      metrics = ['loss', 'auc', 'precision', 'recall']
+      #fig, axs = plt.subplots(2,2)
 
-  for n, metric in enumerate(metrics):
-    name = metric.replace("_"," ").capitalize()
-    i, j = n//2, n%2
-    axs[i,j].plot(history.epoch, history.history[metric], color=colors[0], label='Train_' + name)
-    axs[i,j].plot(history.epoch, history.history['val_'+metric],
-             color=colors[0], linestyle="--", label='Val_' + name)
-    axs[i,j].xlabel('Epoch')
-    axs[i,j].ylabel(name)
-    if metric == 'loss':
-      axs[i,j].ylim([0, plt.ylim()[1]])
-    elif metric == 'auc':
-      axs[i,j].ylim([0.8,1])
+      for n, metric in enumerate(metrics):
+        name = metric.replace("_"," ").capitalize()
+        i, j = n//2, n%2
+        axs[i,j].plot(history.epoch, history.history[metric], color=colors[0], label='Train_' + name)
+        axs[i,j].plot(history.epoch, history.history['val_'+metric],
+                color=colors[0], linestyle="--", label='Val_' + name)
+        axs[i,j].xlabel('Epoch')
+        axs[i,j].ylabel(name)
+        if metric == 'loss':
+          axs[i,j].ylim([0, plt.ylim()[1]])
+        elif metric == 'auc':
+          axs[i,j].ylim([0.8,1])
+        else:
+          axs[i,j].ylim([0,1])
+
+        #axs[i,j].legend()
+
+    fig, axs = plt.subplots(2,2)
+
+    for i in range(config.hyperparam["model_variable"]["kfold"]):
+        name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
+        model = LoadModel(f"{config.path_model}_custom_sm_{name}",f"{config.path_weights}_custom_sm_{name}",optimizer,loss)
+        plot_metrics(axs, f"{i}_kfold", model)
+
+    if(config.picture["main"]["work"] and config.picture["main"]["bound"]):
+        name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
+        model = LoadModel(f"{config.path_model}_custom_sm_{name}",f"{config.path_weights}_custom_sm_{name}",optimizer,loss)
+        plot_metrics(axs, f"main", model)
+
+    fig.legend()
+    fig.set_size_inches(30,20)
+    if(config.picture["main"]["work"] and config.picture["main"]["bound"]):
+        fig.savefig(f'{config.path_pic}/{config.name_sample}_kfold_main_summary_metrics_history.png')
     else:
-      axs[i,j].ylim([0,1])
+        fig.savefig(f'{config.path_pic}/{config.name_sample}_kfold_summary_metrics_history.png')
+       
+    plt.close(fig)
 
-    axs[i,j].legend()
+    if(config.picture["main"]["work"] and not config.picture["main"]["bound"]):
+        fig, axs = plt.subplots(2,2)
+        name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
+        model = LoadModel(f"{config.path_model}_custom_sm_{name}",f"{config.path_weights}_custom_sm_{name}",optimizer,loss)
+        plot_metrics(axs, f"main", model)
+        fig.legend()
+        fig.set_size_inches(30,20)
+        fig.savefig(f'{config.path_pic}/{config.name_sample}_main_metrics_history.png')
+        plt.close(fig)        
 
-def data_hist(config,data=None):
+def picture_hist(config,data=None):
     
     def Hist1(ax,x,mag,label, **kwargs):
         ax.set_xlabel(mag,fontsize=40)
@@ -81,43 +114,37 @@ def data_hist(config,data=None):
         #ax.set_title(name,fontsize = 50)
         ax.hist(x,bins=200, label=label,**kwargs)
 
-    if data == None:
-        data = pd.DataFrame()
-        for class_name in config.name_class:
-            data_temp = pd.read_csv(f"{config.path_ml_data}/{class_name}_main_sample.csv", header=0, sep=',')       
-            data = pd.concat([data,data_temp], ignore_index=True)
-    elif():
-        data_mass = []
-        for class_name in config.name_class:
-            data_temp = pd.read_csv(f"{config.path_ml_data}/{class_name}_main_sample.csv", header=0, sep=',')       
-            data_mass.append(data_temp)
-    else:     
-        data = data.drop(config.name_class_cls, axis = 1)
+    data_mass = []
+    for class_name in config.name_class:
+        data_temp = pd.read_csv(f"{config.path_ml_data}/{class_name}_main_sample.csv", header=0, sep=',')       
+        data_mass.append(data_temp)
 
     columns = data_mass[0].drop(config.base, axis=1).columns.values
 
-    if():
+    if(not config.picture["hist"]["bound"]):
         for col in columns:
             for i, class_name in enumerate(config.name_class):
                 fig=plt.figure()
                 ax = fig.add_subplot(1,1,1)
                 fig.suptitle(col, fontsize=50)       
-                Hist1(ax,data_mass[i][col],col,class_name, histtype='step', stacked=False, fill=True)
+                Hist1(ax,data_mass[i][col],col,class_name, histtype='step', fill=config.picture["hist"]["fill"])
                 ax.legend()
                 fig.set_size_inches(30,20)
                 fig.savefig(f"{config.path_pic}/{config.name_sample}_{class_name}_{col}_hist.png")
                 plt.close(fig)
-    elif():
+    elif(config.picture["hist"]["bound"]):
         for col in columns:
             fig=plt.figure()
             ax = fig.add_subplot(1,1,1)
             fig.suptitle(col, fontsize=50)       
             for i, class_name in enumerate(config.name_class):
-                Hist1(ax,data_mass[i][col],col,class_name, histtype='step', stacked=False, fill=False)
+                Hist1(ax,data_mass[i][col],col,class_name, histtype='step', stacked=config.picture["hist"]["stacked"], fill=config.picture["hist"]["fill"])
             ax.legend()
             fig.set_size_inches(30,20)
             fig.savefig(f"{config.path_pic}/{config.name_sample}_{col}_hist.png")
             plt.close(fig)
+    else:
+       raise Exception('unknown config value config.picture["hist"]["bound"] ', config.picture["hist"]["bound"])
 
 def picture_loss(optimizer,loss,config):
 
@@ -137,11 +164,36 @@ def picture_loss(optimizer,loss,config):
   for i in range(config.hyperparam["model_variable"]["kfold"]):
     name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
     model = LoadModel(f"{config.path_model}_custom_sm_{name}",f"{config.path_weights}_custom_sm_{name}",optimizer,loss)
-    plot_loss(ax,model,f"{config.name_sample}_{i}",i)
+    plot_loss(ax,model,f"kfold_{i}",i)
+  #
+  if(config.picture["main"]["work"] and config.picture["main"]["bound"]):
+    name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
+    model = LoadModel(f"{config.path_model}_custom_sm_{name}",f"{config.path_weights}_custom_sm_{name}",optimizer,loss)
+    plot_loss(ax,model,f"main",config.hyperparam["model_variable"]["kfold"] + 1)
+  #
   ax.set_label(config.name_sample)
   ax.legend()
-  fig.savefig(f'{config.path_pic}/{config.name_sample}_kfold_summary_loss.png')
+  if(config.picture["main"]["work"] and config.picture["main"]["bound"]):
+    fig.savefig(f'{config.path_pic}/{config.name_sample}_kfold_main_summary_loss.png')     
+  else:
+    fig.savefig(f'{config.path_pic}/{config.name_sample}_kfold_summary_loss.png')
+
+  #for main
+  if(config.picture["main"]["work"] and not config.picture["main"]["bound"]):
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+
+    name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
+    model = LoadModel(f"{config.path_model}_custom_sm_{name}",f"{config.path_weights}_custom_sm_{name}",optimizer,loss)
+    plot_loss(ax,model,f"main",config.hyperparam["model_variable"]["kfold"] + 1)
+
+    ax.set_label(config.name_sample)
+    ax.legend()
+    fig.savefig(f'{config.path_pic}/{config.name_sample}_main_loss.png')
+
   del fig
+
+  
 
 def picture_roc_prc(config):  
 
@@ -169,6 +221,9 @@ def picture_roc_prc(config):
       ax.grid(True)
       #ax = plt.gca()
       ax.set_aspect('equal')
+  
+  name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
+  data_main = pd.read_csv(f'{config.path_eval}_custom_sm_{name}_prob.csv', header=0, sep=",")
 
   data_mass = []
   for i in range(config.hyperparam["model_variable"]["kfold"]):
@@ -186,6 +241,9 @@ def picture_roc_prc(config):
                 for i in range(config.hyperparam["model_variable"]["kfold"]):
                     plot_prc(ax_prc,f"{i}_kfold",data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
                     plot_roc(ax_roc,f"{i}_kfold",data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
+                if(config.picture["main"]["work"] and config.picture["main"]["bound"]):
+                    plot_prc(ax_prc,f"main",data_main[f'{class_name}_cls'],data_main[f'{class_name}_cls_prob'])
+                    plot_roc(ax_roc,f"main",data_main[f'{class_name}_cls'],data_main[f'{class_name}_cls_prob'])                  
                 fig.set_label(f"{config.name_sample}_{class_name}")
                 fig.legend()
                 fig.savefig(f'{config.path_pic}/{config.name_sample}_{class_name}_kfold_summary_roc_prc.png')
@@ -197,6 +255,9 @@ def picture_roc_prc(config):
                 for i in range(config.hyperparam["model_variable"]["kfold"]):
                     plot_prc(ax_prc,f"{i}_{class_name}",data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
                     plot_roc(ax_roc,f"{i}_{class_name}",data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
+                if(config.picture["main"]["work"] and config.picture["main"]["bound"]):
+                    plot_prc(ax_prc,f"main",data_main[f'{class_name}_cls'],data_main[f'{class_name}_cls_prob'])
+                    plot_roc(ax_roc,f"main",data_main[f'{class_name}_cls'],data_main[f'{class_name}_cls_prob'])                  
             fig.set_label(f"{config.name_sample}")
             fig.legend()
             fig.savefig(f'{config.path_pic}/{config.name_sample}_class_kfold_summary_roc_prc.png')
@@ -208,6 +269,9 @@ def picture_roc_prc(config):
                 for class_name in config.name_class:
                     plot_prc(ax_prc,class_name,data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
                     plot_roc(ax_roc,class_name,data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
+                    if(config.picture["main"]["work"] and config.picture["main"]["bound"]):
+                        plot_prc(ax_prc,f"main",data_main[f'{class_name}_cls'],data_main[f'{class_name}_cls_prob'])
+                        plot_roc(ax_roc,f"main",data_main[f'{class_name}_cls'],data_main[f'{class_name}_cls_prob'])                  
                 fig.set_label(f"{config.name_sample}_{i}_kfold")
                 fig.legend()
                 fig.savefig(f'{config.path_pic}/{config.name_sample}_{i}_kfold_class_summary_roc_prc.png')
@@ -219,6 +283,32 @@ def picture_roc_prc(config):
                     ax_roc = fig.add_subplot(1,2,1)
                     plot_prc(ax_prc,f"{class_name}_{i}_kfold",data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
                     plot_roc(ax_roc,f"{class_name}_{i}_kfold",data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
+                    if(config.picture["main"]["work"] and config.picture["main"]["bound"]):
+                        plot_prc(ax_prc,f"main",data_main[f'{class_name}_cls'],data_main[f'{class_name}_cls_prob'])
+                        plot_roc(ax_roc,f"main",data_main[f'{class_name}_cls'],data_main[f'{class_name}_cls_prob'])                  
                     fig.set_label(f"{config.name_sample}_{class_name}_{i}_kfold")
                     fig.legend()
                     fig.savefig(f'{config.path_pic}/{config.name_sample}_{i}_kfold_{class_name}_summary_roc_prc.png')
+  
+  if(config.picture["main"]["work"] and not config.picture["main"]["bound"]):
+      if(4, 1 in config.picture["roc_prc"]):
+          for class_name in config.name_class:
+              fig = plt.figure()
+              ax_prc = fig.add_subplot(1,2,2)
+              ax_roc = fig.add_subplot(1,2,1)
+              plot_prc(ax_prc,f"main",data_main[f'{class_name}_cls'],data_main[f'{class_name}_cls_prob'])
+              plot_roc(ax_roc,f"main",data_main[f'{class_name}_cls'],data_main[f'{class_name}_cls_prob'])                  
+              fig.set_label(f"{config.name_sample}_{class_name}_main")
+              fig.legend()
+              fig.savefig(f'{config.path_pic}/{config.name_sample}_{class_name}_main_roc_prc.png')
+      elif(2, 3 in config.picture["roc_prc"]):
+          fig = plt.figure()
+          ax_prc = fig.add_subplot(1,2,2)
+          ax_roc = fig.add_subplot(1,2,1)
+          for class_name in config.name_class:
+              plot_prc(ax_prc,f"main",data_main[f'{class_name}_cls'],data_main[f'{class_name}_cls_prob'])
+              plot_roc(ax_roc,f"main",data_main[f'{class_name}_cls'],data_main[f'{class_name}_cls_prob'])                  
+          fig.set_label(f"{config.name_sample}_main")
+          fig.legend()
+          fig.savefig(f'{config.path_pic}/{config.name_sample}_main_summary_roc_prc.png')
+         

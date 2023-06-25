@@ -80,6 +80,10 @@ def dir(save_path,name):
     if not os.path.isdir(dir_name):
         os.mkdir(dir_name)
 
+if not os.path.isdir(config.prediction_path):
+    os.mkdir(config.prediction_path)
+
+
 dir(config.general_path,'sample')
 dir(config.general_path,'statistic')
 dir(config.general_path,'ml')
@@ -96,8 +100,8 @@ diff_class(config.data_path,config.name_class,config.path_sample,config.base)
 for name in config.name_class:
     stat = class_download(name, config.path_sample,config)
     stat.to_csv(f'{config.path_stat}/{name}_slice.log', index=False)
-    sum = pd.DataFrame(stat.sum(axis=0), columns = name, index = stat.columns.values)
-    sum_mass = pd.concat([sum_mass,sum], axis=1)
+    sum = pd.DataFrame(stat.sum(axis=0), columns = stat.columns.values, index = name)
+    sum_mass = pd.concat([sum_mass,sum], ignore_index=False)
     #stat_mass.append(stat)
 sum_mass.to_csv(f'{config.path_stat}/classes.log')
 print(sum_mass)
@@ -132,8 +136,16 @@ from sklearn.utils import class_weight
 class_weights = {}
 
 print(data)
+
+
+#
+
+
+from data_process import get_features
+features = get_features(config.features["train"],config)
+
 if(config.hyperparam["model_variable"]["work"]):
-    NN(data[config.features].values,data[config.name_class].values,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
+    NN(data[features].values,data[config.name_class].values,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
     output_path_predict = config.path_predict,
     output_path_mod = config.path_model,
     output_path_weight = config.path_weight,
@@ -141,13 +153,23 @@ if(config.hyperparam["model_variable"]["work"]):
     config=config)
 
 #statistic
-
+from statistic import metric_statistic
+if(config.statistic["metric"]):
+    metric_statistic(config)
 
 #picture
-from graphic import picture_cm, picture_loss, picture_roc_prc
-picture_cm(config)
-picture_loss(optimizer,loss,config)
-picture_roc_prc(config)
+from graphic import picture_cm, picture_loss, picture_roc_prc, picture_hist, picture_metrics
+if(not 0 in config.picture["roc_prc"]):
+    picture_roc_prc(config)
+if(config.picture["loss"]):
+    picture_loss(optimizer,loss,config)
+if(config.picture["cm"]):
+    picture_cm(config)
+if(config.picture["hist"]["work"]):
+    picture_hist(config)
+if(config.picture["metrics_h"]):
+    picture_metrics(config)
 
 #prediction
+
 #short statistic

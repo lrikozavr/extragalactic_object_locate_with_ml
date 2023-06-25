@@ -61,6 +61,9 @@
                 },
             "balanced": true
             },
+        "prediction":{
+
+            },
         "system": "cpu"
         },
     "hyperparam":{
@@ -79,15 +82,28 @@
             }
         },
     "picture":{
+            "main": {
+                "work": true,
+                "bound": true
+            },
             "roc_prc": [1],
             "loss": true,
             "cm": true,
-            "hist": true
+            "hist": {
+                "work": true,
+                "bound": true,
+                "stacked": true,
+                "fill": true
+            },
+            "metrics_h":true
     },
     "statistic":{
-
+        "metric": true
     },
     "base": ["RA","DEC","z"],
-    "features": ["W1mag","e_W1mag","W2mag","e_W2mag","W3mag","e_W3mag","phot_g_mean_mag","phot_g_mean_mag_error","phot_bp_mean_mag","phot_bp_mean_mag_error","phot_rp_mean_mag","phot_rp_mean_mag_error"],
+    "features": {
+        "data": ["W1mag","e_W1mag","W2mag","e_W2mag","W3mag","e_W3mag","phot_g_mean_mag","phot_g_mean_mag_error","phot_bp_mean_mag","phot_bp_mean_mag_error","phot_rp_mean_mag","phot_rp_mean_mag_error"],
+        "train": ["color","mags","err_color","err_mags"]
+        },
     "name_class": ["star","qso","gal"]
 }

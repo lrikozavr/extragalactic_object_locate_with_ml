@@ -208,6 +208,38 @@ def NtoPtoN(data,index):
     res = pd.DataFrame(np.array(res), columns=data.columns.values)
     return res
 
+def get_features(features_list,config):
+    features = []
+
+    colours_name, colours_error_name = [], []
+    mags_name, mags_error_name = [], []
+
+    list_name = config.features["data"]
+    mags = int(len(list_name)/2)
+    for j in range(mags):
+        for i in range(j, mags):
+            if(i!=j):
+                colours_name.append(f"{list_name[j*2]}&{list_name[i*2]}")
+                colours_error_name.append(f"{list_name[j*2+1]}&{list_name[i*2+1]}")
+        mags_name.append(f"{list_name[j*2]}")
+        mags_error_name.append(f"{list_name[j*2]+1}")
+
+    for features_flag in features_list:
+        match features_flag:
+            #може потрібно тут ставити запобіжник?
+            case "color":
+                features.extend(colours_name)
+            case "mags":
+                features.extend(mags_name)
+            case "err_color":
+                features.extend(colours_error_name)
+            case "err_mags":
+                features.extend(mags_error_name)
+            case _:
+                raise Exception('unknown config value config.features["train"]')
+    
+    return features
+
 def process(path_sample,name,save_path, config):
     #data_mags = data.drop(['RA','DEC','z','CatName','Class'], axis=1)
     data = pd.read_csv(f"{path_sample}/{name}.csv", header=0, sep=',')
@@ -215,7 +247,7 @@ def process(path_sample,name,save_path, config):
 
     #Check variable zero value
     data = data.fillna(0)
-    base = ['RA','DEC','z']
+
     def data_issue(check):
         match check:
             case 'err':
@@ -315,24 +347,5 @@ def data_preparation(save_path,path_sample,name_class,config):
         print(f"{name_class[i]} count:\t---\t", count[i])
 
     data.to_csv(f'{save_path}/all.csv',index = False)
-
-    '''
-    data1 = preparation('star')
-    data2 = preparation('qso')
-    data3 = preparation('gal')
-    
-    #data_exgal = pd.read_csv(f"{save_path}/exgal_main_sample.csv", header=0, sep=',')
-    #data_star = pd.read_csv(f"{save_path}/star_main_sample.csv", header=0, sep=',')
-
-    data1['star_cls'], data1['qso_cls'], data1['gal_cls'] = 1,0,0
-    data2['star_cls'], data2['qso_cls'], data2['gal_cls'] = 0,1,0
-    data3['star_cls'], data3['qso_cls'], data3['gal_cls'] = 0,0,1
-
-    data12 = pd.concat([data1,data2], ignore_index=True)
-    data123 = pd.concat([data12,data3], ignore_index=True)
-    data123 = data123.sample(data123.shape[0], random_state=1)
-    
-    data123.to_csv(f'{save_path}/all.csv',index = False)
-    '''
     
     return data

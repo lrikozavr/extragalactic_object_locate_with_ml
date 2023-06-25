@@ -1,24 +1,86 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
+import math
 
 #Середнє, дисперсія і т.д. для всіх значень метрик отриманих після Kfold
-from data_processing import M, D
+from data_process import M, D
+from network import make_custom_index
 
-def metric_stat(data):
-    res = pd.DataFrame()
-    for index, name in enumerate(data.columns.values):
-        average = M(data[name],data.shape[0])
-        dispersion = D(data[name],data.shape[0])
-        max = data[name].max()
-        min = data[name].min()
-        df = pd.DataFrame(np.array([average,dispersion,max,min]), columns=data.columns.values, index=["average","dispersion","max","min"])
-        res = pd.concat([res,df], ignore_index=True)
-        '''
-        if (index < 1):
-            res = df
-        else:
-            res = pd.concat([res,df], axis = 1)
-        '''
-    res = pd.DataFrame(res, index=data.columns.values).transpose()
-    return res
+def metric_statistic(config):
+    def eval(y,y_pred,n):
+        count = 0
+        TP, FP, TN, FN = 0,0,0,0
+        Y = 0
+        for i in range(n):
+            if(y[i]<0.5):
+                Y = 0
+            if(y[i]>=0.5):
+                Y = 1
+            if(Y==y_pred[i]):
+                count+=1
+            if(Y==1):
+                if(Y==y_pred[i]):
+                    TP += 1
+                else:
+                    FP += 1
+            if(Y==0):
+                if(Y==y_pred[i]):
+                    TN += 1
+                else:
+                    FN += 1
+        Acc = count/n
+        pur_a = TP/(TP+FP)
+        pur_not_a = TN/(TN+FN)
+        com_a = TP/(TP+FN)
+        com_not_a = TN/(TN+FP)
+        f1 = 2*TP/(2*TP+FP+FN)
+        fpr = FP/(TN+FN)
+        tnr = TN/(TN+FN)
+        bAcc = (TP/(TP+FP)+TN/(TN+FN))/2.
+        k = 2*(TP*TN-FN*FP)/((TP+FP)*(FP+TN)+(TP+FN)*(FN+TN))
+        mcc = (TP*TN-FP*FN)/math.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
+        BinBs = (FP+FN)/(TP+FP+FN+TN)
+
+        print(np.array([Acc,pur_a,pur_not_a,com_a,com_not_a,f1,fpr,tnr,bAcc,k,mcc,BinBs]))
+        ev = pd.DataFrame([np.array([Acc,pur_a,pur_not_a,com_a,com_not_a,f1,fpr,tnr,bAcc,k,mcc,BinBs])], 
+        columns=['Accuracy','AGN_purity','nonAGN_precision','AGN_completness','nonAGN_completness','F1',
+        'FPR','TNR','bACC','K','MCC','BinaryBS'])
+
+        return ev
+
+    def metric_stat(data):
+        res = pd.DataFrame()
+        for name in data.columns.values:
+            average = M(data[name],data.shape[0])
+            dispersion = D(data[name],data.shape[0])
+            max = data[name].max()
+            min = data[name].min()
+            df = pd.DataFrame(np.array([average,dispersion,max,min]), columns=name, index=["average","dispersion","max","min"])
+            res = pd.concat([res,df], axis=1)
+        #res = res.transpose()
+        return res
+
+    ev_data = [pd.DataFrame() for i in range(len(config.name_class))]
+    for i in range(config.hyperparam["model_variable"]["kfold"]):
+        name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
+        data = pd.read_csv(f"{config.path_eval}_custom_sm_{name}_prob.csv", header=0, sep=",")
+        for n in range(config.name_class):
+            ev_data_temp = eval(data[config.name_class_prob[n]].values,data[config.name_class_cls[n]].values,data.shape[0])
+            ev_data[n] = pd.concat([ev_data[n],ev_data_temp],ignore_index=True)
+    
+    for i, name in enumerate(config.name_class):
+        metric_data = metric_stat(ev_data[i])
+        metric_data.to_csv(f"{config.path_stat}/{config.name_sample}_{name}_kfold_summary_metric_statistic.csv")
+
+    del ev_data
+    
+    #main
+    name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
+    data = pd.read_csv(f"{config.path_eval}_custom_sm_{name}_prob.csv", header=0, sep=",")
+    for n in range(config.name_class):
+        ev_data_temp = eval(data[config.name_class_prob[n]].values,data[config.name_class_cls[n]].values,data.shape[0])
+        ev_data_temp.to_csv(f"{config.path_stat}/{config.name_sample}_{name}_main_metric.csv")
+
+    del data
+

@@ -197,3 +197,70 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
     #hyperparam from config
     custom_index.append(make_custom_index(index,config.hyperparam["model_variable"]["neuron_count"]))
     model_activate(config.flags["system"],custom_index,train,label,train,label)
+
+
+def large_file_prediction(filename,count,config):
+    from data_process import get_features
+
+    def DataTransform(data,config):
+        data_new = pd.DataFrame()
+        for features_flag in config.features["train"]:
+            match features_flag:
+                #може потрібно тут ставити запобіжник?
+                case "color":
+                    mags = get_features("mags",config)
+                    num_colours = sum(i for i in range(len(mags)))
+                    colours = np.zeros((data.shape[0],num_colours))
+                    data_temp = np.array(data[mags])
+                    for j in range(len(mags)):
+                        for i in range(j, len(mags)):
+                            if(i!=j):
+                                colours[:,index] = data_temp[:,j] - data_temp[:,i]
+                    colours = pd.DataFrame(colours,columns=mags)
+                    data_new = pd.concat([data_new,colours],axis=1)
+                case "mags":
+                    mags = get_features("mags",config)
+                    data_new = pd.concat([data_new,data[mags]],axis=1)                    
+                case "err_color":
+                    mags = get_features("err_mags",config)
+                    num_colours = sum(i for i in range(len(mags)))
+                    colours = np.zeros((data.shape[0],num_colours))
+                    data_temp = np.array(data[mags])
+                    for j in range(len(mags)):
+                        for i in range(j, len(mags)):
+                            if(i!=j):
+                                colours[:,index] = data_temp[:,j] - data_temp[:,i]
+                    colours = pd.DataFrame(colours,columns=mags)
+                    data_new = pd.concat([data_new,colours],axis=1)
+                case "err_mags":
+                    mags_err = get_features("err_mags",config)
+                    data_new = pd.concat([data_new,data[mags_err]],axis=1)                    
+                case _:
+                    raise Exception('unknown config value config.features["train"]')
+        
+        return data_new
+        #get_features(config)
+
+    def ml(output_path_mod,output_path_weight,output_path_predict,data,config):
+        model = LoadModel(output_path_mod,output_path_weight,config.hyperparam["optimizer"],config.hyperparam["loss"])
+        predicted = model.predict(DataTransform(data,config), config.hyperparam["batch_size"])
+
+        predicted = pd.DataFrame(np.array(predicted), columns=config.name_class_prob)
+        data = pd.concat([data,predicted], axis=1)
+        data.to_csv(output_path_predict, index=False)
+
+    i, index = 0, 1
+    data_mass = np.array((count,))
+    f = open(filename,'r')
+    columns = f.readline().strip('\n').split(",")
+    
+    for line in f:
+        data_mass[i - (index-1)*count] = line.split(",")
+        if(i // count == index):
+            index += 1
+            #magic
+            data_mass = pd.DataFrame(np.array(data_mass), columns=columns)
+            name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
+            ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",f"{config.prediction_path}/{name}_{index}",data_mass,config)
+        
+        i += 1
