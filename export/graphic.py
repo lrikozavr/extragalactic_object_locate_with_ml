@@ -45,9 +45,9 @@ def picture_cm(config):
     plt.close(fig)
 
   for i in range(config.hyperparam["model_variable"]["kfold"]):
-    plot_cm(i,f"{config.sample_name}_{i}_kfold")
+    plot_cm(i,f"{config.name_sample}_{i}_kfold")
   #
-  plot_cm('00',f"{config.sample_name}_main")
+  plot_cm('00',f"{config.name_sample}_main")
   #
 
 def plot_metrics(axs, name, history):
@@ -105,7 +105,7 @@ def data_hist(config,data=None):
                 Hist1(ax,data_mass[i][col],col,class_name, histtype='step', stacked=False, fill=True)
                 ax.legend()
                 fig.set_size_inches(30,20)
-                fig.savefig(f"{config.path_pic}/{class_name}_{col}_hist.png")
+                fig.savefig(f"{config.path_pic}/{config.name_sample}_{class_name}_{col}_hist.png")
                 plt.close(fig)
     elif():
         for col in columns:
@@ -116,7 +116,7 @@ def data_hist(config,data=None):
                 Hist1(ax,data_mass[i][col],col,class_name, histtype='step', stacked=False, fill=False)
             ax.legend()
             fig.set_size_inches(30,20)
-            fig.savefig(f"{config.path_pic}/{col}_hist.png")
+            fig.savefig(f"{config.path_pic}/{config.name_sample}_{col}_hist.png")
             plt.close(fig)
 
 def picture_loss(optimizer,loss,config):
@@ -137,10 +137,10 @@ def picture_loss(optimizer,loss,config):
   for i in range(config.hyperparam["model_variable"]["kfold"]):
     name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
     model = LoadModel(f"{config.path_model}_custom_sm_{name}",f"{config.path_weights}_custom_sm_{name}",optimizer,loss)
-    plot_loss(ax,model,f"{config.sample_name}_{i}",i)
-  ax.set_label(config.sample_name)
+    plot_loss(ax,model,f"{config.name_sample}_{i}",i)
+  ax.set_label(config.name_sample)
   ax.legend()
-  fig.savefig(f'{config.path_pic}/{config.sample_name}_kfold_summary_loss.png')
+  fig.savefig(f'{config.path_pic}/{config.name_sample}_kfold_summary_loss.png')
   del fig
 
 def picture_roc_prc(config):  
@@ -186,9 +186,9 @@ def picture_roc_prc(config):
                 for i in range(config.hyperparam["model_variable"]["kfold"]):
                     plot_prc(ax_prc,f"{i}_kfold",data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
                     plot_roc(ax_roc,f"{i}_kfold",data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
-                fig.set_label(f"{config.sample_name}_{class_name}")
+                fig.set_label(f"{config.name_sample}_{class_name}")
                 fig.legend()
-                fig.savefig(f'{config.path_pic}/{config.sample_name}_{class_name}_kfold_summary_roc_prc.png')
+                fig.savefig(f'{config.path_pic}/{config.name_sample}_{class_name}_kfold_summary_roc_prc.png')
         case 2:
             fig = plt.figure()
             ax_prc = fig.add_subplot(1,2,2)
@@ -197,9 +197,9 @@ def picture_roc_prc(config):
                 for i in range(config.hyperparam["model_variable"]["kfold"]):
                     plot_prc(ax_prc,f"{i}_{class_name}",data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
                     plot_roc(ax_roc,f"{i}_{class_name}",data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
-            fig.set_label(f"{config.sample_name}")
+            fig.set_label(f"{config.name_sample}")
             fig.legend()
-            fig.savefig(f'{config.path_pic}/{config.sample_name}_class_kfold_summary_roc_prc.png')
+            fig.savefig(f'{config.path_pic}/{config.name_sample}_class_kfold_summary_roc_prc.png')
         case 3:
             for i in range(config.hyperparam["model_variable"]["kfold"]):
                 fig = plt.figure()
@@ -208,9 +208,9 @@ def picture_roc_prc(config):
                 for class_name in config.name_class:
                     plot_prc(ax_prc,class_name,data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
                     plot_roc(ax_roc,class_name,data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
-                fig.set_label(f"{config.sample_name}_{i}_kfold")
+                fig.set_label(f"{config.name_sample}_{i}_kfold")
                 fig.legend()
-                fig.savefig(f'{config.path_pic}/{config.sample_name}_{i}_kfold_class_summary_roc_prc.png')
+                fig.savefig(f'{config.path_pic}/{config.name_sample}_{i}_kfold_class_summary_roc_prc.png')
         case 4:
             for i in range(config.hyperparam["model_variable"]["kfold"]):
                 for class_name in config.name_class:
@@ -219,6 +219,6 @@ def picture_roc_prc(config):
                     ax_roc = fig.add_subplot(1,2,1)
                     plot_prc(ax_prc,f"{class_name}_{i}_kfold",data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
                     plot_roc(ax_roc,f"{class_name}_{i}_kfold",data_mass[i][f'{class_name}_cls'],data_mass[i][f'{class_name}_cls_prob'])
-                    fig.set_label(f"{config.sample_name}_{class_name}_{i}_kfold")
+                    fig.set_label(f"{config.name_sample}_{class_name}_{i}_kfold")
                     fig.legend()
-                    fig.savefig(f'{config.path_pic}/{config.sample_name}_{i}_kfold_{class_name}_summary_roc_prc.png')
+                    fig.savefig(f'{config.path_pic}/{config.name_sample}_{i}_kfold_{class_name}_summary_roc_prc.png')

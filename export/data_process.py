@@ -177,7 +177,7 @@ def MCD(data,deep_i,config):
     gauss, outlire = Gauss_cut(d,count,threshold=config.flags['data_preprocessing']['main_sample']['outlire']['add_param']['additional_parametr'])
 
     return d, gauss, outlire
-
+'''
 def redded_des(data):
     def dust_SFD(ra,dec):
         from dustmaps.config import config
@@ -196,7 +196,7 @@ def redded_des(data):
     data['imag'] -= 1.5689*data['E(B-V)']
     data['zmag'] -= 1.1959*data['E(B-V)']
     data['Ymag'] -= 1.048*data['E(B-V)']
-
+'''
 def redded_(data,name):
     return
 
