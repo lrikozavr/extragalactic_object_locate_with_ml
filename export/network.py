@@ -199,7 +199,7 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
     model_activate(config.flags["system"],custom_index,train,label,train,label)
 
 
-def large_file_prediction(filename,count,config):
+def large_file_prediction(config):
     from data_process import get_features
 
     def DataTransform(data,config):
@@ -249,9 +249,10 @@ def large_file_prediction(filename,count,config):
         data = pd.concat([data,predicted], axis=1)
         data.to_csv(output_path_predict, index=False)
 
+    count = config.flags["prediction"]["batch_count"]
     i, index = 0, 1
     data_mass = np.array((count,))
-    f = open(filename,'r')
+    f = open(config.prediction_path,'r')
     columns = f.readline().strip('\n').split(",")
     
     for line in f:
@@ -261,6 +262,6 @@ def large_file_prediction(filename,count,config):
             #magic
             data_mass = pd.DataFrame(np.array(data_mass), columns=columns)
             name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
-            ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",f"{config.prediction_path}/{name}_{index}",data_mass,config)
+            ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",f"{config.path_predict}/{name}_{index}",data_mass,config)
         
         i += 1

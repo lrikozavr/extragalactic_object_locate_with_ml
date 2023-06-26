@@ -41,6 +41,7 @@ class Config():
         self.hyperparam = config['hyperparam']
         self.features = config['features']
         self.name_class = config['name_class']
+        self.name_class_column = config["name_class_column"]
         self.base = config["base"]
         self.picture = config['picture']
         self.statistic = config['statistic']
@@ -64,11 +65,6 @@ class Config():
         self.name_class_cls = columns
         self.name_class_prob = columns_prob
 
-
-
-
-
-
 #    return name_sample, general_path, data_path, prediction_path, flags, hyperparam, features, name_class
 
 #name_sample, general_path, data_path, prediction_path, flags, hyperparam, features, name_class = parse_config(fconfig)
@@ -80,8 +76,8 @@ def dir(save_path,name):
     if not os.path.isdir(dir_name):
         os.mkdir(dir_name)
 
-if not os.path.isdir(config.prediction_path):
-    os.mkdir(config.prediction_path)
+if not os.path.isdir(config.general_path):
+    os.mkdir(config.general_path)
 
 
 dir(config.general_path,'sample')
@@ -94,17 +90,24 @@ dir(config.path_ml,'prediction')
 dir(config.path_ml,'picture')
 
 #data download
-#stat_mass = []
-sum_mass = pd.DataFrame()
-diff_class(config.data_path,config.name_class,config.path_sample,config.base)
-for name in config.name_class:
-    stat = class_download(name, config.path_sample,config)
-    stat.to_csv(f'{config.path_stat}/{name}_slice.log', index=False)
-    sum = pd.DataFrame(stat.sum(axis=0), columns = stat.columns.values, index = name)
-    sum_mass = pd.concat([sum_mass,sum], ignore_index=False)
-    #stat_mass.append(stat)
-sum_mass.to_csv(f'{config.path_stat}/classes.log')
-print(sum_mass)
+if(config.flags["data_downloading"]["work"]):
+    #stat_mass = []
+    sum_mass = pd.DataFrame()
+
+    if(config.flags["data_downloading"]["class_diff"]):
+        diff_class(config)
+
+    for name in config.name_class:
+        stat = class_download(name, config.path_sample,config)
+        stat.to_csv(f'{config.path_stat}/{name}_slice.log', index=False)
+        stat = pd.read_csv(f'{config.path_stat}/{name}_slice.log',header=0,sep=",")
+        #print(np.array(stat.sum(axis=0)))
+        sum = pd.DataFrame([np.array(stat.sum(axis=0))], columns = stat.columns.values, index = [name])
+        #print(sum)
+        sum_mass = pd.concat([sum_mass,sum], ignore_index=False)
+        #stat_mass.append(stat)
+    sum_mass.to_csv(f'{config.path_stat}/classes.log')
+    print(sum_mass)
 
 
 data = pd.DataFrame()

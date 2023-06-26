@@ -7,26 +7,29 @@ import os
 
 #sample_path = f'{general_path}/sample'
 
-def diff_class(data_path,name_class,path_sample,base):
+def diff_class(config):
     #create file for class obj
     #data_mass = []
     #for i in range(len(name_class)):
     #    data_mass.append(pd.DataFrame())
     #
     data_file = []
-    for i in range(len(name_class)):
-        f = open(f'{path_sample}/{name_class[i]}_origin.csv','w')
+    for i in range(len(config.name_class)):
+        f = open(f'{config.path_sample}/{config.name_class[i]}_origin.csv','w')
+        f.write(','.join(config.base)+"\n")
         data_file.append(f)
 
     #extract exgal and star obj from file exit.sort
-    count = np.zeros(len(name_class))
+    count = np.zeros(len(config.name_class))
 
-    base_index_array = [0]
-    for line in open(data_path):
-        n = line.split(',')
-        if(base_index_array[0] == 0):
-            base_index_array = [n.index(base[i]) for i in range(len(base))]
-        base_array = [n[base_index_array[i]] for i in range(len(base))]
+    f = open(config.data_path,'r')
+    first_line = f.readline().strip('\n').split(",")
+    base_index_array = [first_line.index(config.base[i]) for i in range(len(config.base))]
+    name_class_column_index = first_line.index(config.name_class_column)
+
+    for line in f:
+        n = line.strip('\n').split(',')
+        base_array = [n[base_index_array[i]] for i in range(len(config.base))]
         #if(len(n[4].split('_')) == 1 and (n[4] == 'lamost' or n[4] == 'sdss')):
         index = 0 
         line_out = ''
@@ -36,18 +39,18 @@ def diff_class(data_path,name_class,path_sample,base):
             else: line_out += word + '\n'
             index += 1
 
-        count[int(n[3])] += 1
+        count[int(n[name_class_column_index])] += 1
         #
-        data_file[int(n[3])].write(line_out)
+        data_file[int(n[name_class_column_index])].write(line_out)
         # with pandas
         #data_temp = pd.DataFrame(np.array(base_array), columns=base)
         #data_mass[int(n[3])] = pd.concat([data_mass[int(n[3])],data_temp],axis=1)
 
-    for i in range(len(name_class)):
+    for i in range(len(config.name_class)):
         data_file[i].close()
     
-    for i in range(len(name_class)):
-        print(name_class[i],'\t\t',count[i])
+    for i in range(len(config.name_class)):
+        print(config.name_class[i],'\t\t',count[i])
 
 #write define col from row to file
 def out(line,col,fout,config):
@@ -159,19 +162,21 @@ def req(cat_name,name,fout,R=1):
     h.close()
 
 #division into pieces of define count
-def slice(filename,count):
+def slice(filename,foldername,count,base):
     import os
-    foldername = filename.split('.')[0]
+    #foldername = filename.split('_')[0]
     if not os.path.isdir(foldername):
         os.mkdir(foldername)
     stat = []
     index = 0
     index_name = 1
     fout = open(f"{foldername}/0.csv","w")
-    for line in open(filename):
+    fin = open(filename,'r')
+    print(fin.readline().strip('\n'))
+    for line in fin:
         index+=1
         if(index % count == 1):
-            fout.write('RA,DEC,z\n')
+            fout.write(','.join(base)+'\n')
         fout.write(line)
         if(index // count == index_name):
             stat.append(count)
@@ -179,7 +184,7 @@ def slice(filename,count):
             fout.close()
             fout = open(f"{foldername}/{fout_name}","w")
             index_name+=1
-    stat.append(index - (len(stat) + 1)*count)
+    stat.append(index - len(stat)*count)
     fout.close()
     #return foldername
     return stat
@@ -204,14 +209,15 @@ def download(catalogs_name,filepath,config):
         
         count_mass[n*2],count_mass[n*2+1] = cut_cut(config.flags["data_downloading"]["catalogs"]["columns"][n],temp,filepath_temp,config)
         
-        if(config.flags["data_downloading"]["remove"]["catalogs_cross_origin"][n]):
+        if(config.flags["data_downloading"]["remove"]["catalog_cross_origin"][n]):
             os.remove(temp)
             #os.rename(filepath_temp,temp)
             #filepath_temp = temp
-        columns.append(name)
-        columns.append(f'{name}_cut')
-    
-    count_mass = pd.DataFrame(np.array(count_mass), columns=columns)
+        columns.extend([name,f'{name}_cut'])
+    #print(count_mass[0])
+    #print(columns)
+    count_mass = pd.DataFrame([np.array(count_mass)], columns=columns)
+    #print(count_mass)
 
     return count_mass
         
@@ -277,7 +283,7 @@ def unslice(filename_list,filename,fout,config):
 def class_download(name,path_sample,config):
     catalogs_names = config.flags["data_downloading"]["catalogs"]["name"]
     #differentiation origin catalog to slice
-    stat_count = slice(f'{path_sample}/{name}_origin.csv', config.flags["data_downloading"]["slice_count"])
+    stat_count = slice(f'{path_sample}/{name}_origin.csv',f'{path_sample}/{name}', config.flags["data_downloading"]["slice_count"],config.base)
     stat_count = pd.DataFrame(np.array(stat_count), columns=['origin'])
     #cross-match feat. VizieR
     if(config.flags["data_downloading"]["multi_thr"]["work"]):

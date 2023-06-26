@@ -1,10 +1,12 @@
 {
-    "name_sample": "",
-    "general_path": "",
-    "data_path": "",
+    "name_sample": "test",
+    "general_path": "/home/lrikozavr/ML_work/test",
+    "data_path": "/home/lrikozavr/catalogs/elewen/exit_notlamost.csv",
     "prediction_path": "",
     "flags":{
         "data_downloading":{
+            "work": true,
+            "class_diff": false,
             "radius": 1,
             "slice_count": 100000,
             "multi_thr":{
@@ -62,7 +64,8 @@
             "balanced": true
             },
         "prediction":{
-
+            "work": true,
+            "batch_count": 20000000
             },
         "system": "cpu"
         },
@@ -101,6 +104,7 @@
         "metric": true
     },
     "base": ["RA","DEC","z"],
+    "name_class_column": "class",
     "features": {
         "data": ["W1mag","e_W1mag","W2mag","e_W2mag","W3mag","e_W3mag","phot_g_mean_mag","phot_g_mean_mag_error","phot_bp_mean_mag","phot_bp_mean_mag_error","phot_rp_mean_mag","phot_rp_mean_mag_error"],
         "train": ["color","mags","err_color","err_mags"]
