@@ -5,15 +5,15 @@
     "prediction_path": "",
     "flags":{
         "data_downloading":{
-            "work": true,
+            "work": false,
             "class_diff": false,
             "radius": 1,
             "slice_count": 100000,
             "multi_thr":{
-                "work": false,
+                "work": true,
                 "MAX_WORKERS": 3,
                 "WAIT_UNTIL_REPEAT_ACCESS": 3,
-                "NUM_URL_ACCESS_ATTEMPTS": 4
+                "NUM_URL_ACCESS_ATTEMPTS": 10
             },
             "duplicate": false,
             "filter": ["", 0],

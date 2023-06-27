@@ -138,7 +138,7 @@ def cut_cut(col,filein,fileout,config):
         return f1()
 
 #request to VizieR X-match
-def req(cat_name,name,fout,R=1):
+def req(cat_name,name,fout,config):
     from astropy.table import Table
     from astropy.io.votable import from_table, writeto
 
@@ -148,46 +148,69 @@ def req(cat_name,name,fout,R=1):
     #catalog_name = globals()[cat_name]
 
     import requests
+    import time
 
-    r = requests.post(
-            'http://cdsxmatch.u-strasbg.fr/xmatch/api/v1/sync',
-            data={'request': 'xmatch', 'distMaxArcsec': R, 'RESPONSEFORMAT': 'csv',
-            'cat2': f'vizier:{cat_name}', 'colRA1': 'RA', 'colDec1': 'DEC'},
-            files={'cat1': open(f'{name}.vot', 'r')})
+    WAIT_UNTIL_REPEAT_ACCESS = config.flags["data_downloading"]["multi_thr"]["WAIT_UNTIL_REPEAT_ACCESS"]
+    NUM_URL_ACCESS_ATTEMPTS = config.flags["data_downloading"]["multi_thr"]["NUM_URL_ACCESS_ATTEMPTS"]
 
-    import os
-    os.remove(f'{name}.vot')
-    h = open(f'{fout}', 'w')
-    h.write(r.text)
-    h.close()
+    attempts = 0
+    while attempts < NUM_URL_ACCESS_ATTEMPTS:
+        try:
+            r = requests.post('http://cdsxmatch.u-strasbg.fr/xmatch/api/v1/sync',
+                            data={  'request': 'xmatch', 
+                                    'distMaxArcsec': config.flags["data_downloading"]["radius"], 
+                                    'RESPONSEFORMAT': 'csv',
+                                    'cat2': f'vizier:{cat_name}', 'colRA1': 'RA', 'colDec1': 'DEC'},
+                                    files={'cat1': open(f'{name}.vot', 'r')})
+            if(r.ok):
+                os.remove(f'{name}.vot')
+                h = open(f'{fout}', 'w')
+                h.write(r.text)
+                h.close()
+                break
+            else:
+                raise Exception(r.raise_for_status())
+        except:
+            time.sleep(WAIT_UNTIL_REPEAT_ACCESS)
+            attempts += 1
+    
+    if(attempts == NUM_URL_ACCESS_ATTEMPTS):
+        raise Exception('')
+    
+    
 
 #division into pieces of define count
 def slice(filename,foldername,count,base):
+    print("cut to slice start for ",filename)
     import os
     #foldername = filename.split('_')[0]
     if not os.path.isdir(foldername):
         os.mkdir(foldername)
+    filelist = []
     stat = []
     index = 0
     index_name = 1
     fout = open(f"{foldername}/0.csv","w")
     fin = open(filename,'r')
-    print(fin.readline().strip('\n'))
+    print('Origin catalog columns:\t',fin.readline().strip('\n'))
     for line in fin:
         index+=1
         if(index % count == 1):
             fout.write(','.join(base)+'\n')
         fout.write(line)
         if(index // count == index_name):
+            filelist.append(f"{index_name-1}.csv")
             stat.append(count)
             fout_name = f"{index_name}.csv"
             fout.close()
             fout = open(f"{foldername}/{fout_name}","w")
             index_name+=1
     stat.append(index - len(stat)*count)
+    filelist.append(f"{index_name-1}.csv")
     fout.close()
+    print("cut to slice finish with ",index_name-1," slices")
     #return foldername
-    return stat
+    return stat, filelist
 
 #download from VizieR
 def download(catalogs_name,filepath,config):
@@ -198,7 +221,7 @@ def download(catalogs_name,filepath,config):
     for n, name in enumerate(catalogs_name):
         fin = filepath_temp.split(".")[0]
         temp = f"{fin}_{name}.csv"
-        req(config.flags["data_downloading"]["catalogs"]["VizieR"][n],fin,temp,config.flags["data_downloading"]["radius"])
+        req(config.flags["data_downloading"]["catalogs"]["VizieR"][n],fin,temp,config)
         
         if(n==0 and config.flags["data_downloading"]["remove"]["slice"]):
             os.remove(filepath_temp)
@@ -222,34 +245,33 @@ def download(catalogs_name,filepath,config):
     return count_mass
         
 
-def multi_thr_slice_download(catalogs_name,filename,config):
+def multi_thr_slice_download(catalogs_name,filename,filelist,config):
     MAX_WORKERS = config.flags["data_downloading"]["multi_thr"]["MAX_WORKERS"]
-    WAIT_UNTIL_REPEAT_ACCESS = config.flags["data_downloading"]["multi_thr"]["WAIT_UNTIL_REPEAT_ACCESS"]
-    NUM_URL_ACCESS_ATTEMPTS = config.flags["data_downloading"]["multi_thr"]["NUM_URL_ACCESS_ATTEMPTS"]
-    import time
-    import os   
+      
     from concurrent.futures import ThreadPoolExecutor
     count_mass = []
-    count_mass_temp = pd.DataFrame()
-    attempts = 0
-    while attempts < NUM_URL_ACCESS_ATTEMPTS:
-        try:
-            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                for name in os.listdir(filename):
-                    count_mass_temp = executor.submit(download,catalogs_name,f"{filename}/{name}",config)
-                    count_mass.append(count_mass_temp)
-            break
-        except:
-            time.sleep(WAIT_UNTIL_REPEAT_ACCESS)
+    attempts = 0    
+    try:
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            for name in filelist:
+                count_mass_temp = executor.submit(download,catalogs_name,f"{filename}/{name}",config)
+                #print(count_mass_temp)
+                count_mass.append(count_mass_temp)
+    except:
+        raise Exception("Except: download part have issue. \nCheck your Ethernet conection, \nor config->flags->data_downloading variable, \nor origin catalog purity")
+        
+        #attempts += 1
     
-    count_mass = pd.DataFrame(np.array(count_mass), columns=count_mass_temp.columns.values)
+    stat = pd.DataFrame()
+    for i in range(len(count_mass)):
+        stat = pd.concat([stat,count_mass[i].result()],ignore_index=True)
     
-    return count_mass
+    return stat
 
-def slice_download(catalogs_name,filename,config):
+def slice_download(catalogs_name,filename,filelist,config):
     import os
     count_mass = pd.DataFrame()
-    for name in os.listdir(filename):
+    for name in filelist:
         count_mass_temp = download(catalogs_name,f"{filename}/{name}",config)
         count_mass = pd.concat([count_mass,count_mass_temp],ignore_index=True)
     
@@ -283,14 +305,14 @@ def unslice(filename_list,filename,fout,config):
 def class_download(name,path_sample,config):
     catalogs_names = config.flags["data_downloading"]["catalogs"]["name"]
     #differentiation origin catalog to slice
-    stat_count = slice(f'{path_sample}/{name}_origin.csv',f'{path_sample}/{name}', config.flags["data_downloading"]["slice_count"],config.base)
+    stat_count, filelist = slice(f'{path_sample}/{name}_origin.csv',f'{path_sample}/{name}', config.flags["data_downloading"]["slice_count"],config.base)
     stat_count = pd.DataFrame(np.array(stat_count), columns=['origin'])
     #cross-match feat. VizieR
     if(config.flags["data_downloading"]["multi_thr"]["work"]):
-        count_cat = multi_thr_slice_download(['des_dr2'],f'{path_sample}/{name}',config)
+        count_cat = multi_thr_slice_download(catalogs_names,f'{path_sample}/{name}',filelist,config)
         stat_count = pd.concat([stat_count,count_cat],axis=1)
     else:
-        count_cat = slice_download(catalogs_names,f'{path_sample}/{name}',config)
+        count_cat = slice_download(catalogs_names,f'{path_sample}/{name}',filelist,config)
         stat_count = pd.concat([stat_count,count_cat],axis=1)
     #
     filename_list = []
