@@ -74,9 +74,29 @@ def out(line,col,fout,config):
     if(empty_count):
         fout.write(line_out)
 
+#                "columns": [[1,2,3,5,6,10,11,12,17,18,19],
+#                            [1,2,3,6,9,7,10,8,11,43,60,46,61,48,62]]
+
+def get_col_list(columns,config):
+    col = []
+    #print(columns)
+    for column in config.base:
+        col.append(columns.index(column))
+    for column in config.features["data"]:
+        try:
+            col.append(columns.index(column))
+        except:
+            continue
+    return col
+
 #cut dublicate
-def cut_cut(col,filein,fileout,config):
+def cut_cut(filein,fileout,config):
     fout = open(fileout,'w')
+    #
+    f = open(filein,'r')
+    col = get_col_list(f.readline().strip('\n').split(','),config)
+    #print(col)
+    #
     gc1 = col[0]
     gc2 = col[1]
     #kill duplicate algorithm
@@ -230,7 +250,8 @@ def download(catalogs_name,filepath,config):
         
         filepath_temp = f"{temp.split('.')[0]}_cut.csv"
         
-        count_mass[n*2],count_mass[n*2+1] = cut_cut(config.flags["data_downloading"]["catalogs"]["columns"][n],temp,filepath_temp,config)
+        #config.flags["data_downloading"]["catalogs"]["columns"][n],
+        count_mass[n*2],count_mass[n*2+1] = cut_cut(temp,filepath_temp,config)
         
         if(config.flags["data_downloading"]["remove"]["catalog_cross_origin"][n]):
             os.remove(temp)
@@ -298,7 +319,9 @@ def unslice(filename_list,filename,fout,config):
         if(config.flags["data_downloading"]["remove"]["catalogs_cross_cut_duplicate"][-1]):
             os.remove(f"{filename}/{name}")
     if(config.flags["data_downloading"]["remove"]["dir"]):
-        os.rmdir(f"{filename}")
+        import shutil
+        shutil.rmtree(filename)
+        #os.rmdir(f"{filename}")
     
     f.close()
 

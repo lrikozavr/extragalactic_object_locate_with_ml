@@ -51,9 +51,10 @@ def fuzzy_dist(data):
     columns = data.columns.values
     count = data.shape[0]
     rc = pd.DataFrame()
+    #print(data)
     #
     for col in columns:
-        rc[col] = M(data[col],count)
+        rc[col] = [M(data[col],count)]
         #print(rc[col])
         #print("M        ", M(data[col],count))
     #print("rc           ",rc)
@@ -146,7 +147,7 @@ def S0(data,t0,n):
 
 
 def MCD(data,deep_i,config):
-    print(deep_i)
+    #print(deep_i)
     deep_i+=1
     count = data.shape[0]
     count_col = data.shape[1]
@@ -222,7 +223,7 @@ def get_features(features_list,config):
                 colours_name.append(f"{list_name[j*2]}&{list_name[i*2]}")
                 colours_error_name.append(f"{list_name[j*2+1]}&{list_name[i*2+1]}")
         mags_name.append(f"{list_name[j*2]}")
-        mags_error_name.append(f"{list_name[j*2]+1}")
+        mags_error_name.append(f"{list_name[j*2+1]}")
 
     for features_flag in features_list:
         match features_flag:
@@ -251,51 +252,51 @@ def process(path_sample,name,save_path, config):
     def data_issue(check):
         match check:
             case 'err':
-                if(config.flags['data_preprocessin']['main_sample']['color']['work']):
+                if(config.flags['data_preprocessing']['main_sample']['color']['work']):
                     return data_err
                 else:
-                    raise Exception('cant made outlire by err, \ncheck flags["data_preprocessin"]["main_sample"]["color"]["work"] in config')
+                    raise Exception('cant made outlire by err, \ncheck flags["data_preprocessing"]["main_sample"]["color"]["work"] in config')
             case 'color':
-                if(config.flags['data_preprocessin']['main_sample']['color']['work']):
+                if(config.flags['data_preprocessing']['main_sample']['color']['work']):
                     return data_color
                 else:
-                    raise Exception('cant made outlire by color, \ncheck flags["data_preprocessin"]["main_sample"]["color"]["work"] in config')
+                    raise Exception('cant made outlire by color, \ncheck flags["data_preprocessing"]["main_sample"]["color"]["work"] in config')
             case 'features':
-                return data[config.features]
+                return data[config.features["data"]]
             case _:
-                raise Exception('wrong value flags["data_preprocessin"]["main_sample"]["weight"]["value"]')
+                raise Exception('wrong value flags["data_preprocessing"]["main_sample"]["weight"]["value"]')
 
     #redded_des(data)
     #print(name, 'deredded complite')
-    if(config.flags['data_preprocessin']['main_sample']['color']['work']):
-        data_color, data_err = colors(data[config.features])
+    if(config.flags['data_preprocessing']['main_sample']['color']['work']):
+        data_color, data_err = colors(data[config.features["data"]])
         print(name," complite colors")
-        if(config.flags['data_preprocessin']['main_sample']['color']['mags']):
+        if(config.flags['data_preprocessing']['main_sample']['color']['mags']):
             data = pd.concat([data,data_color],axis=1)
-        if(config.flags['data_preprocessin']['main_sample']['color']['err']):
+        if(config.flags['data_preprocessing']['main_sample']['color']['err']):
             data = pd.concat([data,data_err],axis=1)
         
-    if(config.flags['data_preprocessin']['main_sample']['outlire']['cut']):
-        if( "MCD" in config.flags['data_preprocessin']['main_sample']['outlire']['method'] ):
-            mcd_d, gauss_d, outlire = MCD(data_issue(config.flags['data_preprocessin']['main_sample']['outlire']['value']),0,config)
+    if(config.flags['data_preprocessing']['main_sample']['outlire']['work']):
+        if("MCD" in config.flags['data_preprocessing']['main_sample']['outlire']['method'] ):
+            mcd_d, gauss_d, outlire = MCD(data_issue(config.flags['data_preprocessing']['main_sample']['outlire']['value']),0,config)
             print(name," complite MCD")
-            if(config.flags['data_preprocessin']['main_sample']['outlire']['add_param']['add']):
+            if(config.flags['data_preprocessing']['main_sample']['outlire']['add_param']['add']):
                 mcd_d = pd.DataFrame(np.array(mcd_d), columns = ['mcd_d'])
                 mcd_g = pd.DataFrame(np.array(gauss_d), columns = ['mcd_g'])
                 data = pd.concat([data,mcd_d,mcd_g], axis=1)
-            if(config.flags['data_preprocessin']['main_sample']['outlire']['cut']):
+            if(config.flags['data_preprocessing']['main_sample']['outlire']['cut']):
                 data = data.drop(outlire)
     
     
     #additional weight
-    if('fuzzy_err' in config.flags['data_preprocessin']['main_sample']['weight']['method']):        
-        index = config.flags['data_preprocessin']['main_sample']['weight']['method'].index('fuzzy_err')
-        data['fuzzy_err'] = fuzzy_err(data_issue(config.flags['data_preprocessin']['main_sample']['weight']['value'][index]))
+    if('fuzzy_err' in config.flags['data_preprocessing']['main_sample']['weight']['method']):        
+        index = config.flags['data_preprocessing']['main_sample']['weight']['method'].index('fuzzy_err')
+        data['fuzzy_err'] = fuzzy_err(data_issue(config.flags['data_preprocessing']['main_sample']['weight']['value'][index]))
         print(name," complite fuzzy_err")
 
-    if('fuzzy_dist' in config.flags['data_preprocessin']['main_sample']['weight']['method']):    
-        index = config.flags['data_preprocessin']['main_sample']['weight']['method'].index('fuzzy_dist')
-        data_dist, max = fuzzy_dist(data_issue(config.flags['data_preprocessin']['main_sample']['weight']['value'][index]))
+    if('fuzzy_dist' in config.flags['data_preprocessing']['main_sample']['weight']['method']):    
+        index = config.flags['data_preprocessing']['main_sample']['weight']['method'].index('fuzzy_dist')
+        data_dist, max = fuzzy_dist(data_issue(config.flags['data_preprocessing']['main_sample']['weight']['value'][index]))
         data['fuzzy_dist'] = Normali(data_dist, max)
         print(name," complite fuzzy_dist")
 
@@ -337,15 +338,19 @@ def data_preparation(save_path,path_sample,name_class,config):
             data = pd.concat([data,data_temp], ignore_index=True)
 
     if(config.flags['data_preprocessing']['balanced']):
-        for i in range(name_class):
-            data_temp = data_mass[i].sample(count.min(), random_state = 1)
+        for i in range(len(name_class)):
+            data_temp = data_mass[i].sample(int(count.min()), random_state = 1)
             data = pd.concat([data,data_temp], ignore_index=True)
         
     del data_mass
     
     for i in range(len(name_class)):
-        print(f"{name_class[i]} count:\t---\t", count[i])
+        print(f"{name_class[i]} count:\t---\t", int(count[i]))
 
+    print("final sample:\t---\t", data.shape[0])
+
+    data = data.sample(data.shape[0], ignore_index=True)
     data.to_csv(f'{save_path}/all.csv',index = False)
     
+
     return data

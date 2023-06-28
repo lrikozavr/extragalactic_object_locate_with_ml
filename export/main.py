@@ -127,7 +127,7 @@ data.describe().to_csv(f'{config.path_stat}/stat.log')
 #features from config
 #name from config
 print('Sample name: ', config.name_sample)
-print('Features: ', config.features)
+print('Features: ', config.features["data"])
 #hyperparams from config
 batch_size = config.hyperparam['batch_size']
 num_ep = config.hyperparam['num_ep']
@@ -145,10 +145,11 @@ print(data)
 
 
 from data_process import get_features
+print(config.features["train"])
 features = get_features(config.features["train"],config)
 
 if(config.hyperparam["model_variable"]["work"]):
-    NN(data[features].values,data[config.name_class].values,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
+    NN(data[features].values,data[config.name_class_cls].values,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
     output_path_predict = config.path_predict,
     output_path_mod = config.path_model,
     output_path_weight = config.path_weight,
@@ -164,15 +165,19 @@ if(config.statistic["metric"]):
 from graphic import picture_cm, picture_loss, picture_roc_prc, picture_hist, picture_metrics
 if(not 0 in config.picture["roc_prc"]):
     picture_roc_prc(config)
-if(config.picture["loss"]):
-    picture_loss(optimizer,loss,config)
+#to network    
+#if(config.picture["loss"]):
+#    picture_loss(optimizer,loss,config)
 if(config.picture["cm"]):
     picture_cm(config)
 if(config.picture["hist"]["work"]):
     picture_hist(config)
-if(config.picture["metrics_h"]):
-    picture_metrics(config)
+
+#if(config.picture["metrics_h"]):
+#    picture_metrics(config)
 
 #prediction
+from network import large_file_prediction
+large_file_prediction(config)
 
 #short statistic

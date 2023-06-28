@@ -101,8 +101,8 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
         #verbose=1,
         verbose=0,
         batch_size=batch_size,
-        validation_split=validation_split,
-        callbacks=[early_stopping]
+        validation_split=validation_split
+        #callbacks=[early_stopping]
         #class_weight=class_weights
         #&&&????????????????????????????????????????????????????????????????????
         #sample_weight=
@@ -119,7 +119,7 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
         Class = model.predict(train, batch_size)
         pd_label = pd.DataFrame(np.array(label), columns=config.name_class_cls)
     #param from config (columns)
-    res = pd.DataFrame(np.array(Class), columns=config.name_class_cls_prob)
+    res = pd.DataFrame(np.array(Class), columns=config.name_class_prob)
     #print(pd_label)
     res = pd.concat([res, pd_label], axis=1)
     
@@ -146,7 +146,7 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
         n = name.split("n")
         l2,l3,l4 = n[1],n[2],n[3]
         a = config.hyperparam["model_variable"]["activation"]
-        model = DeepCustomNN_sm(features,l2,l3,l4,a[0],a[1],a[2],3)	
+        model = DeepCustomNN_sm(features,l2,l3,l4,a[0],a[1],a[2],len(config.name_class))	
         
         model1 = model_volume(train,label,X_train,y_train,X_test,y_test,
         model,optimizer,loss,class_weights,num_ep,batch_size,validation_split,
@@ -155,11 +155,12 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
     
     def model_activate(flag,custom_index,X_train,y_train,X_test,y_test):
         #param from config 'gpu', 'cpu'
-        if('gpu'):
+        print(flag)
+        if(flag == 'gpu'):
             for name in custom_index:
                 cust_model(name,X_train,y_train,X_test,y_test)
         #add multithread resolve
-        if('cpu'):
+        if(flag == 'cpu'):
             import multiprocessing
             MAX_WORKERS = multiprocessing.cpu_count()
             from concurrent.futures import ThreadPoolExecutor
@@ -186,11 +187,12 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
         y_test = label[test_index]
         
         custom_index = []
-        
+        #print(index)
         #hyperparam from config
         custom_index.append(make_custom_index(index,config.hyperparam["model_variable"]["neuron_count"]))
+        #print(custom_index)
         model_activate(config.flags["system"],custom_index,X_train,y_train,X_test,y_test)
-    index+=1
+        index+=1
     #
     index = '00'
     custom_index = []
@@ -208,7 +210,7 @@ def large_file_prediction(config):
             match features_flag:
                 #може потрібно тут ставити запобіжник?
                 case "color":
-                    mags = get_features("mags",config)
+                    mags = get_features(["mags"],config)
                     num_colours = sum(i for i in range(len(mags)))
                     colours = np.zeros((data.shape[0],num_colours))
                     data_temp = np.array(data[mags])
@@ -216,13 +218,16 @@ def large_file_prediction(config):
                         for i in range(j, len(mags)):
                             if(i!=j):
                                 colours[:,index] = data_temp[:,j] - data_temp[:,i]
-                    colours = pd.DataFrame(colours,columns=mags)
+                    color = get_features(["color"],config)
+                    colours = pd.DataFrame(colours,columns=color)
                     data_new = pd.concat([data_new,colours],axis=1)
+                    del data_temp
+                    del colours
                 case "mags":
-                    mags = get_features("mags",config)
+                    mags = get_features(["mags"],config)
                     data_new = pd.concat([data_new,data[mags]],axis=1)                    
                 case "err_color":
-                    mags = get_features("err_mags",config)
+                    mags = get_features(["err_mags"],config)
                     num_colours = sum(i for i in range(len(mags)))
                     colours = np.zeros((data.shape[0],num_colours))
                     data_temp = np.array(data[mags])
@@ -230,38 +235,52 @@ def large_file_prediction(config):
                         for i in range(j, len(mags)):
                             if(i!=j):
                                 colours[:,index] = data_temp[:,j] - data_temp[:,i]
-                    colours = pd.DataFrame(colours,columns=mags)
+                    err_color = get_features(["err_color"],config)
+                    colours = pd.DataFrame(colours,columns=err_color)
                     data_new = pd.concat([data_new,colours],axis=1)
+                    del data_temp
+                    del colours
                 case "err_mags":
-                    mags_err = get_features("err_mags",config)
+                    mags_err = get_features(["err_mags"],config)
                     data_new = pd.concat([data_new,data[mags_err]],axis=1)                    
                 case _:
                     raise Exception('unknown config value config.features["train"]')
-        
+        #del data
+
         return data_new
         #get_features(config)
 
-    def ml(output_path_mod,output_path_weight,output_path_predict,data,config):
+    def ml(output_path_mod,output_path_weight,data,config):
         model = LoadModel(output_path_mod,output_path_weight,config.hyperparam["optimizer"],config.hyperparam["loss"])
         predicted = model.predict(DataTransform(data,config), config.hyperparam["batch_size"])
 
         predicted = pd.DataFrame(np.array(predicted), columns=config.name_class_prob)
         data = pd.concat([data,predicted], axis=1)
-        data.to_csv(output_path_predict, index=False)
-
+        return data
+    
     count = config.flags["prediction"]["batch_count"]
     i, index = 0, 1
-    data_mass = np.array((count,))
+
+    data_mass = [[]]*count
+    #data_mass = np.array((count,))
     f = open(config.prediction_path,'r')
     columns = f.readline().strip('\n').split(",")
     
     for line in f:
-        data_mass[i - (index-1)*count] = line.split(",")
         if(i // count == index):
             index += 1
             #magic
             data_mass = pd.DataFrame(np.array(data_mass), columns=columns)
             name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
-            ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",f"{config.path_predict}/{name}_{index}",data_mass,config)
+            data = ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",data_mass,config)
+            data.to_csv(f"{config.path_predict}_{name}_{index}.csv", index=False)
+
+        #print(i - (index-1)*count)
+        data_mass[i - (index-1)*count] = list(map(float,line.strip('\n').split(",")))
         
         i += 1
+    #print(data_mass[200][1])
+    data_mass = pd.DataFrame(data_mass, columns=columns)
+    name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
+    data = ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",data_mass,config)
+    data.head(i - (index-1)*count).to_csv(f"{config.path_predict}_{name}_{index}.csv", index=False)

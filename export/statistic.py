@@ -31,9 +31,7 @@ def metric_statistic(config):
                     FN += 1
         Acc = count/n
         pur_a = TP/(TP+FP)
-        pur_not_a = TN/(TN+FN)
         com_a = TP/(TP+FN)
-        com_not_a = TN/(TN+FP)
         f1 = 2*TP/(2*TP+FP+FN)
         fpr = FP/(TN+FN)
         tnr = TN/(TN+FN)
@@ -42,9 +40,9 @@ def metric_statistic(config):
         mcc = (TP*TN-FP*FN)/math.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
         BinBs = (FP+FN)/(TP+FP+FN+TN)
 
-        print(np.array([Acc,pur_a,pur_not_a,com_a,com_not_a,f1,fpr,tnr,bAcc,k,mcc,BinBs]))
-        ev = pd.DataFrame([np.array([Acc,pur_a,pur_not_a,com_a,com_not_a,f1,fpr,tnr,bAcc,k,mcc,BinBs])], 
-        columns=['Accuracy','AGN_purity','nonAGN_precision','AGN_completness','nonAGN_completness','F1',
+        #print(np.array([Acc,pur_a,com_a,f1,fpr,tnr,bAcc,k,mcc,BinBs]))
+        ev = pd.DataFrame([np.array([Acc,pur_a,com_a,f1,fpr,tnr,bAcc,k,mcc,BinBs])], 
+        columns=['Accuracy','Purity','Completness','F1',
         'FPR','TNR','bACC','K','MCC','BinaryBS'])
 
         return ev
@@ -56,8 +54,10 @@ def metric_statistic(config):
             dispersion = D(data[name],data.shape[0])
             max = data[name].max()
             min = data[name].min()
-            df = pd.DataFrame(np.array([average,dispersion,max,min]), columns=name, index=["average","dispersion","max","min"])
-            res = pd.concat([res,df], axis=1)
+            #print([average,dispersion,max,min])
+            df = pd.DataFrame(np.array([average,dispersion,max,min]), columns=[name], index=["average","dispersion","max","min"]).transpose()
+            #print(df)
+            res = pd.concat([res,df], axis=0)
         #res = res.transpose()
         return res
 
@@ -65,7 +65,7 @@ def metric_statistic(config):
     for i in range(config.hyperparam["model_variable"]["kfold"]):
         name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
         data = pd.read_csv(f"{config.path_eval}_custom_sm_{name}_prob.csv", header=0, sep=",")
-        for n in range(config.name_class):
+        for n in range(len(config.name_class)):
             ev_data_temp = eval(data[config.name_class_prob[n]].values,data[config.name_class_cls[n]].values,data.shape[0])
             ev_data[n] = pd.concat([ev_data[n],ev_data_temp],ignore_index=True)
     
@@ -78,7 +78,7 @@ def metric_statistic(config):
     #main
     name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
     data = pd.read_csv(f"{config.path_eval}_custom_sm_{name}_prob.csv", header=0, sep=",")
-    for n in range(config.name_class):
+    for n in range(len(config.name_class)):
         ev_data_temp = eval(data[config.name_class_prob[n]].values,data[config.name_class_cls[n]].values,data.shape[0])
         ev_data_temp.to_csv(f"{config.path_stat}/{config.name_sample}_{name}_main_metric.csv")
 

@@ -2,7 +2,7 @@
     "name_sample": "test",
     "general_path": "/home/lrikozavr/ML_work/test",
     "data_path": "/home/lrikozavr/catalogs/elewen/exit_notlamost.csv",
-    "prediction_path": "",
+    "prediction_path": "/home/lrikozavr/ML_work/test/ml/data/qso_main_sample.csv",
     "flags":{
         "data_downloading":{
             "work": false,
@@ -19,9 +19,7 @@
             "filter": ["", 0],
             "catalogs":{
                 "name": ["allwise","gaiaedr3"],
-                "VizieR": ["II/328/allwise","I/350/gaiaedr3"],
-                "columns": [[1,2,3,5,6,10,11,12,17,18,19],
-                            [1,2,3,6,9,7,10,8,11,43,60,46,61,48,62]]
+                "VizieR": ["II/328/allwise","I/350/gaiaedr3"]
             },
             "remove":{
                 "origin": false,
@@ -32,15 +30,16 @@
             }
             },
         "data_preprocessing":{
-            "work": true,
+            "work": false,
             "main_sample":{
-                "work": true,
+                "work": false,
                 "color":{
                     "work": true,
                     "mags": true,
                     "err": true
                     },
                 "outlire": {
+                    "work": true,
                     "cut": false,
                     "method": ["MCD"],
                     "value": "color",
@@ -65,7 +64,7 @@
             },
         "prediction":{
             "work": true,
-            "batch_count": 20000000
+            "batch_count": 10000000
             },
         "system": "cpu"
         },
@@ -76,7 +75,7 @@
         "loss": "categorical_crossentropy",
         "validation_split": 0.3,
         "model_variable":{
-                "work": true,
+                "work": false,
                 "kfold": 5,
                 "neuron_count": [64,64,64],
                 "activation": ["softsign","tanh","elu"],
@@ -91,9 +90,9 @@
             },
             "roc_prc": [1],
             "loss": true,
-            "cm": true,
+            "cm": false,
             "hist": {
-                "work": true,
+                "work": false,
                 "bound": true,
                 "stacked": true,
                 "fill": true
