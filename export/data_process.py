@@ -230,10 +230,14 @@ def get_features(features_list,config):
             #може потрібно тут ставити запобіжник?
             case "color":
                 features.extend(colours_name)
+                if not (config.flags['data_preprocessing']['main_sample']['color']['work'] and config.flags['data_preprocessing']['main_sample']['color']['mags']):
+                    print("WARNING: data may don't have a property columns, check: \nconfig.flags['data_preprocessing']['main_sample']['color']['work']\nand\nconfig.flags['data_preprocessing']['main_sample']['color']['mags']\nand\nconfig.features['train']\n")
             case "mags":
                 features.extend(mags_name)
             case "err_color":
                 features.extend(colours_error_name)
+                if not (config.flags['data_preprocessing']['main_sample']['color']['work'] and config.flags['data_preprocessing']['main_sample']['color']['err']):
+                    print("WARNING: data may don't have a property columns\ncheck config.flags['data_preprocessing']['main_sample']['color']['work']\nand\nconfig.flags['data_preprocessing']['main_sample']['color']['err']\nand\nconfig.features['train']\n")
             case "err_mags":
                 features.extend(mags_error_name)
             case _:

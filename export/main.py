@@ -33,7 +33,7 @@ class Config():
 
     def __init__(self,fconfig):
         config = json.load(fconfig)
-        self.name_sample = config['name_sample']
+        self.name_sample = config['name_sample'] + config['additional_name']
         self.general_path = config['general_path']
         self.data_path = config['data_path']
         self.prediction_path = config['prediction_path']
@@ -121,7 +121,7 @@ else:
     data = data_preparation(config.path_ml_data,config.path_sample,config.name_class,config)    
 
 #data_statistic
-data.describe().to_csv(f'{config.path_stat}/stat.log')
+data.describe().transpose().to_csv(f'{config.path_stat}/{config.name_sample}_stat.log')
 
 #network training
 #features from config
@@ -135,8 +135,16 @@ optimizer = config.hyperparam['optimizer']
 loss = config.hyperparam['loss']
 validation_split = config.hyperparam['validation_split']
 #balanced class
-from sklearn.utils import class_weight
-class_weights = {}
+class_weights = None
+if(config.hyperparam["model_variable"]["balanced"]):
+    from sklearn.utils import class_weight
+    y = np.zeros(data.shape[0])
+    cl = np.array(data[config.name_class_cls].values)
+    for i in range(data.shape[0]):
+        y[i] = np.argmax(cl[i,:])
+    class_weights = dict(enumerate(class_weight.compute_class_weight(class_weight = 'balanced',classes = np.unique(y),y = y)))
+    print("class weights",class_weights)
+    del y
 
 print(data)
 
@@ -145,11 +153,21 @@ print(data)
 
 
 from data_process import get_features
-print(config.features["train"])
+print("Features mode list:\t",config.features["train"])
 features = get_features(config.features["train"],config)
+print("Features train values:\t",features)
+
+sample_weight = None
+if(config.hyperparam["model_variable"]["sample_weight"] in config.flags['data_preprocessing']['main_sample']['weight']['method']):
+    sample_weight = data[config.hyperparam["model_variable"]["sample_weight"]].values
+
+try:
+    data[features]
+except:
+    raise Exception("data don't have initiated features, check config.features['train'] value and WARNINGs above")
 
 if(config.hyperparam["model_variable"]["work"]):
-    NN(data[features].values,data[config.name_class_cls].values,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
+    NN(data[features].values,data[config.name_class_cls].values,sample_weight,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
     output_path_predict = config.path_predict,
     output_path_mod = config.path_model,
     output_path_weight = config.path_weight,
@@ -163,7 +181,7 @@ if(config.statistic["metric"]):
 
 #picture
 from graphic import picture_cm, picture_loss, picture_roc_prc, picture_hist, picture_metrics
-if(not 0 in config.picture["roc_prc"]):
+if(config.picture["roc_prc"]["work"]):
     picture_roc_prc(config)
 #to network    
 #if(config.picture["loss"]):
@@ -177,7 +195,8 @@ if(config.picture["hist"]["work"]):
 #    picture_metrics(config)
 
 #prediction
-from network import large_file_prediction
-large_file_prediction(config)
+if(config.flags["prediction"]["work"]):
+    from network import large_file_prediction
+    large_file_prediction(config)
 
 #short statistic

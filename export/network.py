@@ -32,12 +32,6 @@ METRICS = [
       keras.metrics.AUC(name='prc', curve='PR'), # precision-recall curve
 ]
 
-early_stopping = keras.callbacks.EarlyStopping(
-    monitor='val_prc', 
-    verbose=1,
-    patience=10,
-    mode='max',
-    restore_best_weights=True)
 
 def SaveModel(model, path_model, path_weights, name):
     model_json = model.to_json()
@@ -83,11 +77,20 @@ def somemodel(features):
 def reconstruct_NN():
     return
 
+
 def model_volume(train,label,X_train,y_train,X_test,y_test,
-	model,optimizer,loss,class_weights,num_ep,batch_size,validation_split,
-	output_path_predict,path_save_eval,name,config):
-	
-    model.compile(optimizer=optimizer, loss=loss, metrics=METRICS) #!
+	model,optimizer,loss,sample_weight,class_weights,num_ep,batch_size,validation_split,
+    path_save_eval,name,config):
+
+    early_stopping = keras.callbacks.EarlyStopping(
+        monitor=config.hyperparam["model_variable"]["early_stopping"]["monitor"], 
+        verbose=1,
+        patience=config.hyperparam["model_variable"]["early_stopping"]["patience"],
+        mode=config.hyperparam["model_variable"]["early_stopping"]["mode"],
+        restore_best_weights=config.hyperparam["model_variable"]["early_stopping"]["restore_best_weights"])
+
+    model.compile(optimizer=optimizer, loss=loss, metrics=METRICS, weighted_metrics=['accuracy']) #!
+    print("model compiled")
     #model.compile(optimizer=optimizer, loss=loss, metrics=['acc'])
 
     '''
@@ -101,12 +104,13 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
         #verbose=1,
         verbose=0,
         batch_size=batch_size,
-        validation_split=validation_split
-        #callbacks=[early_stopping]
-        #class_weight=class_weights
+        validation_split=validation_split,
+        callbacks=[early_stopping],
+        class_weight=class_weights,
         #&&&????????????????????????????????????????????????????????????????????
-        #sample_weight=
+        sample_weight=sample_weight
         )
+    print("model fited")
     #model.evaluate(X_test, y_test, verbose=1)
     #model.summary()
 
@@ -136,7 +140,7 @@ def make_custom_index(index,list):
             name += str(list[i]) + 'n'
     return name
 
-def NN(train,label,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
+def NN(train,label,sample_weight,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
 output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
     
     features = train.shape[1]
@@ -149,8 +153,8 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
         model = DeepCustomNN_sm(features,l2,l3,l4,a[0],a[1],a[2],len(config.name_class))	
         
         model1 = model_volume(train,label,X_train,y_train,X_test,y_test,
-        model,optimizer,loss,class_weights,num_ep,batch_size,validation_split,
-        output_path_predict,path_save_eval,f"custom_sm_{name}",config)
+        model,optimizer,loss,sample_weight,class_weights,num_ep,batch_size,validation_split,
+        path_save_eval,f"custom_sm_{name}",config)
         SaveModel(model1,output_path_mod,output_path_weight,f"custom_sm_{name}")
     
     def model_activate(flag,custom_index,X_train,y_train,X_test,y_test):
@@ -213,11 +217,15 @@ def large_file_prediction(config):
                     mags = get_features(["mags"],config)
                     num_colours = sum(i for i in range(len(mags)))
                     colours = np.zeros((data.shape[0],num_colours))
-                    data_temp = np.array(data[mags])
+                    data_temp = np.array(data[mags].values)
+                    #print("data_temp",data_temp)
+                    index=0
                     for j in range(len(mags)):
                         for i in range(j, len(mags)):
                             if(i!=j):
                                 colours[:,index] = data_temp[:,j] - data_temp[:,i]
+                                index+=1
+                    #print(colours)
                     color = get_features(["color"],config)
                     colours = pd.DataFrame(colours,columns=color)
                     data_new = pd.concat([data_new,colours],axis=1)
@@ -231,10 +239,12 @@ def large_file_prediction(config):
                     num_colours = sum(i for i in range(len(mags)))
                     colours = np.zeros((data.shape[0],num_colours))
                     data_temp = np.array(data[mags])
+                    index=0
                     for j in range(len(mags)):
                         for i in range(j, len(mags)):
                             if(i!=j):
                                 colours[:,index] = data_temp[:,j] - data_temp[:,i]
+                                index+=1
                     err_color = get_features(["err_color"],config)
                     colours = pd.DataFrame(colours,columns=err_color)
                     data_new = pd.concat([data_new,colours],axis=1)
@@ -246,7 +256,9 @@ def large_file_prediction(config):
                 case _:
                     raise Exception('unknown config value config.features["train"]')
         #del data
-
+        print(data_new.columns.values)
+        print(data_new)
+        data_new.to_csv('/home/lrikozavr/ML_work/test/ml/prediction/data_new.csv')
         return data_new
         #get_features(config)
 
@@ -270,7 +282,7 @@ def large_file_prediction(config):
         if(i // count == index):
             index += 1
             #magic
-            data_mass = pd.DataFrame(np.array(data_mass), columns=columns)
+            data_mass = pd.DataFrame(data_mass, columns=columns)
             name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
             data = ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",data_mass,config)
             data.to_csv(f"{config.path_predict}_{name}_{index}.csv", index=False)
@@ -281,6 +293,7 @@ def large_file_prediction(config):
         i += 1
     #print(data_mass[200][1])
     data_mass = pd.DataFrame(data_mass, columns=columns)
+    data_mass = pd.DataFrame(data_mass.head(i - (index-1)*count))
     name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
     data = ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",data_mass,config)
     data.head(i - (index-1)*count).to_csv(f"{config.path_predict}_{name}_{index}.csv", index=False)

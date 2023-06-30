@@ -74,9 +74,6 @@ def out(line,col,fout,config):
     if(empty_count):
         fout.write(line_out)
 
-#                "columns": [[1,2,3,5,6,10,11,12,17,18,19],
-#                            [1,2,3,6,9,7,10,8,11,43,60,46,61,48,62]]
-
 def get_col_list(columns,config):
     col = []
     #print(columns)
@@ -301,23 +298,18 @@ def slice_download(catalogs_name,filename,filelist,config):
 def unslice(filename_list,filename,fout,config):
     import os
     f = open(fout,"w")
-    flag_2 = 1
     for name in filename_list:
-        flag_1 = 1
-        for line in open(f"{filename}/{name}"):
-            if flag_1:
-                if flag_2:
-                    flag_2 = 0
-                    f.write(line)
-                flag_1 = 0
-                continue
+        f_slice = open(f"{filename}/{name}",'r')
+        f.write(f_slice.readline())
+        for line in f_slice:
             if (line=='\n'):
                 continue
             f.write(line)
-        flag = 1
+        f_slice.close()
         
         if(config.flags["data_downloading"]["remove"]["catalogs_cross_cut_duplicate"][-1]):
             os.remove(f"{filename}/{name}")
+    
     if(config.flags["data_downloading"]["remove"]["dir"]):
         import shutil
         shutil.rmtree(filename)

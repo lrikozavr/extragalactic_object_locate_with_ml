@@ -16,6 +16,12 @@ from network import LoadModel, make_custom_index
 
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
+#from main import dir
+def dir(save_path,name):
+  dir_name = f"{save_path}/{name}"
+  if not os.path.isdir(dir_name):
+      os.mkdir(dir_name)
+
 def MCD_plot(name,d):
     count = len(d)
     ar_i = [i for i in range(count)]
@@ -105,7 +111,7 @@ def picture_metrics(config):
         fig.savefig(f'{config.path_pic}/{config.name_sample}_main_metrics_history.png')
         plt.close(fig)        
 
-def picture_hist(config,data=None):
+def picture_hist(config):
     
     def Hist1(ax,x,mag,label, **kwargs):
         ax.set_xlabel(mag,fontsize=40)
@@ -114,12 +120,6 @@ def picture_hist(config,data=None):
         ax.tick_params(axis='y', labelsize=30)
         #ax.set_title(name,fontsize = 50)
         ax.hist(x,bins=200, label=label,**kwargs)
-
-    #from main import dir
-    def dir(save_path,name):
-      dir_name = f"{save_path}/{name}"
-      if not os.path.isdir(dir_name):
-          os.mkdir(dir_name)
   
     dir(config.path_pic,'hist')
 
@@ -177,6 +177,7 @@ def picture_loss(optimizer,loss,config):
   for i in range(config.hyperparam["model_variable"]["kfold"]):
     name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
     model = LoadModel(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",optimizer,loss)
+    model.fit()
     plot_loss(ax,model,f"kfold_{i}",i)
   #
   if(config.picture["main"]["work"] and config.picture["main"]["bound"]):
@@ -214,11 +215,13 @@ def picture_roc_prc(config):
     fp, tp, _ = roc_curve(labels, predictions)
 
     #fig = plt.figure(figsize=(5,5))
-    ax.plot(100*fp, 100*tp, label=name, linewidth=2, **kwargs)
+    ax.plot(fp, tp, label=name, linewidth=2, **kwargs)
     ax.set_xlabel('False positives [%]', fontsize=24)
     ax.set_ylabel('True positives [%]', fontsize=24)
-    ax.set_xlim([-0.5,40])
-    ax.set_ylim([95,100.5])
+    ax.set_xlim(config.picture["roc_prc"]["lim_roc"][0])
+    ax.set_ylim(config.picture["roc_prc"]["lim_roc"][1])
+    ax.tick_params(axis='x', labelsize=30)
+    ax.tick_params(axis='y', labelsize=30)
     ax.grid(True)
     ax = plt.gca()
     #ax.legend()
@@ -230,15 +233,19 @@ def picture_roc_prc(config):
       precision, recall, _ = precision_recall_curve(labels, predictions)
 
       ax.plot(precision, recall, label=name, linewidth=2, **kwargs)
-      ax.set_xlim([0.4,1.05])
-      ax.set_ylim([0.9,1.01])
+      ax.set_xlim(config.picture["roc_prc"]["lim_prc"][0])
+      ax.set_ylim(config.picture["roc_prc"]["lim_prc"][1])
       ax.set_xlabel('Precision', fontsize=24)
       ax.set_ylabel('Recall', fontsize=24)
+      ax.tick_params(axis='x', labelsize=30)
+      ax.tick_params(axis='y', labelsize=30)
       ax.grid(True)
       ax = plt.gca()
       #ax.set_aspect('equal')
       #ax.legend()
   
+  dir(config.path_pic,'roc_prc')
+
   name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
   data_main = pd.read_csv(f'{config.path_eval}_custom_sm_{name}_prob.csv', header=0, sep=",")
 
@@ -248,7 +255,7 @@ def picture_roc_prc(config):
     data = pd.read_csv(f'{config.path_eval}_custom_sm_{name}_prob.csv', header=0, sep=",")
     data_mass.append(data)
   
-  for key in config.picture["roc_prc"]:
+  for key in config.picture["roc_prc"]["flags"]:
     match key:
         case 1:
             for class_name in config.name_class:
@@ -266,7 +273,8 @@ def picture_roc_prc(config):
                 fig.set_label(f"{config.name_sample}_{class_name}")
                 #fig.legend()
                 fig.set_size_inches(30,15)
-                fig.savefig(f'{config.path_pic}/{config.name_sample}_{class_name}_kfold_summary_roc_prc.png')
+                fig.savefig(f'{config.path_pic}/roc_prc/{config.name_sample}_{class_name}_kfold_summary_roc_prc.png')
+                plt.close(fig)
         case 2:
             fig = plt.figure()
             ax_prc = fig.add_subplot(1,2,2)
@@ -283,7 +291,8 @@ def picture_roc_prc(config):
             fig.set_size_inches(30,15)          
             fig.set_label(f"{config.name_sample}")
             #fig.legend()
-            fig.savefig(f'{config.path_pic}/{config.name_sample}_class_kfold_summary_roc_prc.png')
+            fig.savefig(f'{config.path_pic}/roc_prc/{config.name_sample}_class_kfold_summary_roc_prc.png')
+            plt.close(fig)
         case 3:
             for i in range(config.hyperparam["model_variable"]["kfold"]):
                 fig = plt.figure()
@@ -300,7 +309,8 @@ def picture_roc_prc(config):
                 fig.set_size_inches(30,15)          
                 fig.set_label(f"{config.name_sample}_{i}_kfold")
                 #fig.legend()
-                fig.savefig(f'{config.path_pic}/{config.name_sample}_{i}_kfold_class_summary_roc_prc.png')
+                fig.savefig(f'{config.path_pic}/roc_prc/{config.name_sample}_{i}_kfold_class_summary_roc_prc.png')
+                plt.close(fig)
         case 4:
             for i in range(config.hyperparam["model_variable"]["kfold"]):
                 for class_name in config.name_class:
@@ -317,7 +327,8 @@ def picture_roc_prc(config):
                     fig.set_size_inches(30,15)
                     fig.set_label(f"{config.name_sample}_{class_name}_{i}_kfold")
                     #fig.legend()
-                    fig.savefig(f'{config.path_pic}/{config.name_sample}_{i}_kfold_{class_name}_summary_roc_prc.png')
+                    fig.savefig(f'{config.path_pic}/roc_prc/{config.name_sample}_{i}_kfold_{class_name}_summary_roc_prc.png')
+                    plt.close(fig)
   
   if(config.picture["main"]["work"] and not config.picture["main"]["bound"]):
       if(4, 1 in config.picture["roc_prc"]):
@@ -332,7 +343,8 @@ def picture_roc_prc(config):
               ax_prc.legend(prop={'size': 15})
               fig.set_size_inches(30,15)          
               #fig.legend()
-              fig.savefig(f'{config.path_pic}/{config.name_sample}_{class_name}_main_roc_prc.png')
+              fig.savefig(f'{config.path_pic}/roc_prc/{config.name_sample}_{class_name}_main_roc_prc.png')
+              plt.close(fig)
       elif(2, 3 in config.picture["roc_prc"]):
           fig = plt.figure()
           ax_prc = fig.add_subplot(1,2,2)
@@ -345,6 +357,7 @@ def picture_roc_prc(config):
           fig.set_size_inches(30,15)                    
           fig.set_label(f"{config.name_sample}_main")
           #fig.legend()
-          fig.savefig(f'{config.path_pic}/{config.name_sample}_main_summary_roc_prc.png')
+          fig.savefig(f'{config.path_pic}/roc_prc/{config.name_sample}_main_summary_roc_prc.png')
+          plt.close(fig)
          
   print("picture ROC&PRC done")
