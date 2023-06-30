@@ -77,6 +77,29 @@ def somemodel(features):
 def reconstruct_NN():
     return
 
+from sklearn.ensemble import ExtraTreesClassifier
+def outlire(train,data_test,class_weight,sample_weight):
+
+    label = np.ones(train.shape[0])
+    
+    clf = ExtraTreesClassifier(n_estimators=500,
+                                 criterion='gini', 
+                                 class_weight=class_weight,
+                                 bootstrap=True,
+                                 random_state=476,
+                                 n_jobs=-1)
+    
+    clf.fit(X=train,y=label,sample_weight=sample_weight)
+
+    data_test = pd.DataFrame(data_test)
+    data_test["predict"] = clf.predict(data_test)
+    print("data predict by ExtraTreesClassifier:\n",data_test["predict"])
+    data_test = data_test[data_test["predict"] > 0.9999]
+    #print(data_test)
+    data_test = data_test.drop(["predict"], axis=1)
+    #print(data_test)
+    return np.array(data_test)
+
 
 def model_volume(train,label,X_train,y_train,X_test,y_test,
 	model,optimizer,loss,sample_weight,class_weights,num_ep,batch_size,validation_split,
@@ -114,12 +137,14 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
     #model.evaluate(X_test, y_test, verbose=1)
     #model.summary()
 
-
+    
 
     if(config.hyperparam["model_variable"]["metric_culc"] == "test"):
-        Class = model.predict(X_test, batch_size)
+        data_test = outlire(train,X_test,None,sample_weight)
+        Class = model.predict(data_test, batch_size)
         pd_label = pd.DataFrame(np.array(y_test), columns=config.name_class_cls)
     else:
+
         Class = model.predict(train, batch_size)
         pd_label = pd.DataFrame(np.array(label), columns=config.name_class_cls)
     #param from config (columns)

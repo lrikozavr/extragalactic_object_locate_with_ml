@@ -159,7 +159,9 @@ print("Features train values:\t",features)
 
 sample_weight = None
 if(config.hyperparam["model_variable"]["sample_weight"] in config.flags['data_preprocessing']['main_sample']['weight']['method']):
-    sample_weight = data[config.hyperparam["model_variable"]["sample_weight"]].values
+    #sample_weight = data[config.hyperparam["model_variable"]["sample_weight"]].values
+    sample_weight = data[config.hyperparam["model_variable"]["sample_weight"]].values.T[0]
+    print(sample_weight)
 
 try:
     data[features]
