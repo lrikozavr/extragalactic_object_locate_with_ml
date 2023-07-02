@@ -306,7 +306,13 @@ def process(path_sample,name,save_path, config):
         data['fuzzy_dist'] = Normali(data_dist, max)
         print(name," complite fuzzy_dist")
 
-    data.to_csv(f'{save_path}/{name}_main_sample.csv', index=False)
+    if(config.flags['data_preprocessing']['main_sample']['normalize']['work']):
+        from sklearn.preprocessing import normalize
+        columns = data.columns.values
+        data = pd.DataFrame(np.array(normalize(data)), columns = columns)
+
+    data.to_csv(f'{save_path}/{config.name_main_sample}_{name}_main_sample.csv', index=False)
+
     return data
 
 def data_preparation(save_path,path_sample,name_class,config):
@@ -315,13 +321,11 @@ def data_preparation(save_path,path_sample,name_class,config):
         data = pd.DataFrame()
         if(not config.flags['data_preprocessing']['main_sample']['work']):
             if(os.path.isfile(f"{save_path}/{name}_main_sample.csv")):   
-                data = pd.read_csv(f"{save_path}/{name}_main_sample.csv", header=0, sep=',')
+                data = pd.read_csv(f"{save_path}/{config.name_main_sample}_{name}_main_sample.csv", header=0, sep=',')
             else:
                 data = process(path_sample,name,save_path,config)
-                data.to_csv(f'{save_path}/{name}_main_sample.csv', index=False)
         else:
             data = process(path_sample,name,save_path,config)
-            data.to_csv(f'{save_path}/{name}_main_sample.csv', index=False)
 
         return data
     
@@ -356,7 +360,7 @@ def data_preparation(save_path,path_sample,name_class,config):
     print("final sample:\t---\t", data.shape[0])
 
     data = data.sample(data.shape[0], ignore_index=True)
-    data.to_csv(f'{save_path}/all.csv',index = False)
+    data.to_csv(f'{save_path}/{config.name_main_sample}_all.csv',index = False)
     
 
     return data

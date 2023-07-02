@@ -91,7 +91,7 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn import svm
 from sklearn.model_selection import RandomizedSearchCV,ShuffleSplit
 from sklearn.utils.fixes import loguniform
-def outlire(train,data_test,class_weight,sample_weight,config):
+def outlire(train,data_test,class_weight,sample_weight,name,config):
 
     label = np.ones(train.shape[0])
     '''
@@ -122,7 +122,7 @@ def outlire(train,data_test,class_weight,sample_weight,config):
         mode=config.hyperparam["model_variable"]["early_stopping"]["mode"],
         restore_best_weights=config.hyperparam["model_variable"]["early_stopping"]["restore_best_weights"])
 
-    clf_gs = LogisticRegression(data_test.shape[1])
+    clf_gs = LogisticRegression(train.shape[1])
     print("ok")
     clf_gs.compile(optimizer=config.hyperparam["optimizer"], loss="binary_crossentropy", metrics=METRICS)
     print("compile")
@@ -138,12 +138,13 @@ def outlire(train,data_test,class_weight,sample_weight,config):
         print(pred)
     except:
         print("aboba")
-    print("data predict by ExtraTreesClassifier:\n",data_test["predict"])
-    data_test = data_test[data_test["predict"] > 0.999]
+    print("data predict by NN:\n",data_test["predict"])
+    data_test = data_test[data_test["predict"] > config.hyperparam["model_variable"]["outlire"]["threshold"]]
     #print(data_test)
     data_test = data_test.drop(["predict"], axis=1)
     #print(data_test)
     print(data_test)
+    SaveModel(clf_gs,config.path_model,config.path_weight,f'outlire_{name}')
     return np.array(data_test), data_test.index
 
 
@@ -183,12 +184,14 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
     #model.evaluate(X_test, y_test, verbose=1)
     #model.summary()
 
-    
-
     if(config.hyperparam["model_variable"]["metric_culc"] == "test"):
-        data_test, outlire_index = outlire(train,X_test,None,sample_weight,config)
+        if(config.hyperparam["model_variable"]["outlire"]["work"]):
+            data_test, outlire_index = outlire(X_train,X_test,None,sample_weight,name,config)
+            pd_label = pd.DataFrame(np.array(y_test[outlire_index]), columns=config.name_class_cls)
+        else:
+            data_test = X_test
+            pd_label = pd.DataFrame(np.array(y_test), columns=config.name_class_cls)
         Class = model.predict(data_test, batch_size)
-        pd_label = pd.DataFrame(np.array(y_test[outlire_index]), columns=config.name_class_cls)
     else:
         Class = model.predict(train, batch_size)
         pd_label = pd.DataFrame(np.array(label), columns=config.name_class_cls)
@@ -325,10 +328,14 @@ def large_file_prediction(config):
                     data_new = pd.concat([data_new,data[mags_err]],axis=1)                    
                 case _:
                     raise Exception('unknown config value config.features["train"]')
-        #del data
-        print(data_new.columns.values)
-        print(data_new)
-        data_new.to_csv('/home/lrikozavr/ML_work/test/ml/prediction/data_new.csv')
+        del data
+        #print(data_new.columns.values)
+        #print(data_new)
+        #data_new.to_csv('/home/lrikozavr/ML_work/test/ml/prediction/data_new.csv')
+        if(config.flags["prediction"]["outlire"]):
+            outlire_model = LoadModel(f'{config.path_model}_outlire_{name}',f'{config.path_weight}_outlire_{name}',config.hyperparam["optimizer"],"binary_crossentropy")
+            data_new['outlire_prob'] = outlire_model.predict(data_new)
+            data_new = data_new[data_new['outlire_prob'] > config.hyperparam["model_variable"]["outlire"]["threshold"]].drop(['outlire_prob'], axis=1)
         return data_new
         #get_features(config)
 

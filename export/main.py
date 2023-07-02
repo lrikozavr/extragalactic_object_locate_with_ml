@@ -33,6 +33,7 @@ class Config():
 
     def __init__(self,fconfig):
         config = json.load(fconfig)
+        self.name_main_sample = config['name_sample']
         self.name_sample = config['name_sample'] + config['additional_name']
         self.general_path = config['general_path']
         self.data_path = config['data_path']
@@ -113,15 +114,15 @@ if(config.flags["data_downloading"]["work"]):
 data = pd.DataFrame()
 #data preparation
 if(not config.flags['data_preprocessing']['work']):
-    if(os.path.isfile(f'{config.path_ml_data}/all.csv')):
-        data = pd.read_csv(f'{config.path_ml_data}/all.csv', header = 0, sep = ',')
+    if(os.path.isfile(f'{config.path_ml_data}/{config.name_main_sample}_all.csv')):
+        data = pd.read_csv(f'{config.path_ml_data}/{config.name_main_sample}_all.csv', header = 0, sep = ',')
     else:
         data = data_preparation(config.path_ml_data,config.path_sample,config.name_class,config)
 else:
     data = data_preparation(config.path_ml_data,config.path_sample,config.name_class,config)    
 
 #data_statistic
-data.describe().transpose().to_csv(f'{config.path_stat}/{config.name_sample}_stat.log')
+data.describe().transpose().to_csv(f'{config.path_stat}/{config.name_main_sample}_stat.log')
 
 #network training
 #features from config

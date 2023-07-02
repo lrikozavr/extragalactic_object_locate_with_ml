@@ -58,13 +58,17 @@
                     },
                 "deredded": {
                     "work": false
-                    }
+                    },
+                "normalize": {
+                    "work": true
+                }
                 },
             "balanced": true
             },
         "prediction":{
             "work": false,
-            "batch_count": 10000000
+            "batch_count": 10000000,
+            "outlire": true
             },
         "system": "gpu"
         },
@@ -88,6 +92,10 @@
                     "patience": 5,
                     "mode": "max",
                     "restore_best_weights": true
+                },
+                "outlire":{
+                    "work": true,
+                    "threshold": 0.999
                 }
             }
         },
