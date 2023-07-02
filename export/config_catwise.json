@@ -30,7 +30,7 @@
                 }
             },
         "data_preprocessing":{
-            "work": true,
+            "work": false,
             "main_sample":{
                 "work": true,
                 "color":{
@@ -66,7 +66,7 @@
             "work": false,
             "batch_count": 10000000
             },
-        "system": "cpu"
+        "system": "gpu"
         },
     "hyperparam":{
         "batch_size": 1024,
@@ -76,7 +76,7 @@
         "validation_split": 0.3,
         "model_variable":{
                 "work": true,
-                "kfold": 5,
+                "kfold": 2,
                 "neuron_count": [64,64,64],
                 "activation": ["softsign","tanh","elu"],
                 "metric_culc": "test",
@@ -115,7 +115,7 @@
     "statistic":{
         "metric": true
         },
-    "additional_name": "4",
+    "additional_name": "6",
     "base": ["RA","DEC","z"],
     "name_class_column": "class",
     "features": {

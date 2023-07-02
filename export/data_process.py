@@ -290,6 +290,8 @@ def process(path_sample,name,save_path, config):
                 data = pd.concat([data,mcd_d,mcd_g], axis=1)
             if(config.flags['data_preprocessing']['main_sample']['outlire']['cut']):
                 data = data.drop(outlire)
+                data_color = data_color.drop(outlire)
+                data_err = data_err.drop(outlire)
     
     
     #additional weight

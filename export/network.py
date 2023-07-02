@@ -67,6 +67,16 @@ def DeepCustomNN_sm(features, l2, l3, l4, a2, a3, a4, output): #16, 8, 4
     model = Model(input_array, output_array)
     return model
 
+def LogisticRegression(features):
+    input_array = Input(shape=(features,))
+    layer_1 = Dense(features,activation='tanh',kernel_initializer='he_uniform')(input_array)
+    layer_2 = Dense(features,activation='elu',kernel_initializer='he_uniform')(layer_1)
+    layer_3 = Dropout(.4)(layer_2)
+    output_array = Dense(1, activation='sigmoid', kernel_initializer='he_uniform')(layer_3)
+
+    model = Model(input_array,output_array)
+    return model
+
 def somemodel(features):
     if output_bias is not None:
         output_bias = tf.keras.initializers.Constant(output_bias)
@@ -78,27 +88,63 @@ def reconstruct_NN():
     return
 
 from sklearn.ensemble import ExtraTreesClassifier
-def outlire(train,data_test,class_weight,sample_weight):
+from sklearn import svm
+from sklearn.model_selection import RandomizedSearchCV,ShuffleSplit
+from sklearn.utils.fixes import loguniform
+def outlire(train,data_test,class_weight,sample_weight,config):
 
     label = np.ones(train.shape[0])
-    
+    '''
     clf = ExtraTreesClassifier(n_estimators=500,
                                  criterion='gini', 
                                  class_weight=class_weight,
                                  bootstrap=True,
                                  random_state=476,
                                  n_jobs=-1)
+    '''
+    '''
+    params = {'C': loguniform(1e0, 1e3),
+          'gamma': loguniform(1e-4, 1e-2)}
     
-    clf.fit(X=train,y=label,sample_weight=sample_weight)
+    clf = svm.SVR(gamma='scale',
+                    kernel='rbf',
+                    cache_size=500)
+    clf_gs = RandomizedSearchCV(estimator=clf, param_distributions=params, 
+                                n_iter=10, scoring='f1', n_jobs=-1, 
+                                cv=ShuffleSplit(n_splits=1, test_size=0.2),   
+                                refit=True, verbose=1)
+    clf_gs.fit(X=train,y=label,sample_weight=sample_weight)
+    '''
+    early_stopping = keras.callbacks.EarlyStopping(
+        monitor=config.hyperparam["model_variable"]["early_stopping"]["monitor"], 
+        verbose=1,
+        patience=2,
+        mode=config.hyperparam["model_variable"]["early_stopping"]["mode"],
+        restore_best_weights=config.hyperparam["model_variable"]["early_stopping"]["restore_best_weights"])
 
+    clf_gs = LogisticRegression(data_test.shape[1])
+    print("ok")
+    clf_gs.compile(optimizer=config.hyperparam["optimizer"], loss="binary_crossentropy", metrics=METRICS)
+    print("compile")
+    clf_gs.fit(train,label,epochs=20,batch_size=1024,validation_split=0.3,callbacks=[early_stopping])
+    
     data_test = pd.DataFrame(data_test)
-    data_test["predict"] = clf.predict(data_test)
+    data_test["predict"] = clf_gs.predict(data_test)
+    print(data_test)
+    zero = pd.DataFrame(np.full((5,data_test.shape[1]-1),-20))
+    print(zero)
+    try:
+        pred = clf_gs.predict(zero)
+        print(pred)
+    except:
+        print("aboba")
     print("data predict by ExtraTreesClassifier:\n",data_test["predict"])
-    data_test = data_test[data_test["predict"] > 0.9999]
+    data_test = data_test[data_test["predict"] > 0.999]
     #print(data_test)
     data_test = data_test.drop(["predict"], axis=1)
     #print(data_test)
-    return np.array(data_test)
+    print(data_test)
+    return np.array(data_test), data_test.index
 
 
 def model_volume(train,label,X_train,y_train,X_test,y_test,
@@ -140,11 +186,10 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
     
 
     if(config.hyperparam["model_variable"]["metric_culc"] == "test"):
-        data_test = outlire(train,X_test,None,sample_weight)
+        data_test, outlire_index = outlire(train,X_test,None,sample_weight,config)
         Class = model.predict(data_test, batch_size)
-        pd_label = pd.DataFrame(np.array(y_test), columns=config.name_class_cls)
+        pd_label = pd.DataFrame(np.array(y_test[outlire_index]), columns=config.name_class_cls)
     else:
-
         Class = model.predict(train, batch_size)
         pd_label = pd.DataFrame(np.array(label), columns=config.name_class_cls)
     #param from config (columns)
