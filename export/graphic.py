@@ -125,7 +125,7 @@ def picture_hist(config):
 
     data_mass = []
     for class_name in config.name_class:
-        data_temp = pd.read_csv(f"{config.path_ml_data}/{class_name}_main_sample.csv", header=0, sep=',')       
+        data_temp = pd.read_csv(f"{config.path_ml_data}/{config.name_main_sample}_{class_name}_main_sample.csv", header=0, sep=',')       
         data_mass.append(data_temp)
 
     columns = data_mass[0].drop(config.base, axis=1).columns.values

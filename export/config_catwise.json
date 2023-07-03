@@ -1,8 +1,8 @@
 {
     "name_sample": "test_catwise",
-    "general_path": "/home/lrikozavr/ML_work/test",
+    "general_path": "/home/lrikozavr/ML_work/test_catwise",
     "data_path": "/home/lrikozavr/catalogs/elewen/exit_notlamost.csv",
-    "prediction_path": "/home/lrikozavr/ML_work/test/ml/data/gal_main_sample.csv",
+    "prediction_path": "/home/lrikozavr/ML_work/test_catwise/ml/data/test_catwise_gal_main_sample.csv",
     "flags":{
         "data_downloading":{
             "work": false,
@@ -61,15 +61,16 @@
                     },
                 "normalize": {
                     "work": true,
-                    "features": ["color"]
+                    "features": ["color"],
+                    "mode": "max"
                 }
                 },
             "balanced": true
             },
         "prediction":{
-            "work": false,
+            "work": true,
             "batch_count": 10000000,
-            "outlire": true
+            "outlire": false
             },
         "system": "gpu"
         },
@@ -80,8 +81,8 @@
         "loss": "categorical_crossentropy",
         "validation_split": 0.3,
         "model_variable":{
-                "work": true,
-                "kfold": 2,
+                "work": false,
+                "kfold": 3,
                 "neuron_count": [64,64,64],
                 "activation": ["softsign","tanh","elu"],
                 "metric_culc": "test",
@@ -95,12 +96,13 @@
                     "restore_best_weights": true
                 },
                 "outlire":{
-                    "work": true,
-                    "threshold": 0.999
+                    "work": false,
+                    "threshold": 0.99
                 }
             }
         },
     "picture":{
+            "work": false,
             "main": {
                 "work": true,
                 "bound": true
@@ -122,9 +124,9 @@
             "metrics_h":true
         },
     "statistic":{
-        "metric": true
+        "metric": false
         },
-    "additional_name": "6",
+    "additional_name": "1",
     "base": ["RA","DEC","z"],
     "name_class_column": "class",
     "features": {

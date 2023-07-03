@@ -280,14 +280,6 @@ def process(path_sample,name,save_path, config):
         if(config.flags['data_preprocessing']['main_sample']['color']['err']):
             data = pd.concat([data,data_err],axis=1)
 
-    if(config.flags['data_preprocessing']['main_sample']['normalize']['work']):
-        from sklearn.preprocessing import normalize
-        data_values = data[get_features(config.flags['data_preprocessing']['main_sample']['normalize']['color'],config)]
-        columns = data_values.columns.values
-        data_normalize, norms = normalize(data_values,norm='l2',axis=0,return_norm=True)
-        data[get_features(config.flags['data_preprocessing']['main_sample']['normalize']['color'],config)] = np.array(data_normalize)
-        pd.DataFrame(np.array(norms),columns = columns).to_csv(f"{config.path_stat}/{config.name_main_sample}_norms.csv")
-
 
     if(config.flags['data_preprocessing']['main_sample']['outlire']['work']):
         if("MCD" in config.flags['data_preprocessing']['main_sample']['outlire']['method'] ):
@@ -325,7 +317,7 @@ def data_preparation(save_path,path_sample,name_class,config):
     def preparation(name):
         data = pd.DataFrame()
         if(not config.flags['data_preprocessing']['main_sample']['work']):
-            if(os.path.isfile(f"{save_path}/{name}_main_sample.csv")):   
+            if(os.path.isfile(f"{save_path}/{config.name_main_sample}_{name}_main_sample.csv")):   
                 data = pd.read_csv(f"{save_path}/{config.name_main_sample}_{name}_main_sample.csv", header=0, sep=',')
             else:
                 data = process(path_sample,name,save_path,config)
@@ -356,7 +348,21 @@ def data_preparation(save_path,path_sample,name_class,config):
         for i in range(len(name_class)):
             data_temp = data_mass[i].sample(int(count.min()), random_state = 1)
             data = pd.concat([data,data_temp], ignore_index=True)
-        
+        print("data have equal count of classes")
+    
+    if(config.flags['data_preprocessing']['main_sample']['normalize']['work']):
+        from sklearn.preprocessing import normalize
+        #print(get_features(config.flags['data_preprocessing']['main_sample']['normalize']['features'],config))
+        #print(data)
+        data_values = data[get_features(config.flags['data_preprocessing']['main_sample']['normalize']['features'],config)]
+        columns = data_values.columns.values
+        data_normalize, norms = normalize(data_values,norm='l2',axis=0,return_norm=True)
+        data[get_features(config.flags['data_preprocessing']['main_sample']['normalize']['features'],config)] = np.array(data_normalize)
+        #print(norms)
+        #print(np.array(norms).transpose())
+        pd.DataFrame(np.array([norms]),columns = columns).to_csv(f"{config.path_stat}/{config.name_main_sample}_norms.csv", index=False)
+        print("complite normalize")
+    
     del data_mass
     
     for i in range(len(name_class)):

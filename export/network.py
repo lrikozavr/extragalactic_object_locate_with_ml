@@ -328,13 +328,15 @@ def large_file_prediction(config):
                     data_new = pd.concat([data_new,data[mags_err]],axis=1)                    
                 case _:
                     raise Exception('unknown config value config.features["train"]')
+        
         del data
+        
         #print(data_new.columns.values)
         #print(data_new)
         #data_new.to_csv('/home/lrikozavr/ML_work/test/ml/prediction/data_new.csv')
         if(config.flags['data_preprocessing']['main_sample']['normalize']['work']):
             norms = pd.read_csv(f"{config.path_stat}/{config.name_main_sample}_norms.csv")
-            data_new[norms.columns.values] = data_new[norms.columns.values].div(norms)
+            data_new[norms.columns.values] = data_new[norms.columns.values].div(np.array(norms))
 
         if(config.flags["prediction"]["outlire"]):
             outlire_model = LoadModel(f'{config.path_model}_outlire_{name}',f'{config.path_weight}_outlire_{name}',config.hyperparam["optimizer"],"binary_crossentropy")
@@ -359,15 +361,21 @@ def large_file_prediction(config):
     #data_mass = np.array((count,))
     f = open(config.prediction_path,'r')
     columns = f.readline().strip('\n').split(",")
-    
+
+    for fc in config.features["data"]:
+        if(not fc in columns):
+            raise Exception("prediction catalog don't have features columns")
+
     for line in f:
         if(i // count == index):
             index += 1
             #magic
-            data_mass = pd.DataFrame(data_mass, columns=columns)
+            data_mass_temp = pd.DataFrame(data_mass, columns=columns)
             name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
-            data = ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",data_mass,config)
-            data.to_csv(f"{config.path_predict}_{name}_{index}.csv", index=False)
+            data = ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",data_mass_temp,config)
+            data.to_csv(f"{config.path_predict}_{name}_{index-1}.csv", index=False)
+            print(index-1,"done")
+            del data
 
         #print(i - (index-1)*count)
         data_mass[i - (index-1)*count] = list(map(float,line.strip('\n').split(",")))

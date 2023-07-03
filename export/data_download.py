@@ -298,9 +298,11 @@ def slice_download(catalogs_name,filename,filelist,config):
 def unslice(filename_list,filename,fout,config):
     import os
     f = open(fout,"w")
-    for name in filename_list:
+    for n, name in enumerate(filename_list):
         f_slice = open(f"{filename}/{name}",'r')
-        f.write(f_slice.readline())
+        first_line = f_slice.readline()
+        if(n==0):
+            f.write(first_line)
         for line in f_slice:
             if (line=='\n'):
                 continue
@@ -318,6 +320,7 @@ def unslice(filename_list,filename,fout,config):
     f.close()
 
 def class_download(name,path_sample,config):
+    
     catalogs_names = config.flags["data_downloading"]["catalogs"]["name"]
     #differentiation origin catalog to slice
     stat_count, filelist = slice(f'{path_sample}/{name}_origin.csv',f'{path_sample}/{name}', config.flags["data_downloading"]["slice_count"],config.base)
@@ -330,6 +333,8 @@ def class_download(name,path_sample,config):
         count_cat = slice_download(catalogs_names,f'{path_sample}/{name}',filelist,config)
         stat_count = pd.concat([stat_count,count_cat],axis=1)
     #
+    #stat_count = pd.read_csv(f'{config.path_stat}/{name}_slice.log', header=0, sep=',')
+    #
     filename_list = []
     for i in range(stat_count.shape[0]):
         line = str(i)
@@ -337,6 +342,7 @@ def class_download(name,path_sample,config):
             line += "_" + stat_count.columns.values[j]
         filename_list.append(f'{line}.csv')
     #
+    print(filename_list)
     unslice(filename_list,f'{path_sample}/{name}',f'{path_sample}/{name}.csv',config)
     #    
     if(config.flags["data_downloading"]["remove"]["origin"]):
