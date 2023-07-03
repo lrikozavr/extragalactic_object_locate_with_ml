@@ -279,7 +279,16 @@ def process(path_sample,name,save_path, config):
             data = pd.concat([data,data_color],axis=1)
         if(config.flags['data_preprocessing']['main_sample']['color']['err']):
             data = pd.concat([data,data_err],axis=1)
-        
+
+    if(config.flags['data_preprocessing']['main_sample']['normalize']['work']):
+        from sklearn.preprocessing import normalize
+        data_values = data[get_features(config.flags['data_preprocessing']['main_sample']['normalize']['color'],config)]
+        columns = data_values.columns.values
+        data_normalize, norms = normalize(data_values,norm='l2',axis=0,return_norm=True)
+        data[get_features(config.flags['data_preprocessing']['main_sample']['normalize']['color'],config)] = np.array(data_normalize)
+        pd.DataFrame(np.array(norms),columns = columns).to_csv(f"{config.path_stat}/{config.name_main_sample}_norms.csv")
+
+
     if(config.flags['data_preprocessing']['main_sample']['outlire']['work']):
         if("MCD" in config.flags['data_preprocessing']['main_sample']['outlire']['method'] ):
             mcd_d, gauss_d, outlire = MCD(data_issue(config.flags['data_preprocessing']['main_sample']['outlire']['value']),0,config)
@@ -306,10 +315,6 @@ def process(path_sample,name,save_path, config):
         data['fuzzy_dist'] = Normali(data_dist, max)
         print(name," complite fuzzy_dist")
 
-    if(config.flags['data_preprocessing']['main_sample']['normalize']['work']):
-        from sklearn.preprocessing import normalize
-        columns = data.columns.values
-        data = pd.DataFrame(np.array(normalize(data)), columns = columns)
 
     data.to_csv(f'{save_path}/{config.name_main_sample}_{name}_main_sample.csv', index=False)
 

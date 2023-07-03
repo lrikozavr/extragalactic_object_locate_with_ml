@@ -332,10 +332,15 @@ def large_file_prediction(config):
         #print(data_new.columns.values)
         #print(data_new)
         #data_new.to_csv('/home/lrikozavr/ML_work/test/ml/prediction/data_new.csv')
+        if(config.flags['data_preprocessing']['main_sample']['normalize']['work']):
+            norms = pd.read_csv(f"{config.path_stat}/{config.name_main_sample}_norms.csv")
+            data_new[norms.columns.values] = data_new[norms.columns.values].div(norms)
+
         if(config.flags["prediction"]["outlire"]):
             outlire_model = LoadModel(f'{config.path_model}_outlire_{name}',f'{config.path_weight}_outlire_{name}',config.hyperparam["optimizer"],"binary_crossentropy")
             data_new['outlire_prob'] = outlire_model.predict(data_new)
             data_new = data_new[data_new['outlire_prob'] > config.hyperparam["model_variable"]["outlire"]["threshold"]].drop(['outlire_prob'], axis=1)
+
         return data_new
         #get_features(config)
 

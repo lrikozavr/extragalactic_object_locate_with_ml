@@ -60,7 +60,8 @@
                     "work": false
                     },
                 "normalize": {
-                    "work": true
+                    "work": true,
+                    "features": ["color"]
                 }
                 },
             "balanced": true
