@@ -91,12 +91,12 @@ dir(config.path_ml,'prediction')
 dir(config.path_ml,'picture')
 
 #data download
+if(config.flags["data_downloading"]["class_diff"]):
+    diff_class(config)
+
 if(config.flags["data_downloading"]["work"]):
     #stat_mass = []
     sum_mass = pd.DataFrame()
-
-    if(config.flags["data_downloading"]["class_diff"]):
-        diff_class(config)
 
     for name in config.name_class:
         stat = class_download(name, config.path_sample,config)

@@ -6,6 +6,17 @@ import os
 
 
 #sample_path = f'{general_path}/sample'
+def get_col_list(columns,config):
+    col = []
+    #print(columns)
+    for column in config.base:
+        col.append(columns.index(column))
+    for column in config.features["data"]:
+        try:
+            col.append(columns.index(column))
+        except:
+            continue
+    return col
 
 def diff_class(config):
     #create file for class obj
@@ -13,23 +24,27 @@ def diff_class(config):
     #for i in range(len(name_class)):
     #    data_mass.append(pd.DataFrame())
     #
-    data_file = []
-    for i in range(len(config.name_class)):
-        f = open(f'{config.path_sample}/{config.name_class[i]}_origin.csv','w')
-        f.write(','.join(config.base)+"\n")
-        data_file.append(f)
 
     #extract exgal and star obj from file exit.sort
     count = np.zeros(len(config.name_class))
 
     f = open(config.data_path,'r')
     first_line = f.readline().strip('\n').split(",")
-    base_index_array = [first_line.index(config.base[i]) for i in range(len(config.base))]
+    base_index_array = get_col_list(first_line, config)
     name_class_column_index = first_line.index(config.name_class_column)
+
+    data_file = []
+    for i in range(len(config.name_class)):
+        if(len(base_index_array) == len(config.base)):
+            f = open(f'{config.path_sample}/{config.name_class[i]}_origin.csv','w')
+        else:
+            f = open(f'{config.path_sample}/{config.name_class[i]}.csv','w')
+        f.write(','.join([first_line[base_index_array[i]] for i in range(len(base_index_array))])+"\n")
+        data_file.append(f)
 
     for line in f:
         n = line.strip('\n').split(',')
-        base_array = [n[base_index_array[i]] for i in range(len(config.base))]
+        base_array = [n[base_index_array[i]] for i in range(len(base_index_array))]
         #if(len(n[4].split('_')) == 1 and (n[4] == 'lamost' or n[4] == 'sdss')):
         index = 0 
         line_out = ''
@@ -73,18 +88,6 @@ def out(line,col,fout,config):
         index += 1
     if(empty_count):
         fout.write(line_out)
-
-def get_col_list(columns,config):
-    col = []
-    #print(columns)
-    for column in config.base:
-        col.append(columns.index(column))
-    for column in config.features["data"]:
-        try:
-            col.append(columns.index(column))
-        except:
-            continue
-    return col
 
 #cut dublicate
 def cut_cut(filein,fileout,config):
