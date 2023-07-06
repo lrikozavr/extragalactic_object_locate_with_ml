@@ -90,7 +90,7 @@ def reconstruct_NN():
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn import svm
 from sklearn.model_selection import RandomizedSearchCV,ShuffleSplit
-from sklearn.utils.fixes import loguniform
+#from sklearn.utils.fixes import loguniform
 def outlire(train,data_test,class_weight,sample_weight,name,config):
 
     label = np.ones(train.shape[0])
@@ -146,6 +146,13 @@ def outlire(train,data_test,class_weight,sample_weight,name,config):
     print(data_test)
     SaveModel(clf_gs,config.path_model,config.path_weight,f'outlire_{name}')
     return np.array(data_test), data_test.index
+
+#def redshift_predict(train,label,X_test,y_test,config):
+    
+
+    
+    
+
 
 
 def model_volume(train,label,X_train,y_train,X_test,y_test,
@@ -245,12 +252,6 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
                 for name in custom_index:
                     executor.submit(cust_model,name,X_train,y_train,X_test,y_test)
     
-
-
-    #print(features)
-    #print(label)
-    #train = np.array(train)
-
     #hyperparam from config
     kfold = KFold(n_splits=config.hyperparam["model_variable"]["kfold"], shuffle=False)
     index=0
@@ -348,10 +349,14 @@ def large_file_prediction(config):
 
     def ml(output_path_mod,output_path_weight,data,config):
         model = LoadModel(output_path_mod,output_path_weight,config.hyperparam["optimizer"],config.hyperparam["loss"])
-        predicted = model.predict(DataTransform(data,config), config.hyperparam["batch_size"])
-
+        data_temp_tr = data[config.features['data']].replace('null',0.0).astype(float)
+        data_transform = DataTransform(data_temp_tr,config)
+        del data_temp_tr
+        predicted = model.predict(data_transform, config.hyperparam["batch_size"])
+        del data_transform
         predicted = pd.DataFrame(np.array(predicted), columns=config.name_class_prob)
         data = pd.concat([data,predicted], axis=1)
+        del predicted
         return data
     
     count = config.flags["prediction"]["batch_count"]
@@ -365,7 +370,7 @@ def large_file_prediction(config):
     for fc in config.features["data"]:
         if(not fc in columns):
             raise Exception("prediction catalog don't have features columns")
-
+    import time
     for line in f:
         if(i // count == index):
             index += 1
@@ -375,15 +380,20 @@ def large_file_prediction(config):
             data = ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",data_mass_temp,config)
             data.to_csv(f"{config.path_predict}_{name}_{index-1}.csv", index=False)
             print(index-1,"done")
+            del data_mass_temp
             del data
+            time.sleep(3)
 
         #print(i - (index-1)*count)
-        data_mass[i - (index-1)*count] = list(map(float,line.strip('\n').split(",")))
-        
-        i += 1
+        line_list = list(line.strip('\n').split(","))
+        if(len(line_list) == len(columns)):
+            data_mass[i - (index-1)*count] = line_list
+            i += 1
+
     #print(data_mass[200][1])
     data_mass = pd.DataFrame(data_mass, columns=columns)
     data_mass = pd.DataFrame(data_mass.head(i - (index-1)*count))
     name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
     data = ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",data_mass,config)
     data.head(i - (index-1)*count).to_csv(f"{config.path_predict}_{name}_{index}.csv", index=False)
+    del data

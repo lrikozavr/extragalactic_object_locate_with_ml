@@ -78,10 +78,10 @@ def fuzzy_err(data):
     #print(count,columns)
 
     max = np.zeros(len(columns))
-    index=0
-    for col in columns:
+    #index=0
+    for index, col in enumerate(columns):
         max[index] = data[col].max()
-        index+=1
+        
 
     summ = np.zeros(count)
     for i in range(count):

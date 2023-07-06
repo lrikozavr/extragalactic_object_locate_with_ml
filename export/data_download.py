@@ -28,8 +28,8 @@ def diff_class(config):
     #extract exgal and star obj from file exit.sort
     count = np.zeros(len(config.name_class))
 
-    f = open(config.data_path,'r')
-    first_line = f.readline().strip('\n').split(",")
+    fin = open(config.data_path,'r')
+    first_line = fin.readline().strip('\n').split(",")
     base_index_array = get_col_list(first_line, config)
     name_class_column_index = first_line.index(config.name_class_column)
 
@@ -42,7 +42,7 @@ def diff_class(config):
         f.write(','.join([first_line[base_index_array[i]] for i in range(len(base_index_array))])+"\n")
         data_file.append(f)
 
-    for line in f:
+    for line in fin:
         n = line.strip('\n').split(',')
         base_array = [n[base_index_array[i]] for i in range(len(base_index_array))]
         #if(len(n[4].split('_')) == 1 and (n[4] == 'lamost' or n[4] == 'sdss')):
