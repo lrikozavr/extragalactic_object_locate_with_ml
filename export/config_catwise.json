@@ -81,7 +81,7 @@
         "loss": "categorical_crossentropy",
         "validation_split": 0.3,
         "model_variable":{
-                "work": false,
+                "work": true,
                 "kfold": 3,
                 "neuron_count": [64,64,64],
                 "activation": ["softsign","tanh","elu"],
@@ -102,7 +102,7 @@
             }
         },
     "picture":{
-            "work": false,
+            "work": true,
             "main": {
                 "work": true,
                 "bound": true
@@ -126,7 +126,7 @@
     "statistic":{
         "metric": false
         },
-    "additional_name": "1",
+    "additional_name": "loadmodel1",
     "base": ["RA","DEC","z"],
     "name_class_column": "class",
     "features": {

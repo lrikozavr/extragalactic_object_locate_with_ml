@@ -167,7 +167,7 @@ if(config.hyperparam["model_variable"]["work"]):
         raise Exception("data don't have initiated features, check config.features['train'] value and WARNINGs above")
 
     if(config.hyperparam["model_variable"]["work"]):
-        NN(data[features].values,data[config.name_class_cls].values,sample_weight,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
+        NN(data[features].values,data[config.name_class_cls].values,data['z'].values,sample_weight,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
         output_path_predict = config.path_predict,
         output_path_mod = config.path_model,
         output_path_weight = config.path_weight,
