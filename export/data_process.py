@@ -198,9 +198,6 @@ def redded_des(data):
     data['zmag'] -= 1.1959*data['E(B-V)']
     data['Ymag'] -= 1.048*data['E(B-V)']
 '''
-def redded_(data,name):
-    return
-
 
 def NtoPtoN(data,index):
     res = []
@@ -245,6 +242,57 @@ def get_features(features_list,config):
     
     return features
 
+def deredded(data,config_local):
+    mags = get_features(['mags'],config_local)
+
+    if(not len(mags)==len(config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["coef"])):
+        raise Exception('config.flags["data_preprocessing"]["main_sample"]["deredded"]["coef"] invalid count')
+
+    def dust_SFD(ra,dec):
+        from dustmaps.config import config
+        config['data_dir'] = config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["dust_map_dir"]
+        from astropy.coordinates import SkyCoord
+        from astropy import units as u
+        from dustmaps.sfd import SFDQuery
+        coords = SkyCoord(ra=ra, dec=dec, unit=(u.degree,u.degree))
+        coords.galactic
+        sfd = SFDQuery()
+        rezult = sfd(coords)
+        return rezult
+    print("0")
+    data['E(B-V)'] = dust_SFD(data[config_local.base[0]],data[config_local.base[1]])
+    print("1")
+    print(data)
+    from extinction_coefficient import extinction_coefficient
+    
+    def ext(DATA,EBV):
+        return DATA - EBV*extinction_coefficient(config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["coef"][i], EBV=EBV, Teff=5500)
+
+    v_ext = np.vectorize(ext)
+
+    MAX_WORKERS=16
+    step = int(data.shape[0]/MAX_WORKERS)
+    from concurrent.futures import ThreadPoolExecutor
+    rezult = []
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        for i, name in enumerate(mags):
+            for j_index in range(0,data.shape[0],step):
+                if(j_index+step > data.shape[0]):
+                    #vector = data.loc[j_index:data.shape[0],(name)]
+                    #ebv_vector = data.loc[j_index:data.shape[0],('E(B-V)')]
+
+                    rezult.append(executor.submit(v_ext,data.loc[j_index:data.shape[0],(name)],data.loc[j_index:data.shape[0],('E(B-V)')]))
+                    break
+                
+                #vector = data.loc[j_index:j_index+step,(name)]
+                #ebv_vector = data.loc[j_index:j_index+step,('E(B-V)')]
+                rezult.append(executor.submit(v_ext,data.loc[j_index:j_index+step,(name)],data.loc[j_index:j_index+step,('E(B-V)')]))
+
+
+
+    print("2")
+
+
 def process(path_sample,name,save_path, config):
     #data_mags = data.drop(['RA','DEC','z','CatName','Class'], axis=1)
     data = pd.read_csv(f"{path_sample}/{name}.csv", header=0, sep=',')
@@ -269,8 +317,11 @@ def process(path_sample,name,save_path, config):
                 return data[config.features["data"]]
             case _:
                 raise Exception('wrong value flags["data_preprocessing"]["main_sample"]["weight"]["value"]')
-
-    #redded_des(data)
+    #deredded
+    if(config.flags['data_preprocessing']['main_sample']['deredded']['work']):
+        deredded(data,config)
+        print(name, " deredded complite")
+    
     #print(name, 'deredded complite')
     if(config.flags['data_preprocessing']['main_sample']['color']['work']):
         data_color, data_err = colors(data[config.features["data"]])

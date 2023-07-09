@@ -30,7 +30,7 @@
                 }
             },
         "data_preprocessing":{
-            "work": false,
+            "work": true,
             "main_sample":{
                 "work": true,
                 "color":{
@@ -57,7 +57,9 @@
                     "//comment_value": "[color,err,features]"
                     },
                 "deredded": {
-                    "work": false
+                    "work": true,
+                    "coef": ["W1","W2","G","BP","RP"],
+                    "dust_map_dir": "/home/lrikozavr/catalogs/dustmaps/"
                     },
                 "normalize": {
                     "work": true,
@@ -126,7 +128,7 @@
     "statistic":{
         "metric": false
         },
-    "additional_name": "loadmodel1",
+    "additional_name": "deredded",
     "base": ["RA","DEC","z"],
     "name_class_column": "class",
     "features": {
