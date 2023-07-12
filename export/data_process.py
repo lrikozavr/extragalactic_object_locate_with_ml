@@ -271,24 +271,25 @@ def deredded(data,config_local):
     v_ext = np.vectorize(ext)
 
     MAX_WORKERS=16
-    step = int(data.shape[0]/MAX_WORKERS)
+    #step = int(data.shape[0]/MAX_WORKERS)
     from concurrent.futures import ThreadPoolExecutor
     rezult = []
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         for i, name in enumerate(mags):
-            for j_index in range(0,data.shape[0],step):
-                if(j_index+step > data.shape[0]):
+            #for j_index in range(0,data.shape[0],step):
+                #if(j_index+step > data.shape[0]):
                     #vector = data.loc[j_index:data.shape[0],(name)]
                     #ebv_vector = data.loc[j_index:data.shape[0],('E(B-V)')]
 
-                    rezult.append(executor.submit(v_ext,data.loc[j_index:data.shape[0],(name)],data.loc[j_index:data.shape[0],('E(B-V)')]))
-                    break
+                    #rezult.append(executor.submit(v_ext,data.loc[j_index:data.shape[0],(name)],data.loc[j_index:data.shape[0],('E(B-V)')]))
+                    #break
                 
                 #vector = data.loc[j_index:j_index+step,(name)]
                 #ebv_vector = data.loc[j_index:j_index+step,('E(B-V)')]
-                rezult.append(executor.submit(v_ext,data.loc[j_index:j_index+step,(name)],data.loc[j_index:j_index+step,('E(B-V)')]))
+            rezult.append(executor.submit(v_ext,data[name],data['E(B-V)']))
 
-
+    for i, name in enumerate(mags):
+        data[name] = rezult[i].result()
 
     print("2")
 
