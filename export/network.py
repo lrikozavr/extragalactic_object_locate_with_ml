@@ -332,7 +332,7 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
 
 
 def large_file_prediction(config):
-    from data_process import get_features
+    from data_process import get_features, deredded
 
     def DataTransform(data,config):
         data_new = pd.DataFrame()
@@ -401,10 +401,17 @@ def large_file_prediction(config):
 
     def ml(output_path_mod,output_path_weight,data,config):
         model = LoadModel(output_path_mod,output_path_weight,config.hyperparam["optimizer"],config.hyperparam["loss"])
-        data_temp_tr = data[config.features['data']].replace('null',0.0).astype(float)
+        print(data)
+        data_temp = deredded(data,config)
+        print("deredded")
+        data_temp_tr = data_temp[config.features['data']].replace('null',0.0).astype(float)
+        print("cut null")
+        del data_temp
         data_transform = DataTransform(data_temp_tr,config)
+        print("Data Transform")
         del data_temp_tr
         predicted = model.predict(data_transform, config.hyperparam["batch_size"])
+        print("predicted")
         del data_transform
         predicted = pd.DataFrame(np.array(predicted), columns=config.name_class_prob)
         data = pd.concat([data,predicted], axis=1)
@@ -427,6 +434,7 @@ def large_file_prediction(config):
         if(i // count == index):
             index += 1
             #magic
+            print(index-1,"start")
             data_mass_temp = pd.DataFrame(data_mass, columns=columns)
             name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
             data = ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",data_mass_temp,config)

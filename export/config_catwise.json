@@ -2,7 +2,7 @@
     "name_sample": "test_catwise",
     "general_path": "/home/lrikozavr/ML_work/test_catwise",
     "data_path": "/home/lrikozavr/catalogs/elewen/exit_notlamost.csv",
-    "prediction_path": "/home/lrikozavr/ML_work/test_catwise/ml/data/test_catwise_gal_main_sample.csv",
+    "prediction_path": "/home/lrikozavr/ML_work/test_catwise/ml/data/test_catwise_gal_main_sample_test.csv",
     "flags":{
         "data_downloading":{
             "work": false,
@@ -62,7 +62,7 @@
                     "dust_map_dir": "/home/lrikozavr/catalogs/dustmaps/"
                     },
                 "normalize": {
-                    "work": true,
+                    "work": false,
                     "features": ["color"],
                     "mode": "max"
                 }
@@ -74,7 +74,7 @@
             "batch_count": 10000000,
             "outlire": false
             },
-        "system": "gpu"
+        "system": "cpu"
         },
     "hyperparam":{
         "batch_size": 1024,
@@ -83,8 +83,8 @@
         "loss": "categorical_crossentropy",
         "validation_split": 0.3,
         "model_variable":{
-                "work": true,
-                "kfold": 3,
+                "work": false,
+                "kfold": 4,
                 "neuron_count": [64,64,64],
                 "activation": ["softsign","tanh","elu"],
                 "metric_culc": "test",
@@ -104,7 +104,7 @@
             }
         },
     "picture":{
-            "work": true,
+            "work": false,
             "main": {
                 "work": true,
                 "bound": true
@@ -126,9 +126,9 @@
             "metrics_h":true
         },
     "statistic":{
-        "metric": false
+        "metric": true
         },
-    "additional_name": "deredded",
+    "additional_name": "deredded4",
     "base": ["RA","DEC","z"],
     "name_class_column": "class",
     "features": {

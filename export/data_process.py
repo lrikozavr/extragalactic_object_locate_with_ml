@@ -245,53 +245,43 @@ def get_features(features_list,config):
 def deredded(data,config_local):
     mags = get_features(['mags'],config_local)
 
+    from extinction_coefficient import extinction_coefficient
+    EXTINCTION_COEFFICIENT_config_mass_value = pd.DataFrame()
+    for i, name in enumerate(mags):
+        EXTINCTION_COEFFICIENT_config_mass_value[name] = extinction_coefficient(config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["coef"][i], mode='simple')
+
     if(not len(mags)==len(config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["coef"])):
         raise Exception('config.flags["data_preprocessing"]["main_sample"]["deredded"]["coef"] invalid count')
 
-    def dust_SFD(ra,dec):
-        from dustmaps.config import config
-        config['data_dir'] = config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["dust_map_dir"]
-        from astropy.coordinates import SkyCoord
-        from astropy import units as u
-        from dustmaps.sfd import SFDQuery
-        coords = SkyCoord(ra=ra, dec=dec, unit=(u.degree,u.degree))
-        coords.galactic
-        sfd = SFDQuery()
-        rezult = sfd(coords)
-        return rezult
-    print("0")
-    data['E(B-V)'] = dust_SFD(data[config_local.base[0]],data[config_local.base[1]])
-    print("1")
-    print(data)
-    from extinction_coefficient import extinction_coefficient
+    ra = data[config_local.base[0]].astype(float)
+    dec = data[config_local.base[1]].astype(float)
     
-    def ext(DATA,EBV):
-        return DATA - EBV*extinction_coefficient(config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["coef"][i], EBV=EBV, Teff=5500)
+    from dustmaps.config import config
+    config['data_dir'] = config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["dust_map_dir"]
+    from astropy.coordinates import SkyCoord
+    from astropy import units as u
+    from dustmaps.sfd import SFDQuery
+    coords = SkyCoord(ra=ra, dec=dec, unit=(u.degree,u.degree))
+    del ra, dec
+    coords.galactic
+    sfd = SFDQuery()
+    rezult = sfd(coords)
+    del coords
+    
+    data['E(B-V)'] = rezult
+    del rezult
+    
+    
+    def ext(DATA,EBV,name):
+        return DATA - EBV*EXTINCTION_COEFFICIENT_config_mass_value.loc[0,(name)]
 
     v_ext = np.vectorize(ext)
 
-    MAX_WORKERS=16
-    #step = int(data.shape[0]/MAX_WORKERS)
-    from concurrent.futures import ThreadPoolExecutor
-    rezult = []
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        for i, name in enumerate(mags):
-            #for j_index in range(0,data.shape[0],step):
-                #if(j_index+step > data.shape[0]):
-                    #vector = data.loc[j_index:data.shape[0],(name)]
-                    #ebv_vector = data.loc[j_index:data.shape[0],('E(B-V)')]
+    for name in mags:
+        data[name] = v_ext(data[name].astype(float),data['E(B-V)'].astype(float),name)
 
-                    #rezult.append(executor.submit(v_ext,data.loc[j_index:data.shape[0],(name)],data.loc[j_index:data.shape[0],('E(B-V)')]))
-                    #break
-                
-                #vector = data.loc[j_index:j_index+step,(name)]
-                #ebv_vector = data.loc[j_index:j_index+step,('E(B-V)')]
-            rezult.append(executor.submit(v_ext,data[name],data['E(B-V)']))
-
-    for i, name in enumerate(mags):
-        data[name] = rezult[i].result()
-
-    print("2")
+    data = data.drop(['E(B-V)'], axis=1)
+    return data
 
 
 def process(path_sample,name,save_path, config):
@@ -320,7 +310,7 @@ def process(path_sample,name,save_path, config):
                 raise Exception('wrong value flags["data_preprocessing"]["main_sample"]["weight"]["value"]')
     #deredded
     if(config.flags['data_preprocessing']['main_sample']['deredded']['work']):
-        deredded(data,config)
+        data = deredded(data,config)
         print(name, " deredded complite")
     
     #print(name, 'deredded complite')
