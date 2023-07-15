@@ -253,8 +253,8 @@ def deredded(data,config_local):
     if(not len(mags)==len(config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["coef"])):
         raise Exception('config.flags["data_preprocessing"]["main_sample"]["deredded"]["coef"] invalid count')
 
-    ra = data[config_local.base[0]].astype(float)
-    dec = data[config_local.base[1]].astype(float)
+    ra = data[config_local.base[0]].astype(float).values
+    dec = data[config_local.base[1]].astype(float).values
     
     from dustmaps.config import config
     config['data_dir'] = config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["dust_map_dir"]

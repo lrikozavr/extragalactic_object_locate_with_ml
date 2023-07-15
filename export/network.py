@@ -426,6 +426,9 @@ def large_file_prediction(config):
     f = open(config.prediction_path,'r')
     columns = f.readline().strip('\n').split(",")
 
+    columns = [col+"_a" for i, col in enumerate(columns) if (col in config.base) and (i >= len(config.base)) ]
+    #columns.index()
+
     for fc in config.features["data"]:
         if(not fc in columns):
             raise Exception("prediction catalog don't have features columns")
