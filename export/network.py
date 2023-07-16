@@ -425,14 +425,22 @@ def large_file_prediction(config):
     #data_mass = np.array((count,))
     f = open(config.prediction_path,'r')
     columns = f.readline().strip('\n').split(",")
-
-    columns = [col+"_a" for i, col in enumerate(columns) if (col in config.base) and (i >= len(config.base)) ]
-    #columns.index()
+    
+    #print(columns)
+    columns_temp = ['']*len(columns)
+    for i, col in enumerate(columns):
+        if (col in config.base) and (i >= len(config.base)):
+            columns_temp[i] = str(col+"_a")
+        else:
+            columns_temp[i] = str(col)
+    
+    columns = list(columns_temp)
 
     for fc in config.features["data"]:
         if(not fc in columns):
             raise Exception("prediction catalog don't have features columns")
     import time
+    i=0
     for line in f:
         if(i // count == index):
             index += 1
@@ -449,10 +457,16 @@ def large_file_prediction(config):
 
         #print(i - (index-1)*count)
         line_list = list(line.strip('\n').split(","))
+        try:
+            float(line_list[columns.index(config.base[0])])
+            float(line_list[columns.index(config.base[1])])
+        except ValueError:
+            print("line contain bad 'ra', 'dec' value: ", i)
+            continue
         if(len(line_list) == len(columns)):
             data_mass[i - (index-1)*count] = line_list
             i += 1
-
+    
     #print(data_mass[200][1])
     data_mass = pd.DataFrame(data_mass, columns=columns)
     data_mass = pd.DataFrame(data_mass.head(i - (index-1)*count))
