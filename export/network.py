@@ -402,9 +402,9 @@ def large_file_prediction(config):
     def ml(output_path_mod,output_path_weight,data,config):
         model = LoadModel(output_path_mod,output_path_weight,config.hyperparam["optimizer"],config.hyperparam["loss"])
         print(data)
-        data_temp = deredded(data,config)
+        data_temp = deredded(data.replace('null',0.0),config)
         print("deredded")
-        data_temp_tr = data_temp[config.features['data']].replace('null',0.0).astype(float)
+        data_temp_tr = data_temp[config.features['data']].astype(float)
         print("cut null")
         del data_temp
         data_transform = DataTransform(data_temp_tr,config)
@@ -435,10 +435,15 @@ def large_file_prediction(config):
             columns_temp[i] = str(col)
     
     columns = list(columns_temp)
-
+    #
     for fc in config.features["data"]:
         if(not fc in columns):
             raise Exception("prediction catalog don't have features columns")
+    #
+    for bc in range(2):
+        if(not config.base[bc] in columns):
+            raise Exception("prediction catalog don't have coordinate columns")
+    #
     import time
     i=0
     for line in f:
@@ -457,11 +462,21 @@ def large_file_prediction(config):
 
         #print(i - (index-1)*count)
         line_list = list(line.strip('\n').split(","))
+        #
+        flag_null = 0
+        for j in range(len(config.features["data"]) // 2):
+            if (line_list[columns.index(config.features["data"][j*2])] == 'null'):
+                print(i," --- column have null features value")
+                flag_null = 1
+                break
+        if(flag_null):
+            continue
+        #
         try:
             float(line_list[columns.index(config.base[0])])
             float(line_list[columns.index(config.base[1])])
         except ValueError:
-            print("line contain bad 'ra', 'dec' value: ", i)
+            print(i," --- line contain bad 'ra', 'dec' value")
             continue
         if(len(line_list) == len(columns)):
             data_mass[i - (index-1)*count] = line_list
