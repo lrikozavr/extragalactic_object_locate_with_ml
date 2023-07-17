@@ -445,6 +445,9 @@ def large_file_prediction(config):
             raise Exception("prediction catalog don't have coordinate columns")
     #
     import time
+    name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
+    file_features_null = open(f'{config.prediction_path}_{name}_null_features_index.log','w')
+    line_features_null = ['']*(len(config.features["data"]) // 2)
     i=0
     for line in f:
         if(i // count == index):
@@ -452,24 +455,25 @@ def large_file_prediction(config):
             #magic
             print(index-1,"start")
             data_mass_temp = pd.DataFrame(data_mass, columns=columns)
-            name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
             data = ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",data_mass_temp,config)
             data.to_csv(f"{config.path_predict}_{name}_{index-1}.csv", index=False)
             print(index-1,"done")
             del data_mass_temp
             del data
-            time.sleep(3)
+            time.sleep(1)
 
         #print(i - (index-1)*count)
         line_list = list(line.strip('\n').split(","))
         #
         flag_null = 0
-        for j in range(len(config.features["data"]) // 2):
+        for j in range(len(line_features_null)):
             if (line_list[columns.index(config.features["data"][j*2])] == 'null'):
-                print(i," --- column have null features value")
+                line_features_null[j] = config.features["data"][j*2]
                 flag_null = 1
-                break
+            else:
+                line_features_null[j] = ''
         if(flag_null):
+            file_features_null.write(f"{i}:{','.join(line_features_null)}\n")
             continue
         #
         try:
@@ -485,7 +489,7 @@ def large_file_prediction(config):
     #print(data_mass[200][1])
     data_mass = pd.DataFrame(data_mass, columns=columns)
     data_mass = pd.DataFrame(data_mass.head(i - (index-1)*count))
-    name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
     data = ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",data_mass,config)
     data.head(i - (index-1)*count).to_csv(f"{config.path_predict}_{name}_{index}.csv", index=False)
     del data
+    file_features_null.close()
