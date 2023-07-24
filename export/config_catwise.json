@@ -30,7 +30,7 @@
                 }
             },
         "data_preprocessing":{
-            "work": true,
+            "work": false,
             "main_sample":{
                 "work": true,
                 "color":{
@@ -74,7 +74,7 @@
             "batch_count": 10000000,
             "outlire": false
             },
-        "system": "cpu"
+        "system": "gpu"
         },
     "hyperparam":{
         "batch_size": 1024,
@@ -83,7 +83,7 @@
         "loss": "categorical_crossentropy",
         "validation_split": 0.3,
         "model_variable":{
-                "work": false,
+                "work": true,
                 "kfold": 4,
                 "neuron_count": [64,64,64],
                 "activation": ["softsign","tanh","elu"],
@@ -101,6 +101,9 @@
                     "work": false,
                     "threshold": 0.99
                 }
+            },
+        "redshift": {
+                "work": true
             }
         },
     "picture":{
@@ -126,14 +129,14 @@
             "metrics_h":true
         },
     "statistic":{
-        "metric": true
+        "metric": false
         },
     "additional_name": "deredded4",
     "base": ["RA","DEC","z"],
     "name_class_column": "class",
     "features": {
         "data": ["W1mproPM","e_W1mproPM","W2mproPM","e_W2mproPM","phot_g_mean_mag","phot_g_mean_mag_error","phot_bp_mean_mag","phot_bp_mean_mag_error","phot_rp_mean_mag","phot_rp_mean_mag_error"],
-        "train": ["color"],
+        "train": ["mags","color"],
         "//comment_train": ["color","mags","err_color","err_mags"]
         },
     "name_class": ["star","qso","gal"]

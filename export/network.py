@@ -69,13 +69,13 @@ def DeepCustomNN_sm(features, l2, l3, l4, a2, a3, a4, output): #16, 8, 4
 
 def DNN(features):
     input_array = Input(shape=(features,))
-    layer_1 = Dense(features,activation='selu', kernel_initializer='he_uniform')(input_array)
+    layer_1 = Dense(features, activation='linear', kernel_initializer='he_uniform')(input_array)
     layer_2 = Dense(64, activation='elu', kernel_initializer='he_uniform')(layer_1)
-    layer_3 = Dense(64, activation='tanh', kernel_initializer='he_uniform')(layer_2)
-    layer_4 = Dense(64, activation='relu', kernel_initializer='he_uniform')(layer_3)
-    layer_5 = Dense(64, activation='elu', kernel_initializer='he_uniform')(layer_4)
-    layer_drop = Dropout(0.3)(layer_5)
-    output_array = Dense(1, activation='selu', kernel_initializer='he_uniform')(layer_drop)
+    layer_3 = Dense(32, activation='relu', kernel_initializer='he_uniform')(layer_2)
+    layer_4 = Dense(16, activation='selu', kernel_initializer='he_uniform')(layer_3)
+    layer_5 = Dense(8, activation='tanh', kernel_initializer='he_uniform')(layer_4)
+    layer_drop = Dropout(0.2)(layer_5)
+    output_array = Dense(1, activation='linear', kernel_initializer='he_uniform')(layer_drop)
 
     model = Model(input_array, output_array)
     return model
@@ -84,7 +84,7 @@ def LogisticRegression(features):
     input_array = Input(shape=(features,))
     layer_1 = Dense(features,activation='tanh',kernel_initializer='he_uniform')(input_array)
     layer_2 = Dense(features,activation='elu',kernel_initializer='he_uniform')(layer_1)
-    layer_3 = Dropout(.4)(layer_2)
+    layer_3 = Dropout(.2)(layer_2)
     output_array = Dense(1, activation='sigmoid', kernel_initializer='he_uniform')(layer_3)
 
     model = Model(input_array,output_array)
@@ -161,7 +161,6 @@ def outlire(train,data_test,class_weight,sample_weight,name,config):
     return np.array(data_test), data_test.index
 
 
-
 def redshift_predict(train,label,X_test,y_test,name,config):
     from sklearn.preprocessing import normalize
     features_count = train.shape[1]
@@ -169,15 +168,22 @@ def redshift_predict(train,label,X_test,y_test,name,config):
     early_stopping = keras.callbacks.EarlyStopping(
         monitor="mean_squared_error", 
         verbose=1,
-        patience=15,
+        patience=20,
         mode="min",
         restore_best_weights=True)
     
     train = normalize(train, axis=0)
     print("normalize complete")
     model_red = DNN(features_count)
-    model_red.compile(optimizer='adam',
-                      loss=tf.keras.losses.MeanAbsoluteError(reduction="auto", name="mean_absolute_error"),
+    optim = tf.keras.optimizers.Adam(learning_rate=1e-3)
+    model_red.compile(optimizer=optim,
+                      #loss = tf.keras.losses.MeanSquaredError(reduction="auto", name="mean_squared_error"),
+                      #loss = tf.keras.losses.CosineSimilarity(axis=1),
+                      #loss = tf.keras.losses.Huber(delta=2., reduction="auto", name="huber_loss"),
+                      #loss = tf.keras.losses.LogCosh(reduction="auto", name="log_cosh"),
+                      #loss = tf.keras.losses.MeanSquaredLogarithmicError(reduction="auto", name="mean_squared_logarithmic_error"),
+                      #loss = tf.keras.losses.MeanAbsolutePercentageError(reduction="auto", name="mean_absolute_percentage_error"),
+                      loss = tf.keras.losses.MeanAbsoluteError(reduction="auto", name="mean_absolute_error"),
                       metrics=tf.keras.metrics.MeanSquaredError(name="mean_squared_error", dtype=None))
 
     model_red.fit(train,label,
@@ -255,7 +261,7 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
     
     res.to_csv(f'{path_save_eval}_{name}_prob.csv', index=False)
 
-    return model
+    #return model
 
 def make_custom_index(index,list):
     name = f'{index}n'
@@ -272,27 +278,29 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
     features = train.shape[1]
     initial_weights = os.path.join(tempfile.mkdtemp(), 'initial_weights')
 
-    def cust_model(name,X_train,y_train,X_test,y_test):
+    def cust_model(name,X_train,y_train,red_train,red_test,X_test,y_test):
         n = name.split("n")
         l2,l3,l4 = n[1],n[2],n[3]
         a = config.hyperparam["model_variable"]["activation"]
         model = DeepCustomNN_sm(features,l2,l3,l4,a[0],a[1],a[2],len(config.name_class))	
         
-        model1 = model_volume(train,label,X_train,y_train,X_test,y_test,
+        #model1 = 
+        model_volume(train,label,X_train,y_train,X_test,y_test,
         model,optimizer,loss,sample_weight,class_weights,num_ep,batch_size,validation_split,
         path_save_eval,f"custom_sm_{name}",config)
         
-        #model_red = redshift_predict(X_train,red_train,X_test,red_test,name,config=config)
-        #SaveModel(model_red,f'{config.path_model}_redshift',f'{config.path_weight}_redshift',name)
+        if(config.hyperparam["redshift"]["work"]):
+            model_red = redshift_predict(X_train,red_train,X_test,red_test,name,config=config)
+            SaveModel(model_red,config.path_model,config.path_weight,f"custom_sm_{name}_redshift")
 
         #SaveModel(model1,output_path_mod,output_path_weight,f"custom_sm_{name}")
     
-    def model_activate(flag,custom_index,X_train,y_train,X_test,y_test):
+    def model_activate(flag,custom_index,X_train,y_train,red_train,red_test,X_test,y_test):
         #param from config 'gpu', 'cpu'
         print(flag)
         if(flag == 'gpu'):
             for name in custom_index:
-                cust_model(name,X_train,y_train,X_test,y_test)
+                cust_model(name,X_train,y_train,red_train,red_test,X_test,y_test)
         #add multithread resolve
         if(flag == 'cpu'):
             import multiprocessing
@@ -300,7 +308,7 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
             from concurrent.futures import ThreadPoolExecutor
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
                 for name in custom_index:
-                    executor.submit(cust_model,name,X_train,y_train,X_test,y_test)
+                    executor.submit(cust_model,name,X_train,y_train,red_train,red_test,X_test,y_test)
     
     #hyperparam from config
     kfold = KFold(n_splits=config.hyperparam["model_variable"]["kfold"], shuffle=False)
@@ -321,14 +329,14 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
         #hyperparam from config
         custom_index.append(make_custom_index(index,config.hyperparam["model_variable"]["neuron_count"]))
         #print(custom_index)
-        model_activate(config.flags["system"],custom_index,X_train,y_train,X_test,y_test)
+        model_activate(config.flags["system"],custom_index,X_train,y_train,red_train,red_test,X_test,y_test)
         index+=1
     #
     index = '00'
     custom_index = []
     #hyperparam from config
     custom_index.append(make_custom_index(index,config.hyperparam["model_variable"]["neuron_count"]))
-    model_activate(config.flags["system"],custom_index,train,label,train,label)
+    model_activate(config.flags["system"],custom_index,train,label,red_label,red_label,train,label)
 
 
 def large_file_prediction(config):
@@ -401,6 +409,8 @@ def large_file_prediction(config):
 
     def ml(output_path_mod,output_path_weight,data,config):
         model = LoadModel(output_path_mod,output_path_weight,config.hyperparam["optimizer"],config.hyperparam["loss"])
+        if(config.hyperparam["redshift"]["work"]):
+            rf_model = LoadModel(f"{output_path_mod}_redshift",f"{output_path_weight}_redshift",config.hyperparam["optimizer"],config.hyperparam["loss"])
         print(data)
         data_temp = deredded(data.replace('null',0.0),config)
         print("deredded")
@@ -411,11 +421,19 @@ def large_file_prediction(config):
         print("Data Transform")
         del data_temp_tr
         predicted = model.predict(data_transform, config.hyperparam["batch_size"])
+        if(config.hyperparam["redshift"]["work"]):
+            rf_predicted = rf_model.predict(data_transform, config.hyperparam["batch_size"])
         print("predicted")
         del data_transform
         predicted = pd.DataFrame(np.array(predicted), columns=config.name_class_prob)
+        if(config.hyperparam["redshift"]["work"]):
+            rf_predicted = pd.DataFrame(np.array(rf_predicted), columns=['redshift'])
+        #
         data = pd.concat([data,predicted], axis=1)
         del predicted
+        if(config.hyperparam["redshift"]["work"]):
+            data = pd.concat([data,rf_predicted], axis=1)
+            del rf_predicted
         return data
     
     count = config.flags["prediction"]["batch_count"]
