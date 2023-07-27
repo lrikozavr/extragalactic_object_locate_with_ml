@@ -1,0 +1,144 @@
+{
+    "name_sample": "unwise_deredded_rangecut",
+    "general_path": "/home/lrikozavr/ML_work/test_unwise",
+    "data_path": "/home/lrikozavr/ML_work/test_unwise/cross_GaiaDR3UnWISE_training_main.csv",
+    "prediction_path": "/home/lrikozavr/ML_work/test_unwise/GaiaUnWise_dr_1sec_025count_main.csv",
+    "flags":{
+        "data_downloading":{
+            "work": false,
+            "class_diff": false,
+            "radius": 1,
+            "slice_count": 100000,
+            "multi_thr":{
+                "work": true,
+                "MAX_WORKERS": 3,
+                "WAIT_UNTIL_REPEAT_ACCESS": 3,
+                "NUM_URL_ACCESS_ATTEMPTS": 10
+                },
+            "duplicate": false,
+            "filter": ["", 0],
+            "catalogs":{
+                "name": [],
+                "VizieR": []
+                },
+            "remove":{
+                "origin": false,
+                "slice": false,
+                "catalog_cross_origin": [false, false],
+                "catalogs_cross_cut_duplicate": [false, false],
+                "dir": false
+                }
+            },
+        "data_preprocessing":{
+            "work": false,
+            "main_sample":{
+                "work": true,
+                "color":{
+                    "work": true,
+                    "mags": true,
+                    "err": true
+                    },
+                "outlire": {
+                    "work": true,
+                    "cut": false,
+                    "method": ["MCD"],
+                    "value": "color",
+                    "//comment_value": "[color,err,features]",
+                    "add_param": {
+                        "add": true,
+                        "method": "gauss",
+                        "additional_parametr": 0.005
+                        }
+                    },
+                "weight":{
+                    "method": ["fuzzy_err","fuzzy_dist"],
+                    "//comment_method": "[fuzzy_err,fuzzy_dist]",
+                    "value": ["features","color"],
+                    "//comment_value": "[color,err,features]"
+                    },
+                "deredded": {
+                    "work": true,
+                    "coef": ["W1","W2","G","BP","RP"],
+                    "dust_map_dir": "/home/lrikozavr/catalogs/dustmaps/"
+                    },
+                "normalize": {
+                    "work": false,
+                    "features": ["mags","color"],
+                    "mode": "max"
+                }
+                },
+            "balanced": false
+            },
+        "prediction":{
+            "work": true,
+            "batch_count": 5000000,
+            "outlire": true
+            },
+        "system": "gpu"
+        },
+    "hyperparam":{
+        "batch_size": 1024,
+        "num_ep": 20,
+        "optimizer": "adam",
+        "loss": "categorical_crossentropy",
+        "validation_split": 0.3,
+        "model_variable":{
+                "work": false,
+                "kfold": 4,
+                "neuron_count": [64,64,64],
+                "activation": ["softsign","tanh","elu"],
+                "metric_culc": "test",
+                "//comment_metric_culc": ["test","train"],
+                "sample_weight": "",
+                "balanced": false,
+                "early_stopping": {
+                    "monitor": "val_prc",
+                    "patience": 5,
+                    "mode": "max",
+                    "restore_best_weights": true
+                },
+                "outlire":{
+                    "work": true,
+                    "threshold": 0.99
+                }
+            },
+        "redshift": {
+                "work": false
+            }
+        },
+    "picture":{
+            "work": false,
+            "main": {
+                "work": true,
+                "bound": true
+            },
+            "roc_prc": {
+                "work": true,
+                "flags": [1,2,3,4],
+                "lim_roc": [[-0.005,0.4],[0.95,1.005]],
+                "lim_prc": [[0.4,1.05],[0.9,1.01]]
+                },
+            "loss": true,
+            "cm": true,
+            "hist": {
+                "work": true,
+                "bound": true,
+                "stacked": true,
+                "fill": true
+            },
+            "metrics_h":true
+        },
+    "statistic":{
+        "metric": false
+        },
+    "additional_name": "outlier",
+    "base": ["ra","dec","z"],
+    "name_class_column": "class",
+    "features": {
+        "data": ["w1mpro","w1sigmpro","w2mpro","w2sigmpro","phot_g_mean_mag","parallax_error","phot_bp_mean_mag","pmra_error","phot_rp_mean_mag","pmdec_error"],
+        "range": [[11,18.5],[11,18.5],[14,21],[14,21],[14,21]],
+        "train": ["color"],
+        "//comment_train": ["color","mags","err_color","err_mags"]
+        },
+    "name_class": ["star","qso","gal"]
+}

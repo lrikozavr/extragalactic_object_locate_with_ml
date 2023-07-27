@@ -20,6 +20,13 @@ import sklearn.metrics as skmetrics
 
 #from main import hyperparam, flags, name_class
 
+def loading_progress_bar(percent):
+    bar_length = 100
+    filled_length = int(percent * bar_length)
+    bar = '█' * filled_length + '-' * (bar_length - filled_length)
+    print(f'\rProgress: |{bar}| {percent*100:.2f}% ', end='')
+
+
 METRICS = [
       keras.metrics.TruePositives(name='tp'),
       keras.metrics.FalsePositives(name='fp'),
@@ -70,12 +77,13 @@ def DeepCustomNN_sm(features, l2, l3, l4, a2, a3, a4, output): #16, 8, 4
 def DNN(features):
     input_array = Input(shape=(features,))
     layer_1 = Dense(features, activation='linear', kernel_initializer='he_uniform')(input_array)
-    layer_2 = Dense(64, activation='elu', kernel_initializer='he_uniform')(layer_1)
-    layer_3 = Dense(32, activation='relu', kernel_initializer='he_uniform')(layer_2)
-    layer_4 = Dense(16, activation='selu', kernel_initializer='he_uniform')(layer_3)
-    layer_5 = Dense(8, activation='tanh', kernel_initializer='he_uniform')(layer_4)
-    layer_drop = Dropout(0.2)(layer_5)
-    output_array = Dense(1, activation='linear', kernel_initializer='he_uniform')(layer_drop)
+    layer_2 = Dense(200, activation='linear', kernel_initializer='he_uniform')(layer_1)
+    layer_3 = Dense(400, activation='elu', kernel_initializer='he_uniform')(layer_2)
+    layer_4 = Dense(200, activation='linear', kernel_initializer='he_uniform')(layer_3)
+    
+    
+    #layer_drop = Dropout(0.2)(layer_5)
+    output_array = Dense(1, activation='elu', kernel_initializer='he_uniform')(layer_4)
 
     model = Model(input_array, output_array)
     return model
@@ -84,6 +92,8 @@ def LogisticRegression(features):
     input_array = Input(shape=(features,))
     layer_1 = Dense(features,activation='tanh',kernel_initializer='he_uniform')(input_array)
     layer_2 = Dense(features,activation='elu',kernel_initializer='he_uniform')(layer_1)
+    layer_3 = Dense(features,activation='selu',kernel_initializer='he_uniform')(layer_2)
+    layer_3 = Dense(features,activation='relu',kernel_initializer='he_uniform')(layer_3)
     layer_3 = Dropout(.2)(layer_2)
     output_array = Dense(1, activation='sigmoid', kernel_initializer='he_uniform')(layer_3)
 
@@ -168,7 +178,7 @@ def redshift_predict(train,label,X_test,y_test,name,config):
     early_stopping = keras.callbacks.EarlyStopping(
         monitor="mean_squared_error", 
         verbose=1,
-        patience=20,
+        patience=10,
         mode="min",
         restore_best_weights=True)
     
@@ -176,14 +186,20 @@ def redshift_predict(train,label,X_test,y_test,name,config):
     print("normalize complete")
     model_red = DNN(features_count)
     optim = tf.keras.optimizers.Adam(learning_rate=1e-3)
+    #optim = tf.keras.optimizers.SGD(momentum=0.9,nesterov=True)
+    def custom_loss(y_true,y_pred):
+        return tf.math.divide_no_nan(tf.math.divide_no_nan(tf.math.square(y_true - y_pred), tf.abs(y_true) + 1e-4), 2.0)
+        
+
     model_red.compile(optimizer=optim,
-                      #loss = tf.keras.losses.MeanSquaredError(reduction="auto", name="mean_squared_error"),
+                      #loss = custom_loss,
+                      loss = tf.keras.losses.MeanSquaredError(reduction="auto", name="mean_squared_error"),
                       #loss = tf.keras.losses.CosineSimilarity(axis=1),
                       #loss = tf.keras.losses.Huber(delta=2., reduction="auto", name="huber_loss"),
                       #loss = tf.keras.losses.LogCosh(reduction="auto", name="log_cosh"),
                       #loss = tf.keras.losses.MeanSquaredLogarithmicError(reduction="auto", name="mean_squared_logarithmic_error"),
                       #loss = tf.keras.losses.MeanAbsolutePercentageError(reduction="auto", name="mean_absolute_percentage_error"),
-                      loss = tf.keras.losses.MeanAbsoluteError(reduction="auto", name="mean_absolute_error"),
+                      #loss = tf.keras.losses.MeanAbsoluteError(reduction="auto", name="mean_absolute_error"),
                       metrics=tf.keras.metrics.MeanSquaredError(name="mean_squared_error", dtype=None))
 
     model_red.fit(train,label,
@@ -389,7 +405,7 @@ def large_file_prediction(config):
                     data_new = pd.concat([data_new,data[mags_err]],axis=1)                    
                 case _:
                     raise Exception('unknown config value config.features["train"]')
-        
+        print("features create complite")
         del data
         
         #print(data_new.columns.values)
@@ -398,11 +414,13 @@ def large_file_prediction(config):
         if(config.flags['data_preprocessing']['main_sample']['normalize']['work']):
             norms = pd.read_csv(f"{config.path_stat}/{config.name_main_sample}_norms.csv")
             data_new[norms.columns.values] = data_new[norms.columns.values].div(np.array(norms))
+            print("normalize complite")
 
         if(config.flags["prediction"]["outlire"]):
-            outlire_model = LoadModel(f'{config.path_model}_outlire_{name}',f'{config.path_weight}_outlire_{name}',config.hyperparam["optimizer"],"binary_crossentropy")
+            outlire_model = LoadModel(f'{config.path_model}_outlire_custom_sm_{name}',f'{config.path_weight}_outlire_custom_sm_{name}',config.hyperparam["optimizer"],"binary_crossentropy")
             data_new['outlire_prob'] = outlire_model.predict(data_new)
             data_new = data_new[data_new['outlire_prob'] > config.hyperparam["model_variable"]["outlire"]["threshold"]].drop(['outlire_prob'], axis=1)
+            print("outlier cut complite")
 
         return data_new
         #get_features(config)
@@ -439,6 +457,7 @@ def large_file_prediction(config):
     count = config.flags["prediction"]["batch_count"]
     i, index = 0, 1
 
+    global data_mass
     data_mass = [[]]*count
     #data_mass = np.array((count,))
     f = open(config.prediction_path,'r')
@@ -467,12 +486,24 @@ def large_file_prediction(config):
     file_features_null = open(f'{config.prediction_path}_{name}_null_features_index.log','w')
     line_features_null = ['']*(len(config.features["data"]) // 2)
     i=0
+
+    print("begin")
+    LINE_COUNT = 0
     for line in f:
+        LINE_COUNT += 1
+        if(LINE_COUNT < count*7.5):
+            continue
+        if(LINE_COUNT > count*8.5):
+            break
         if(i // count == index):
+            
             index += 1
             #magic
             print(index-1,"start")
             data_mass_temp = pd.DataFrame(data_mass, columns=columns)
+            del data_mass
+            time.sleep(1)
+            data_mass = [[]]*count
             data = ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",data_mass_temp,config)
             data.to_csv(f"{config.path_predict}_{name}_{index-1}.csv", index=False)
             print(index-1,"done")
@@ -500,10 +531,19 @@ def large_file_prediction(config):
         except ValueError:
             print(i," --- line contain bad 'ra', 'dec' value")
             continue
+        
+        flag_range = 1
         if(len(line_list) == len(columns)):
-            data_mass[i - (index-1)*count] = line_list
-            i += 1
-    
+            for j in range(len(config.features["data"]) // 2):
+                if(float(line_list[columns.index(config.features["data"][j*2])]) > config.features["range"][j][0] and float(line_list[columns.index(config.features["data"][j*2])]) < config.features["range"][j][1]):
+                    continue
+                else:
+                    flag_range = 0
+                    break            
+            if(flag_range):
+                data_mass[i - (index-1)*count] = line_list
+                i += 1
+                loading_progress_bar((i - (index-1)*count)/count)
     #print(data_mass[200][1])
     data_mass = pd.DataFrame(data_mass, columns=columns)
     data_mass = pd.DataFrame(data_mass.head(i - (index-1)*count))

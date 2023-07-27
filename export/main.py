@@ -113,19 +113,20 @@ if(config.flags["data_downloading"]["work"]):
 
 data = pd.DataFrame()
 #data preparation
-if(config.hyperparam["model_variable"]["work"]):
-    if(not config.flags['data_preprocessing']['work']):
-        if(os.path.isfile(f'{config.path_ml_data}/{config.name_main_sample}_all.csv')):
-            data = pd.read_csv(f'{config.path_ml_data}/{config.name_main_sample}_all.csv', header = 0, sep = ',')
-        else:
-            data = data_preparation(config.path_ml_data,config.path_sample,config.name_class,config)
+if(not config.flags['data_preprocessing']['work']):
+    if(os.path.isfile(f'{config.path_ml_data}/{config.name_main_sample}_all.csv')):
+        data = pd.read_csv(f'{config.path_ml_data}/{config.name_main_sample}_all.csv', header = 0, sep = ',')
     else:
-        data = data_preparation(config.path_ml_data,config.path_sample,config.name_class,config)    
+        data = data_preparation(config.path_ml_data,config.path_sample,config.name_class,config)
+else:
+    data = data_preparation(config.path_ml_data,config.path_sample,config.name_class,config)    
 
-    #data_statistic
+#data_statistic
+if(config.statistic["metric"]):
     data.describe().transpose().to_csv(f'{config.path_stat}/{config.name_main_sample}_stat.log')
 
-    #network training
+#network training
+if(config.hyperparam["model_variable"]["work"]):
     #features from config
     #name from config
     print('Sample name: ', config.name_sample)

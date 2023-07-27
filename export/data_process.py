@@ -269,6 +269,7 @@ def deredded(data,config_local):
     del coords
     
     data['E(B-V)'] = rezult
+    data['E(B-V)'] = data['E(B-V)'].apply(lambda x: 0.5 if x > 0.5 else x)
     del rezult
     
     
@@ -291,7 +292,7 @@ def process(path_sample,name,save_path, config):
 
     #Check variable zero value
     data = data.fillna(0)
-
+            
     def data_issue(check):
         match check:
             case 'err':
@@ -312,7 +313,13 @@ def process(path_sample,name,save_path, config):
     if(config.flags['data_preprocessing']['main_sample']['deredded']['work']):
         data = deredded(data,config)
         print(name, " deredded complite")
-    
+
+    #range cut
+    if(len(config.features["range"]) == len(config.features["data"]) // 2):
+        for i in range(len(config.features["data"]) // 2):
+           data = data[(data[config.features["data"][i*2]] > config.features["range"][i][0]) & (data[config.features["data"][i*2]] < config.features["range"][i][1])]
+        data = data.reset_index()
+
     #print(name, 'deredded complite')
     if(config.flags['data_preprocessing']['main_sample']['color']['work']):
         data_color, data_err = colors(data[config.features["data"]])
@@ -396,10 +403,11 @@ def data_preparation(save_path,path_sample,name_class,config):
         from sklearn.preprocessing import normalize
         #print(get_features(config.flags['data_preprocessing']['main_sample']['normalize']['features'],config))
         #print(data)
-        data_values = data[get_features(config.flags['data_preprocessing']['main_sample']['normalize']['features'],config)]
+        features_normalize = get_features(config.flags['data_preprocessing']['main_sample']['normalize']['features'],config)
+        data_values = data[features_normalize]
         columns = data_values.columns.values
-        data_normalize, norms = normalize(data_values,norm='l2',axis=0,return_norm=True)
-        data[get_features(config.flags['data_preprocessing']['main_sample']['normalize']['features'],config)] = np.array(data_normalize)
+        data_normalize, norms = normalize(data_values,norm=config.flags['data_preprocessing']['main_sample']['normalize']['mode'],axis=0,return_norm=True)
+        data[features_normalize] = np.array(data_normalize)
         #print(norms)
         #print(np.array(norms).transpose())
         pd.DataFrame(np.array([norms]),columns = columns).to_csv(f"{config.path_stat}/{config.name_main_sample}_norms.csv", index=False)
