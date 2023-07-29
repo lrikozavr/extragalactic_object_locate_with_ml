@@ -114,29 +114,27 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn import svm
 from sklearn.model_selection import RandomizedSearchCV,ShuffleSplit
 #from sklearn.utils.fixes import loguniform
-def outlire(train,data_test,class_weight,sample_weight,name,config):
+from pyod.models.ocsvm import OCSVM
+from joblib import dump,load
 
-    label = np.ones(train.shape[0])
-    '''
-    clf = ExtraTreesClassifier(n_estimators=500,
-                                 criterion='gini', 
-                                 class_weight=class_weight,
-                                 bootstrap=True,
-                                 random_state=476,
-                                 n_jobs=-1)
-    '''
-    '''
-    params = {'C': loguniform(1e0, 1e3),
-          'gamma': loguniform(1e-4, 1e-2)}
-    
-    clf = svm.SVR(gamma='scale',
-                    kernel='rbf',
-                    cache_size=500)
-    clf_gs = RandomizedSearchCV(estimator=clf, param_distributions=params, 
-                                n_iter=10, scoring='f1', n_jobs=-1, 
-                                cv=ShuffleSplit(n_splits=1, test_size=0.2),   
-                                refit=True, verbose=1)
-    clf_gs.fit(X=train,y=label,sample_weight=sample_weight)
+def outlire(train,data_test,class_weight,name,config):
+
+    from sklearn.preprocessing import MinMaxScaler
+
+    clf = OCSVM(verbose=False,cache_size=10000,max_iter=1000)
+    rng = np.random.default_rng(seed=13)
+    #smpl = rng.choice(train,50000)
+    scaler = MinMaxScaler(feature_range=(-1,1))
+    sclr_smpl = scaler.fit_transform(train)
+    clf.fit(sclr_smpl)
+    pd.DataFrame(sclr_smpl).to_csv(f'{config.path_stat}/scaler_fuck.csv',index=False)
+    print(sclr_smpl)
+    #clf.fit(smpl)
+    dump(clf,f'{config.path_model}_{name}_outlier_clf')
+    dump(scaler,f'{config.path_model}_{name}_outlier_scaler')
+    scaler = load(f'{config.path_model}_{name}_outlier_scaler')
+    print("binary label:\t", clf.labels_)
+    print("raw scores:\t", clf.decision_scores_)
     '''
     early_stopping = keras.callbacks.EarlyStopping(
         monitor=config.hyperparam["model_variable"]["early_stopping"]["monitor"], 
@@ -144,30 +142,33 @@ def outlire(train,data_test,class_weight,sample_weight,name,config):
         patience=2,
         mode=config.hyperparam["model_variable"]["early_stopping"]["mode"],
         restore_best_weights=config.hyperparam["model_variable"]["early_stopping"]["restore_best_weights"])
+    '''
 
-    clf_gs = LogisticRegression(train.shape[1])
-    print("ok")
-    clf_gs.compile(optimizer=config.hyperparam["optimizer"], loss="binary_crossentropy", metrics=METRICS)
-    print("compile")
-    clf_gs.fit(train,label,epochs=20,batch_size=1024,validation_split=0.3,callbacks=[early_stopping])
-    
     data_test = pd.DataFrame(data_test)
-    data_test["predict"] = clf_gs.predict(data_test)
+    data_test_scaler = scaler.transform(data_test.values)
+    data_test["predict"] = clf.predict(data_test_scaler)
+    print("test data outlier label:\t", data_test["predict"])
+    #print("test data outlier scores:\t",clf.decision_function(data_test.drop(["predict"], axis=1).values))
+
     print(data_test)
     zero = pd.DataFrame(np.full((5,data_test.shape[1]-1),-20))
     print(zero)
+    zero = scaler.transform(zero)
+    print(zero)
     try:
-        pred = clf_gs.predict(zero)
-        print(pred)
+        print("raw outlier scores:\t",clf.decision_function(zero))
+        print("binary outlier scores:\t",clf.predict(zero))
     except:
         print("aboba")
-    print("data predict by NN:\n",data_test["predict"])
-    data_test = data_test[data_test["predict"] > config.hyperparam["model_variable"]["outlire"]["threshold"]]
+    
+    #print("data predict one_class_svm:\n",data_test["predict"])
+    
+    data_test = data_test[data_test["predict"] == 0] #config.hyperparam["model_variable"]["outlire"]["threshold"]]
     #print(data_test)
     data_test = data_test.drop(["predict"], axis=1)
     #print(data_test)
     print(data_test)
-    SaveModel(clf_gs,config.path_model,config.path_weight,f'outlire_{name}')
+    
     return np.array(data_test), data_test.index
 
 
@@ -261,7 +262,7 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
 
     if(config.hyperparam["model_variable"]["metric_culc"] == "test"):
         if(config.hyperparam["model_variable"]["outlire"]["work"]):
-            data_test, outlire_index = outlire(X_train,X_test,None,sample_weight,name,config)
+            data_test, outlire_index = outlire(X_train,X_test,None,name,config)
             pd_label = pd.DataFrame(np.array(y_test[outlire_index]), columns=config.name_class_cls)
         else:
             data_test = X_test
@@ -417,9 +418,13 @@ def large_file_prediction(config):
             print("normalize complite")
 
         if(config.flags["prediction"]["outlire"]):
-            outlire_model = LoadModel(f'{config.path_model}_outlire_custom_sm_{name}',f'{config.path_weight}_outlire_custom_sm_{name}',config.hyperparam["optimizer"],"binary_crossentropy")
-            data_new['outlire_prob'] = outlire_model.predict(data_new)
-            data_new = data_new[data_new['outlire_prob'] > config.hyperparam["model_variable"]["outlire"]["threshold"]].drop(['outlire_prob'], axis=1)
+            #outlire_model = LoadModel(f'{config.path_model}_outlire_custom_sm_{name}',f'{config.path_weight}_outlire_custom_sm_{name}',config.hyperparam["optimizer"],"binary_crossentropy")
+            outlire_model = load(f'{config.path_model}_custom_sm_{name}_outlier_clf')
+            scaler = load(f'{config.path_model}_custom_sm_{name}_outlier_scaler')
+            data_new_scaler = scaler.transform(data_new)
+            data_new['outlire_prob'] = outlire_model.predict(data_new_scaler)
+            del data_new_scaler
+            data_new = data_new[data_new['outlire_prob'] == 0].drop(['outlire_prob'], axis=1)
             print("outlier cut complite")
 
         return data_new

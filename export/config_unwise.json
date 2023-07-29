@@ -30,9 +30,9 @@
                 }
             },
         "data_preprocessing":{
-            "work": false,
+            "work": true,
             "main_sample":{
-                "work": true,
+                "work": false,
                 "color":{
                     "work": true,
                     "mags": true,
@@ -67,7 +67,7 @@
                     "mode": "max"
                 }
                 },
-            "balanced": false
+            "balanced": true
             },
         "prediction":{
             "work": true,
@@ -83,7 +83,7 @@
         "loss": "categorical_crossentropy",
         "validation_split": 0.3,
         "model_variable":{
-                "work": false,
+                "work": true,
                 "kfold": 4,
                 "neuron_count": [64,64,64],
                 "activation": ["softsign","tanh","elu"],
@@ -107,7 +107,7 @@
             }
         },
     "picture":{
-            "work": false,
+            "work": true,
             "main": {
                 "work": true,
                 "bound": true
@@ -131,7 +131,7 @@
     "statistic":{
         "metric": false
         },
-    "additional_name": "outlier",
+    "additional_name": "balanced_outlier_new",
     "base": ["ra","dec","z"],
     "name_class_column": "class",
     "features": {
