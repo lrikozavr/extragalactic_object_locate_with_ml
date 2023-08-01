@@ -269,8 +269,11 @@ def deredded(data,config_local):
     del coords
     
     data['E(B-V)'] = rezult
-    data['E(B-V)'] = data['E(B-V)'].apply(lambda x: 0.5 if x > 0.5 else x)
     del rezult
+    if(config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["cut"]):
+        data = data[data['E(B-V)'] < 0.5]
+    else:
+        data['E(B-V)'] = data['E(B-V)'].apply(lambda x: 0.5 if x > 0.5 else x)
     
     
     def ext(DATA,EBV,name):
@@ -279,9 +282,10 @@ def deredded(data,config_local):
     v_ext = np.vectorize(ext)
 
     for name in mags:
-        data[name] = v_ext(data[name].astype(float),data['E(B-V)'].astype(float),name)
+        data[name] = data[name].astype(float) - data['E(B-V)']*EXTINCTION_COEFFICIENT_config_mass_value.loc[0,(name)]
+        #data[name] = v_ext(data[name].astype(float),data['E(B-V)'].astype(float),name)
 
-    data = data.drop(['E(B-V)'], axis=1)
+    #data = data.drop(['E(B-V)'], axis=1)
     return data
 
 

@@ -123,9 +123,9 @@ def outlire(train,data_test,class_weight,name,config):
 
     clf = OCSVM(verbose=False,cache_size=10000,max_iter=1000)
     rng = np.random.default_rng(seed=13)
-    #smpl = rng.choice(train,50000)
+    smpl = rng.choice(train,50000)
     scaler = MinMaxScaler(feature_range=(-1,1))
-    sclr_smpl = scaler.fit_transform(train)
+    sclr_smpl = scaler.fit_transform(smpl)
     clf.fit(sclr_smpl)
     pd.DataFrame(sclr_smpl).to_csv(f'{config.path_stat}/scaler_fuck.csv',index=False)
     print(sclr_smpl)
@@ -496,9 +496,9 @@ def large_file_prediction(config):
     LINE_COUNT = 0
     for line in f:
         LINE_COUNT += 1
-        if(LINE_COUNT < count*7.5):
+        if(LINE_COUNT < count*4.5):
             continue
-        if(LINE_COUNT > count*8.5):
+        if(LINE_COUNT > count*10.5):
             break
         if(i // count == index):
             

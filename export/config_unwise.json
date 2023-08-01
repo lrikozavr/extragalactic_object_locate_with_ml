@@ -1,5 +1,5 @@
 {
-    "name_sample": "unwise_deredded_rangecut",
+    "name_sample": "unwise_dereddedcut_rangecut",
     "general_path": "/home/lrikozavr/ML_work/test_unwise",
     "data_path": "/home/lrikozavr/ML_work/test_unwise/cross_GaiaDR3UnWISE_training_main.csv",
     "prediction_path": "/home/lrikozavr/ML_work/test_unwise/GaiaUnWise_dr_1sec_025count_main.csv",
@@ -30,9 +30,9 @@
                 }
             },
         "data_preprocessing":{
-            "work": true,
+            "work": false,
             "main_sample":{
-                "work": false,
+                "work": true,
                 "color":{
                     "work": true,
                     "mags": true,
@@ -59,7 +59,8 @@
                 "deredded": {
                     "work": true,
                     "coef": ["W1","W2","G","BP","RP"],
-                    "dust_map_dir": "/home/lrikozavr/catalogs/dustmaps/"
+                    "dust_map_dir": "/home/lrikozavr/catalogs/dustmaps/",
+                    "cut": true
                     },
                 "normalize": {
                     "work": false,
@@ -72,7 +73,7 @@
         "prediction":{
             "work": true,
             "batch_count": 5000000,
-            "outlire": true
+            "outlire": false
             },
         "system": "gpu"
         },
@@ -83,7 +84,7 @@
         "loss": "categorical_crossentropy",
         "validation_split": 0.3,
         "model_variable":{
-                "work": true,
+                "work": false,
                 "kfold": 4,
                 "neuron_count": [64,64,64],
                 "activation": ["softsign","tanh","elu"],
@@ -98,7 +99,7 @@
                     "restore_best_weights": true
                 },
                 "outlire":{
-                    "work": true,
+                    "work": false,
                     "threshold": 0.99
                 }
             },
@@ -107,7 +108,7 @@
             }
         },
     "picture":{
-            "work": true,
+            "work": false,
             "main": {
                 "work": true,
                 "bound": true
@@ -131,12 +132,12 @@
     "statistic":{
         "metric": false
         },
-    "additional_name": "balanced_outlier_new",
+    "additional_name": "countbalanced",
     "base": ["ra","dec","z"],
     "name_class_column": "class",
     "features": {
         "data": ["w1mpro","w1sigmpro","w2mpro","w2sigmpro","phot_g_mean_mag","parallax_error","phot_bp_mean_mag","pmra_error","phot_rp_mean_mag","pmdec_error"],
-        "range": [[11,18.5],[11,18.5],[14,21],[14,21],[14,21]],
+        "range": [[11,19],[11,19],[14,22],[14,22],[14,22]],
         "train": ["color"],
         "//comment_train": ["color","mags","err_color","err_mags"]
         },
