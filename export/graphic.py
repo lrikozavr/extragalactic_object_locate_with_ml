@@ -33,6 +33,27 @@ def MCD_plot(name,d):
     fig.savefig(f"{save_path}/{name}_MCD_distance.png")
     plt.close(fig)    
 
+def contamination_distribution(data,features_name,config):
+    bins = 100
+    min = data[features_name].min()
+    max = data[features_name].max()
+    range_bins = max-min
+    cls_n = len(config.name_class)
+    mass = np.zeros((bins,cls_n*cls_n))
+
+    for i in range(bins):
+        min_f = (range_bins*i)/bins + min
+        max_f = (range_bins*(i+1))/bins + min
+        data_temp = data[(data[features_name] > min_f) & (data[features_name] < max_f)]
+        y = np.argmax(data_temp[config.name_class_cls], axis=1).tolist()
+        y_prob = np.argmax(data_temp[config.name_class_prob], axis=1).tolist()
+        cm = confusion_matrix(y, y_prob)
+        for ii in range(cls_n):
+            for jj in range(cls_n):
+                mass[i,cls_n*ii+jj] += cm[ii,jj]
+    
+
+
 def picture_cm(config):
   def plot_cm(index,save_name):
     name = make_custom_index(index,config.hyperparam["model_variable"]["neuron_count"])
