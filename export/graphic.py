@@ -34,16 +34,22 @@ def MCD_plot(name,d):
     plt.close(fig)    
 
 def contamination_distribution(data,features_name,config):
-    bins = 100
+    bins = 101
     min = data[features_name].min()
     max = data[features_name].max()
-    range_bins = max-min
+    #range_bins = max-min
+    mass_mags = np.linspace(max, min, num = bins)
     cls_n = len(config.name_class)
-    mass = np.zeros((bins,cls_n*cls_n))
+    mass = np.zeros((bins-1,cls_n*cls_n))
 
     for i in range(bins):
-        min_f = (range_bins*i)/bins + min
-        max_f = (range_bins*(i+1))/bins + min
+        #min_f = (range_bins*i)/bins + min
+        #max_f = (range_bins*(i+1))/bins + min
+        if(i+1 == bins):
+           break
+        min_f = mass_mags[i]
+        max_f = mass_mags[i+1]
+
         data_temp = data[(data[features_name] > min_f) & (data[features_name] < max_f)]
         y = np.argmax(data_temp[config.name_class_cls], axis=1).tolist()
         y_prob = np.argmax(data_temp[config.name_class_prob], axis=1).tolist()
@@ -52,7 +58,20 @@ def contamination_distribution(data,features_name,config):
             for jj in range(cls_n):
                 mass[i,cls_n*ii+jj] += cm[ii,jj]
     
+    fig, axs = plt.subplots(cls_n,cls_n)
 
+    for n in range(cls_n*cls_n):
+        ii, jj = n//cls_n, n%cls_n
+        axs[ii,jj].plot(mass_mags,mass[:,n])
+        axs[ii,jj].xlabel(features_name)
+        axs[ii,jj].ylabel('Contamination count')
+        axs[ii,jj].xlim([min-1,max+1])
+    
+    fig.legend()
+    fig.set_size_inches(30,30)
+
+    fig.savefig(f'{config.path_pic}/{config.name_sample}_cm_contamination_by_{features_name}.png')
+    plt.close(fig)
 
 def picture_cm(config):
   def plot_cm(index,save_name):

@@ -176,6 +176,30 @@ def redshift_predict(train,label,X_test,y_test,name,config):
     from sklearn.preprocessing import normalize
     features_count = train.shape[1]
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     early_stopping = keras.callbacks.EarlyStopping(
         monitor="mean_squared_error", 
         verbose=1,
