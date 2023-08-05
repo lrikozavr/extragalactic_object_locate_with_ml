@@ -460,9 +460,13 @@ def large_file_prediction(config):
             rf_model = LoadModel(f"{output_path_mod}_redshift",f"{output_path_weight}_redshift",config.hyperparam["optimizer"],config.hyperparam["loss"])
         print(data)
         data_temp = deredded(data.replace('null',0.0),config)
+        select_index_values = data_temp.index.values
+        data = data.iloc[select_index_values].reset_index(drop=True)
         print("deredded")
-        data_temp_tr = data_temp[config.features['data']].astype(float)
+        del select_index_values
+        data_temp_tr = data_temp[config.features['data']].astype(float).reset_index(drop=True)
         print("cut null")
+        data = pd.concat([data,data_temp_tr],axis=1)
         del data_temp
         data_transform = DataTransform(data_temp_tr,config)
         print("Data Transform")
@@ -471,6 +475,7 @@ def large_file_prediction(config):
         if(config.hyperparam["redshift"]["work"]):
             rf_predicted = rf_model.predict(data_transform, config.hyperparam["batch_size"])
         print("predicted")
+        data = pd.concat([data,data_transform], axis=1)
         del data_transform
         predicted = pd.DataFrame(np.array(predicted), columns=config.name_class_prob)
         if(config.hyperparam["redshift"]["work"]):
@@ -520,9 +525,9 @@ def large_file_prediction(config):
     LINE_COUNT = 0
     for line in f:
         LINE_COUNT += 1
-        if(LINE_COUNT < count*4.5):
+        if(LINE_COUNT < count*7.5):
             continue
-        if(LINE_COUNT > count*10.5):
+        if(LINE_COUNT > count*8.5):
             break
         if(i // count == index):
             
@@ -534,9 +539,9 @@ def large_file_prediction(config):
             time.sleep(1)
             data_mass = [[]]*count
             data = ml(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",data_mass_temp,config)
+            del data_mass_temp
             data.to_csv(f"{config.path_predict}_{name}_{index-1}.csv", index=False)
             print(index-1,"done")
-            del data_mass_temp
             del data
             time.sleep(1)
 
