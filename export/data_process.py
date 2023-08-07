@@ -270,21 +270,39 @@ def deredded(data,config_local):
     
     data['E(B-V)'] = rezult
     del rezult
+
+    threshold = config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["threshold"]
+
     if(config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["cut"]):
-        data = data[data['E(B-V)'] < 0.5]
+        data = data[data['E(B-V)'] < threshold] 
     else:
-        data['E(B-V)'] = data['E(B-V)'].apply(lambda x: 0.5 if x > 0.5 else x)
+        data['E(B-V)'] = data['E(B-V)'].apply(lambda x: threshold if x > threshold else x)
     
-    
-    def ext(DATA,EBV,name):
-        return DATA - EBV*EXTINCTION_COEFFICIENT_config_mass_value.loc[0,(name)]
+    if(config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["mode"] == "simple"):
+        for name in mags:
+            data[name] = data[name].astype(float) - data['E(B-V)']*EXTINCTION_COEFFICIENT_config_mass_value.loc[0,(name)]
+    else:
+        
+        def culc(DATA,EBV,BP_RP,BAND):
+            #print(EBV,BAND,BP_RP)
+            return DATA - EBV*extinction_coefficient(Band=[BAND], EBV=[EBV], BP_RP=[BP_RP])
+            
 
-    v_ext = np.vectorize(ext)
+        culc_v = np.vectorize(culc)
 
-    for name in mags:
-        data[name] = data[name].astype(float) - data['E(B-V)']*EXTINCTION_COEFFICIENT_config_mass_value.loc[0,(name)]
-        #data[name] = v_ext(data[name].astype(float),data['E(B-V)'].astype(float),name)
+        bp_rp = data[mags[len(mags)-2]].astype(float)-data[mags[len(mags)-1]].astype(float)
+        
+        MAX_WORKERS=len(mags)
+        from concurrent.futures import ThreadPoolExecutor
+        rezult = []
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            for n, name in enumerate(mags):
+                rezult.append(executor.submit(culc_v,data[name].astype(float),data['E(B-V)'].values,bp_rp,config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["coef"][n]))
 
+        for i, name in enumerate(mags):
+            data[name] = rezult[i].result()       
+
+        del bp_rp
     #data = data.drop(['E(B-V)'], axis=1)
     return data
 

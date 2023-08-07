@@ -17,11 +17,12 @@ from keras import backend as K
 import numpy as np
 
 import sklearn.metrics as skmetrics
+from data_process import get_features, deredded
 
 #from main import hyperparam, flags, name_class
 
 def loading_progress_bar(percent):
-    bar_length = 100
+    bar_length = 50
     filled_length = int(percent * bar_length)
     bar = '█' * filled_length + '-' * (bar_length - filled_length)
     print(f'\rProgress: |{bar}| {percent*100:.2f}% ', end='')
@@ -175,31 +176,29 @@ def outlire(train,data_test,class_weight,name,config):
 def redshift_predict(train,label,X_test,y_test,name,config):
     from sklearn.preprocessing import normalize
     features_count = train.shape[1]
+    from sklearn.ensemble import RandomForestRegressor
 
+    clf_r = RandomForestRegressor(n_estimators=100,
+                                  max_features=3, 
+                                  criterion="squared_error",
+                                  max_depth=50,
+                                  bootstrap=True,
+                                  random_state=777,
+                                  n_jobs=-1,
+                                  verbose=1)
 
+    clf_r.fit(train,label)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    predict_red = clf_r.predict(X_test)
+    
+    predict_red = pd.DataFrame(np.array(predict_red), columns=['redshift_pred'])
+    y_test = pd.DataFrame(np.array(y_test),columns=['actual_redshift'])
+    X_test = pd.DataFrame(np.array(X_test),columns=get_features(config.features["train"],config))
+    predict_red = pd.concat([X_test,predict_red,y_test], axis=1)
+    
+    predict_red.to_csv(f"{config.path_predict}_{name}_redshift.csv")
+    
+    '''
     early_stopping = keras.callbacks.EarlyStopping(
         monitor="mean_squared_error", 
         verbose=1,
@@ -243,6 +242,9 @@ def redshift_predict(train,label,X_test,y_test,name,config):
     predict_red.to_csv(f"{config.path_predict}_{name}_redshift.csv")
 
     return model_red
+    '''
+
+    return clf_r
 
 def model_volume(train,label,X_train,y_train,X_test,y_test,
 	model,optimizer,loss,sample_weight,class_weights,num_ep,batch_size,validation_split,
@@ -331,8 +333,10 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
         path_save_eval,f"custom_sm_{name}",config)
         
         if(config.hyperparam["redshift"]["work"]):
-            model_red = redshift_predict(X_train,red_train,X_test,red_test,name,config=config)
-            SaveModel(model_red,config.path_model,config.path_weight,f"custom_sm_{name}_redshift")
+            clf_r = redshift_predict(X_train,red_train,X_test,red_test,name,config=config)
+            dump(clf_r,f'{config.path_model}_custom_sm_{name}_redshift_clf')
+            #model_red = redshift_predict(X_train,red_train,X_test,red_test,name,config=config)
+            #SaveModel(model_red,config.path_model,config.path_weight,f"custom_sm_{name}_redshift")
 
         #SaveModel(model1,output_path_mod,output_path_weight,f"custom_sm_{name}")
     
@@ -381,7 +385,7 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
 
 
 def large_file_prediction(config):
-    from data_process import get_features, deredded
+    
 
     def DataTransform(data,config):
         data_new = pd.DataFrame()
@@ -457,7 +461,8 @@ def large_file_prediction(config):
     def ml(output_path_mod,output_path_weight,data,config):
         model = LoadModel(output_path_mod,output_path_weight,config.hyperparam["optimizer"],config.hyperparam["loss"])
         if(config.hyperparam["redshift"]["work"]):
-            rf_model = LoadModel(f"{output_path_mod}_redshift",f"{output_path_weight}_redshift",config.hyperparam["optimizer"],config.hyperparam["loss"])
+            #rf_model = LoadModel(f"{output_path_mod}_redshift",f"{output_path_weight}_redshift",config.hyperparam["optimizer"],config.hyperparam["loss"])
+            rf_model = load(f'{output_path_mod}_redshift_clf')
         print(data)
         data_temp = deredded(data.replace('null',0.0),config)
         select_index_values = data_temp.index.values
@@ -473,7 +478,7 @@ def large_file_prediction(config):
         del data_temp_tr
         predicted = model.predict(data_transform, config.hyperparam["batch_size"])
         if(config.hyperparam["redshift"]["work"]):
-            rf_predicted = rf_model.predict(data_transform, config.hyperparam["batch_size"])
+            rf_predicted = rf_model.predict(data_transform)
         print("predicted")
         data = pd.concat([data,data_transform], axis=1)
         del data_transform
@@ -524,11 +529,13 @@ def large_file_prediction(config):
     print("begin")
     LINE_COUNT = 0
     for line in f:
+        
         LINE_COUNT += 1
         if(LINE_COUNT < count*7.5):
             continue
-        if(LINE_COUNT > count*8.5):
+        if(LINE_COUNT > count*7.6):
             break
+        
         if(i // count == index):
             
             index += 1

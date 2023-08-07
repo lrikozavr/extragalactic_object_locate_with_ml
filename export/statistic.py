@@ -84,3 +84,13 @@ def metric_statistic(config):
 
     del data
 
+#https://iopscience.iop.org/article/10.1088/0004-637X/690/2/1236#fnref-apj292144r30
+def redshift_creterion(x,y):
+    x = np.array(x)
+    y = np.array(y)
+    #NMAD
+    sigma = 1.48*np.median(np.abs(y-x)/(1+x))
+    red = pd.DataFrame(np.array([x,y]),columns=['r','p'])
+    red_catastrophic_outlier = red[np.abs(red['p']-red['r']) > 0.15*(1+red['r'])]
+    del red, x, y
+    return sigma, red_catastrophic_outlier.index.values
