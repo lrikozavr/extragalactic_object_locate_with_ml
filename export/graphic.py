@@ -73,6 +73,31 @@ def contamination_distribution(data,features_name,config):
     fig.savefig(f'{config.path_pic}/{config.name_sample}_cm_contamination_by_{features_name}.png')
     plt.close(fig)
 
+def multigridplot(data, features, config):
+    count = len(features)
+    fig, axs = plt.subplots(count-1,count-1)
+
+    fig.set_size_inches(30,30)
+
+    for index in range(len(config.class_name)):
+        data_class = data[index]
+        for ii, name_ii in enumerate(features):
+            for jj, name_jj in enumerate(features):
+                if(not ii==jj and ii > jj):
+                    data_common = pd.concat([data_class[name_ii],data_class[name_jj]], axis=1)
+                    sns.kdeplot(data=data_common, ax=axs[ii,jj])
+                    axs[ii,jj].scatter(data_class[name_jj],data_class[name_ii], color = colors[index])
+                else:
+                    axs[ii,jj].remove()
+    
+    fig.legend()
+
+    fig.savefig(f'{config.path_pic}/{config.name_sample}_multyhist_distribution.png')
+    plt.close(fig)
+
+       
+       
+
 def picture_cm(config):
   def plot_cm(index,save_name):
     name = make_custom_index(index,config.hyperparam["model_variable"]["neuron_count"])
