@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import os
 
+import requests
+import time
 
 #sample_path = f'{general_path}/sample'
 def get_col_list(columns,config):
@@ -166,9 +168,6 @@ def req(cat_name,name,fout,config):
     votable = from_table(t)
     writeto(votable, f'{name}.vot')
     #catalog_name = globals()[cat_name]
-
-    import requests
-    import time
 
     WAIT_UNTIL_REPEAT_ACCESS = config.flags["data_downloading"]["multi_thr"]["WAIT_UNTIL_REPEAT_ACCESS"]
     NUM_URL_ACCESS_ATTEMPTS = config.flags["data_downloading"]["multi_thr"]["NUM_URL_ACCESS_ATTEMPTS"]
@@ -352,3 +351,19 @@ def class_download(name,path_sample,config):
         os.remove(f'{path_sample}/{name}_origin.csv')
 
     return stat_count
+
+def download_catalog(filename,url,cat):
+
+    response = requests.get(url)
+    data = response.content
+    print(data)
+    open(filename,'wb').write(data)
+    data_str = str(data).split('\n')
+    mass = np.array((len(data_str),len(cat.keys())))
+    for i in range(len(data_str)):
+        data_byte = bytes(data_str[i], 'utf8')
+        for n, name in enumerate(cat.keys()):
+            st_fn = cat.get(name)
+            mass[i,n] = str(data_byte[st_fn[0]:st_fn[1]]) 
+    data_done = pd.DataFrame(mass,columns=cat.keys())
+    return data_done

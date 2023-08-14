@@ -79,13 +79,13 @@ def multigridplot(data, features, config):
 
     fig.set_size_inches(30,30)
 
-    for index in range(len(config.class_name)):
-        data_class = data[index]
+    for index, name_index in enumerate(config.class_name):
+        data_class = data[data[name_index] == 1]
         for ii, name_ii in enumerate(features):
             for jj, name_jj in enumerate(features):
                 if(not ii==jj and ii > jj):
                     data_common = pd.concat([data_class[name_ii],data_class[name_jj]], axis=1)
-                    sns.kdeplot(data=data_common, ax=axs[ii,jj])
+                    sns.kdeplot(data=data_common, ax=axs[ii,jj], color=colors[index])
                     axs[ii,jj].scatter(data_class[name_jj],data_class[name_ii], color = colors[index])
                 else:
                     axs[ii,jj].remove()
