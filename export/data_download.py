@@ -353,14 +353,14 @@ def class_download(name,path_sample,config):
     return stat_count
 
 def download_catalog(filename,url,cat):
-
     response = requests.get(url)
     data = response.content
     print(data)
     open(filename,'wb').write(data)
     data_str = str(data).split('\n')
-    mass = np.array((len(data_str),len(cat.keys())))
-    for i in range(len(data_str)):
+    row_count, col_count = len(data_str), len(cat.keys())
+    mass = np.array((row_count, col_count))
+    for i in range(row_count):
         data_byte = bytes(data_str[i], 'utf8')
         for n, name in enumerate(cat.keys()):
             st_fn = cat.get(name)
