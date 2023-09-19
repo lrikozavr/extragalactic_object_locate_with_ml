@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+  # -*- coding: utf-8 -*-
 
 import os
 import numpy as np
@@ -32,6 +32,22 @@ def MCD_plot(name,d):
     ax.scatter(ar_i, d, color = colors[0])
     fig.savefig(f"{save_path}/{name}_MCD_distance.png")
     plt.close(fig)    
+
+def TSNE_pic(data,label,config):
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    
+    for n, name in enumerate(config.name_class_cls): #?????????????????????????????????????????????????????????????
+        temp_data = data[label[name] == 1]
+        ax.scatter(temp_data[:,0],temp_data[:,1], color = colors[n], label=name)
+        del temp_data
+    
+    fig.legend()
+    fig.set_size_inches(10,10)
+
+    fig.savefig(f"{config.path_pic}/{config.name_sample}_tsne.csv")
+    plt.close(fig)
+   
 
 def contamination_distribution(data,features_name,config):
     bins = 101

@@ -27,7 +27,6 @@ def loading_progress_bar(percent):
     bar = '█' * filled_length + '-' * (bar_length - filled_length)
     print(f'\rProgress: |{bar}| {percent*100:.2f}% ', end='')
 
-
 METRICS = [
       keras.metrics.TruePositives(name='tp'),
       keras.metrics.FalsePositives(name='fp'),
@@ -39,7 +38,6 @@ METRICS = [
       keras.metrics.AUC(name='auc'),
       keras.metrics.AUC(name='prc', curve='PR'), # precision-recall curve
 ]
-
 
 def SaveModel(model, path_model, path_weights, name):
     model_json = model.to_json()
@@ -58,7 +56,6 @@ def LoadModel(path_model, path_weights, optimizer, loss):
     print("Model is loaded from disk\n")
     loaded_model.compile(optimizer=optimizer, loss=loss)
     return loaded_model
-
 
 def DeepCustomNN_sm(features, l2, l3, l4, a2, a3, a4, output): #16, 8, 4
     input_array = Input(shape=(features,))
@@ -115,8 +112,20 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn import svm
 from sklearn.model_selection import RandomizedSearchCV,ShuffleSplit
 #from sklearn.utils.fixes import loguniform
-from pyod.models.ocsvm import OCSVM
+#from pyod.models.ocsvm import OCSVM
 from joblib import dump,load
+
+from sklearn.manifold import TSNE
+
+def dimention_reduction(X_data):
+
+    new_plane_data = TSNE(n_components=2, learning_rate=20.0, perplexity=20, early_exaggeration=10,
+                          n_iter=1000, n_iter_without_progress=200, min_grad_norm=1e-7,
+                          metric="euclidean", init="pca", verbose=1, random_state=420, 
+                          method='barnes_hut', #method='exact'
+                          angle=0.5, n_jobs=-1).fit_transform(X_data)
+
+
 
 def outlire(train,data_test,class_weight,name,config):
 
