@@ -117,7 +117,7 @@ from joblib import dump,load
 
 from sklearn.manifold import TSNE
 
-def dimention_reduction(X_data):
+def dimention_reduction_tsne(X_data,config):
 
     new_plane_data = TSNE(n_components=2, learning_rate=20.0, perplexity=20, early_exaggeration=10,
                           n_iter=1000, n_iter_without_progress=200, min_grad_norm=1e-7,
@@ -125,6 +125,7 @@ def dimention_reduction(X_data):
                           method='barnes_hut', #method='exact'
                           angle=0.5, n_jobs=-1).fit_transform(X_data)
 
+    return new_plane_data
 
 
 def outlire(train,data_test,class_weight,name,config):
@@ -340,7 +341,7 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
         model_volume(train,label,X_train,y_train,X_test,y_test,
         model,optimizer,loss,sample_weight,class_weights,num_ep,batch_size,validation_split,
         path_save_eval,f"custom_sm_{name}",config)
-        
+
         if(config.hyperparam["redshift"]["work"]):
             clf_r = redshift_predict(X_train,red_train,X_test,red_test,name,config=config)
             dump(clf_r,f'{config.path_model}_custom_sm_{name}_redshift_clf')

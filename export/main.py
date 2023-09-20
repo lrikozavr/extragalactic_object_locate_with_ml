@@ -121,10 +121,13 @@ if(not config.flags['data_preprocessing']['work']):
 else:
     data = data_preparation(config.path_ml_data,config.path_sample,config.name_class,config)    
 
+#############################################################if(config.features["mod"])
+
 #data_statistic
 if(config.statistic["metric"]):
     data.describe().transpose().to_csv(f'{config.path_stat}/{config.name_main_sample}_stat.log')
 
+from data_process import get_features
 #network training
 if(config.hyperparam["model_variable"]["work"]):
     #features from config
@@ -151,7 +154,6 @@ if(config.hyperparam["model_variable"]["work"]):
 
     print(data)
 
-    from data_process import get_features
     print("Features mode list:\t",config.features["train"])
     features = get_features(config.features["train"],config)
     print("Features train values:\t",features)
@@ -182,7 +184,17 @@ if(config.statistic["metric"]):
 
 #picture
 if(config.picture["work"]):
-    from graphic import picture_cm, picture_loss, picture_roc_prc, picture_hist, picture_metrics
+    from graphic import picture_cm, picture_loss, picture_roc_prc, picture_hist, picture_metrics, TSNE_pic, contam_dist_pic, multigridplot
+    
+    if(config.picture["tSNE"]):
+        TSNE_pic(config)
+
+    if(config.picture["contam_dist"]["work"]):
+        contam_dist_pic(config)
+
+    if(config.picture["multigridplot"]):
+        multigridplot(data,get_features(["color"],config),config)
+
     if(config.picture["roc_prc"]["work"]):
         picture_roc_prc(config)
     #to network    

@@ -73,7 +73,7 @@
             "balanced": true
             },
         "prediction":{
-            "work": true,
+            "work": false,
             "batch_count": 5000000,
             "outlire": false
             },
@@ -110,7 +110,13 @@
             }
         },
     "picture":{
-            "work": false,
+            "work": true,
+            "tSNE": false,
+            "contam_dist": {
+                "work": false,
+                "bins": 101
+            },
+            "multigridplot": true,
             "main": {
                 "work": true,
                 "bound": true
@@ -139,6 +145,8 @@
     "name_class_column": "class",
     "features": {
         "data": ["w1mpro","w1sigmpro","w2mpro","w2sigmpro","phot_g_mean_mag","parallax_error","phot_bp_mean_mag","pmra_error","phot_rp_mean_mag","pmdec_error"],
+        "mod":"standart",
+        "//comment_features_mod":["standart","all"],
         "range": [[11,19],[11,19],[14,21],[14,21],[14,21]],
         "train": ["color"],
         "//comment_train": ["color","mags","err_color","err_mags"]

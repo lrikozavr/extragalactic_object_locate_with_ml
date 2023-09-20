@@ -11,7 +11,7 @@ import seaborn as sns
 from sklearn.metrics import confusion_matrix, roc_curve, precision_recall_curve
 
 #from main import save_path
-from network import LoadModel, make_custom_index
+from network import LoadModel, make_custom_index, dimention_reduction_tsne, get_features
 
 
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -33,69 +33,157 @@ def MCD_plot(name,d):
     fig.savefig(f"{save_path}/{name}_MCD_distance.png")
     plt.close(fig)    
 
-def TSNE_pic(data,label,config):
+def TSNE_pic(config):
+    
+    data_b = pd.read_csv(f"{config.path_ml_data}/{config.name_main_sample}_all.csv", header=0, sep=',')
+    
+    data_b = data_b.sample(100000, ignore_index=True)
+
+    data = data_b[get_features(config.features["train"],config)]
+
+    label = data_b[config.name_class_cls]
+    
+    del data_b
+
+    data = dimention_reduction_tsne(data.values,config)
+    
+    data = pd.DataFrame(data)
+    
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     
-    for n, name in enumerate(config.name_class_cls): #?????????????????????????????????????????????????????????????
-        temp_data = data[label[name] == 1]
+    for n, name in enumerate(config.name_class_cls):
+        temp_data = data[label[name] == 1].values
+        print(temp_data)
         ax.scatter(temp_data[:,0],temp_data[:,1], color = colors[n], label=name)
         del temp_data
     
+    data.to_csv('',index=False)
+
+    del data, label
+
     fig.legend()
     fig.set_size_inches(10,10)
 
-    fig.savefig(f"{config.path_pic}/{config.name_sample}_tsne.csv")
+    fig.savefig(f"{config.path_pic}/{config.name_sample}_tsne.png")
     plt.close(fig)
-   
 
-def contamination_distribution(data,features_name,config):
-    bins = 101
-    min = data[features_name].min()
-    max = data[features_name].max()
-    #range_bins = max-min
-    mass_mags = np.linspace(max, min, num = bins)
-    cls_n = len(config.name_class)
-    mass = np.zeros((bins-1,cls_n*cls_n))
 
-    for i in range(bins):
-        #min_f = (range_bins*i)/bins + min
-        #max_f = (range_bins*(i+1))/bins + min
-        if(i+1 == bins):
-           break
-        min_f = mass_mags[i]
-        max_f = mass_mags[i+1]
-
-        data_temp = data[(data[features_name] > min_f) & (data[features_name] < max_f)]
-        y = np.argmax(data_temp[config.name_class_cls], axis=1).tolist()
-        y_prob = np.argmax(data_temp[config.name_class_prob], axis=1).tolist()
-        cm = confusion_matrix(y, y_prob)
-        for ii in range(cls_n):
-            for jj in range(cls_n):
-                mass[i,cls_n*ii+jj] += cm[ii,jj]
+def contam_dist_pic(config):
     
-    fig, axs = plt.subplots(cls_n,cls_n)
+    def contamination_distribution(data,features_name,config):
+        bins = config.picture["contam_dist"]["bins"]
+        min = data[features_name].min()
+        max = data[features_name].max()
+        #range_bins = max-min
+        mass_mags = np.linspace(min, max, num = bins)
+        cls_n = len(config.name_class)
+        mass = np.zeros((bins,cls_n*cls_n))
+        contam_mass = np.zeros((bins,cls_n*cls_n))
 
-    for n in range(cls_n*cls_n):
-        ii, jj = n//cls_n, n%cls_n
-        axs[ii,jj].plot(mass_mags,mass[:,n])
-        axs[ii,jj].xlabel(features_name)
-        axs[ii,jj].ylabel('Contamination count')
-        axs[ii,jj].xlim([min-1,max+1])
+        sum_global = np.zeros((bins,cls_n*cls_n))
+        for i in range(bins):
+            #min_f = (range_bins*i)/bins + min
+            #max_f = (range_bins*(i+1))/bins + min
+            if(i+1 == bins):
+                break
+            min_f = mass_mags[i]
+            max_f = mass_mags[i+1]
+            #потребує оптимізації, бо O(n^2)
+            data_temp = data[(data[features_name] >= min_f) & (data[features_name] < max_f)]
+            #print(data_temp)
+            #
+            y = np.argmax(data_temp[config.name_class_cls], axis=1).tolist()
+            y_prob = np.argmax(data_temp[config.name_class_prob], axis=1).tolist()
+            #        
+            cm = confusion_matrix(y, y_prob)
+            if(len(cm)>2):
+              #print(cm)
+              #print(y,y_prob)
+              for ii in range(cls_n):
+                  sum = 0
+                  for jj in range(cls_n):
+                      #all correct
+                      mass[i][cls_n*ii+jj] = cm[ii][jj]
+                      sum += cm[ii][jj]
+                      if(i-1 > 0):
+                         sum_global[i][cls_n*ii+jj] += sum_global[i-1][cls_n*ii+jj]
+                      sum_global[i][cls_n*ii+jj] += cm[ii][jj] 
+                  for jj in range(cls_n):
+                      if(sum!=0):
+                          contam_mass[i][cls_n*ii+jj] = (cm[ii][jj]/float(sum))*100
+
+        '''            
+        fig, axs = plt.subplots(cls_n,cls_n)
+        
+        for n in range(cls_n*cls_n):
+            ii, jj = n//cls_n, n%cls_n
+            axs[ii,jj].plot(mass_mags,mass[:,n])
+            axs[ii,jj].set_xlabel(features_name)
+            axs[ii,jj].set_ylabel('Contamination count')
+            axs[ii,jj].set_xlim([min-1,max+1])
+        '''
+        fig, axs = plt.subplots(3,cls_n)
+
+        for n in range(cls_n):
+
+            sum_local = 0
+            for ii in range(cls_n):
+                sum_local += sum_global[bins-2,cls_n*n+ii]
+
+            for ii in range(cls_n):
+                if(ii != n):
+                    axs[1,n].plot(mass_mags,contam_mass[:,cls_n*n+ii],label=f"{config.name_class_cls[n]} as {config.name_class_prob[ii]}")
+                    axs[0,n].plot(mass_mags,np.log10(mass[:,cls_n*n+ii]),label=f"{config.name_class_cls[n]} as {config.name_class_prob[ii]}")
+                    axs[2,n].plot(mass_mags,(sum_global[:,cls_n*n+ii]/sum_local)*100,label=f"{config.name_class_cls[n]} as {config.name_class_prob[ii]}")
+                else:
+                    axs[0,n].plot(mass_mags,np.log10(mass[:,cls_n*n+ii]),label=f"{config.name_class_cls[n]} true pred")
+            axs[1,n].set_xlabel("mags")
+            axs[1,n].set_ylabel('Contamination, % (per bin)')
+
+            axs[0,n].set_xlabel("mags")
+            axs[0,n].set_ylabel('Contamination count, log10 (per bin)')
+            
+            axs[2,n].set_xlabel("mags")
+            axs[2,n].set_ylabel('Contamination, %')
+
+            axs[2,n].set_xlim([min-1,max+1])
+            axs[0,n].set_xlim([min-1,max+1])
+            axs[1,n].set_xlim([min-1,max+1])
+
+            axs[2,n].legend()
+            axs[1,n].legend()
+            axs[0,n].legend()
+            #axs[1,n].set_ylim([,])
+        
+        #fig.legend()
+        fig.supxlabel(features_name, fontsize=30)
+        fig.set_size_inches(30,30)
+
+        fig.savefig(f'{config.path_pic}/{config.name_sample}_cm_contamination_by_{features_name}.png')
+        plt.close(fig)
+
+
+    name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
+    label = pd.read_csv(f'{config.path_eval}_custom_sm_{name}_prob.csv', header=0, sep=",")
     
-    fig.legend()
-    fig.set_size_inches(30,30)
+    data = pd.read_csv(f"{config.path_ml_data}/{config.name_main_sample}_all.csv", header=0, sep=',')
 
-    fig.savefig(f'{config.path_pic}/{config.name_sample}_cm_contamination_by_{features_name}.png')
-    plt.close(fig)
+    for name in get_features(["mags"],config):
+        data_temp = data[name]
+        data_temp = pd.concat((data_temp,label),axis=1)
+        contamination_distribution(data_temp,name,config)
+
 
 def multigridplot(data, features, config):
     count = len(features)
-    fig, axs = plt.subplots(count-1,count-1)
+    fig, axs = plt.subplots(count,count)
 
     fig.set_size_inches(30,30)
 
-    for index, name_index in enumerate(config.class_name):
+    #add input features weights
+
+    for index, name_index in enumerate(config.name_class_cls):
         data_class = data[data[name_index] == 1]
         for ii, name_ii in enumerate(features):
             for jj, name_jj in enumerate(features):
@@ -110,9 +198,6 @@ def multigridplot(data, features, config):
 
     fig.savefig(f'{config.path_pic}/{config.name_sample}_multyhist_distribution.png')
     plt.close(fig)
-
-       
-       
 
 def picture_cm(config):
   def plot_cm(index,save_name):
