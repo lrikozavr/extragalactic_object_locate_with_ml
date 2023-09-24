@@ -429,6 +429,12 @@ def data_preparation(save_path,path_sample,name_class,config):
         columns = data_values.columns.values
         data_normalize, norms = normalize(data_values,norm=config.flags['data_preprocessing']['main_sample']['normalize']['mode'],axis=0,return_norm=True)
         data[features_normalize] = np.array(data_normalize)
+        
+        #### ????????????????????????????????????
+        #data[features]-data[features].mean()
+        #data[features]-data[features].std()
+        ####
+        
         #print(norms)
         #print(np.array(norms).transpose())
         pd.DataFrame(np.array([norms]),columns = columns).to_csv(f"{config.path_stat}/{config.name_main_sample}_norms.csv", index=False)

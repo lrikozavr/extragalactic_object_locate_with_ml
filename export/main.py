@@ -184,29 +184,27 @@ if(config.statistic["metric"]):
 
 #picture
 if(config.picture["work"]):
-    from graphic import picture_cm, picture_loss, picture_roc_prc, picture_hist, picture_metrics, TSNE_pic, contam_dist_pic, multigridplot
+    from graphic import picture_confusion_matrix, picture_roc_prc, picture_hist, TSNE_pic, contam_dist_pic, multigridplot, picture_correlation_matrix
+    
+    if(config.picture["correlation_matrix"]):
+        picture_correlation_matrix(data[get_features(["mags"],config)],"mags",config)
     
     if(config.picture["tSNE"]):
-        TSNE_pic(config)
+        TSNE_pic(data,config)
 
     if(config.picture["contam_dist"]["work"]):
-        contam_dist_pic(config)
+        contam_dist_pic(data,config)
 
     if(config.picture["multigridplot"]):
         multigridplot(data,get_features(["color"],config),config)
 
     if(config.picture["roc_prc"]["work"]):
         picture_roc_prc(config)
-    #to network    
-    #if(config.picture["loss"]):
-    #    picture_loss(optimizer,loss,config)
-    if(config.picture["cm"]):
-        picture_cm(config)
+    #to network   
+    if(config.picture["confusion_matrix"]):
+        picture_confusion_matrix(config)
     if(config.picture["hist"]["work"]):
         picture_hist(config)
-
-    #if(config.picture["metrics_h"]):
-    #    picture_metrics(config)
 
 #prediction
 if(config.flags["prediction"]["work"]):

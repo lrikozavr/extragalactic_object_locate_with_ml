@@ -33,17 +33,19 @@ def MCD_plot(name,d):
     fig.savefig(f"{save_path}/{name}_MCD_distance.png")
     plt.close(fig)    
 
-def TSNE_pic(config):
+def TSNE_pic(data_b,config):
     
-    data_b = pd.read_csv(f"{config.path_ml_data}/{config.name_main_sample}_all.csv", header=0, sep=',')
+    print("picture by tSNE")
+
+    #data_b = pd.read_csv(f"{config.path_ml_data}/{config.name_main_sample}_all.csv", header=0, sep=',')
     
-    data_b = data_b.sample(100000, ignore_index=True)
+    #data_b = data_b.sample(100000, ignore_index=True)
 
     data = data_b[get_features(config.features["train"],config)]
 
     label = data_b[config.name_class_cls]
     
-    del data_b
+    #del data_b
 
     data = dimention_reduction_tsne(data.values,config)
     
@@ -54,23 +56,26 @@ def TSNE_pic(config):
     
     for n, name in enumerate(config.name_class_cls):
         temp_data = data[label[name] == 1].values
-        print(temp_data)
-        ax.scatter(temp_data[:,0],temp_data[:,1], color = colors[n], label=name)
+        #print(temp_data)
+        ax.scatter(temp_data[:,0],temp_data[:,1], color = colors[n], label=name,s=1)
+        ax.legend()
         del temp_data
     
-    data.to_csv('',index=False)
+    #data.to_csv('',index=False)
 
     del data, label
 
-    fig.legend()
+    #fig.legend()
     fig.set_size_inches(10,10)
 
     fig.savefig(f"{config.path_pic}/{config.name_sample}_tsne.png")
     plt.close(fig)
 
 
-def contam_dist_pic(config):
+def contam_dist_pic(data,config):
     
+    print("picture Contamination by mags")
+
     def contamination_distribution(data,features_name,config):
         bins = config.picture["contam_dist"]["bins"]
         min = data[features_name].min()
@@ -78,10 +83,12 @@ def contam_dist_pic(config):
         #range_bins = max-min
         mass_mags = np.linspace(min, max, num = bins)
         cls_n = len(config.name_class)
-        mass = np.zeros((bins,cls_n*cls_n))
+        mass = np.ones((bins,cls_n*cls_n))
         contam_mass = np.zeros((bins,cls_n*cls_n))
 
         sum_global = np.zeros((bins,cls_n*cls_n))
+        
+        sum_main = np.zeros(cls_n*cls_n)
         for i in range(bins):
             #min_f = (range_bins*i)/bins + min
             #max_f = (range_bins*(i+1))/bins + min
@@ -104,11 +111,12 @@ def contam_dist_pic(config):
                   sum = 0
                   for jj in range(cls_n):
                       #all correct
-                      mass[i][cls_n*ii+jj] = cm[ii][jj]
+                      mass[i][cls_n*ii+jj] += cm[ii][jj]
                       sum += cm[ii][jj]
-                      if(i-1 > 0):
-                         sum_global[i][cls_n*ii+jj] += sum_global[i-1][cls_n*ii+jj]
-                      sum_global[i][cls_n*ii+jj] += cm[ii][jj] 
+
+                      sum_main[cls_n*ii+jj] += cm[ii][jj]
+                      sum_global[i][cls_n*ii+jj] = sum_main[cls_n*ii+jj]
+                      
                   for jj in range(cls_n):
                       if(sum!=0):
                           contam_mass[i][cls_n*ii+jj] = (cm[ii][jj]/float(sum))*100
@@ -125,40 +133,52 @@ def contam_dist_pic(config):
         '''
         fig, axs = plt.subplots(3,cls_n)
 
+        fontsize_side = 20
+        fontsize_legend = 15
+
         for n in range(cls_n):
 
             sum_local = 0
             for ii in range(cls_n):
-                sum_local += sum_global[bins-2,cls_n*n+ii]
+                sum_local += sum_main[cls_n*n+ii]
 
+            #print("SUM_LOCAL\n\n",sum_local)
+            #print(sum_global)
             for ii in range(cls_n):
                 if(ii != n):
-                    axs[1,n].plot(mass_mags,contam_mass[:,cls_n*n+ii],label=f"{config.name_class_cls[n]} as {config.name_class_prob[ii]}")
-                    axs[0,n].plot(mass_mags,np.log10(mass[:,cls_n*n+ii]),label=f"{config.name_class_cls[n]} as {config.name_class_prob[ii]}")
-                    axs[2,n].plot(mass_mags,(sum_global[:,cls_n*n+ii]/sum_local)*100,label=f"{config.name_class_cls[n]} as {config.name_class_prob[ii]}")
+                    axs[1,n].plot(mass_mags,contam_mass[:,cls_n*n+ii],label=f"as {config.name_class_prob[ii]}")
+                    axs[0,n].plot(mass_mags,np.log10(mass[:,cls_n*n+ii]),label=f"as {config.name_class_prob[ii]}")
+                    axs[2,n].plot(mass_mags,(sum_global[:,cls_n*n+ii]/sum_local)*100,label=f"as {config.name_class_prob[ii]}")
                 else:
                     axs[0,n].plot(mass_mags,np.log10(mass[:,cls_n*n+ii]),label=f"{config.name_class_cls[n]} true pred")
-            axs[1,n].set_xlabel("mags")
-            axs[1,n].set_ylabel('Contamination, % (per bin)')
+            #axs[1,n].set_xlabel("mags", fontsize=10)
+            #axs[1,n].set_ylabel('Contamination, % (per bin)', fontsize=10)
+            axs[1,0].set_ylabel('Contamination, % (per bin)', fontsize=fontsize_side)
 
-            axs[0,n].set_xlabel("mags")
-            axs[0,n].set_ylabel('Contamination count, log10 (per bin)')
+            #axs[0,n].set_xlabel("mags", fontsize=10)
+            #axs[0,n].set_ylabel('Contamination count, log10 (per bin)', fontsize=10)
+            axs[0,0].set_ylabel('Contamination count, log10 (per bin)', fontsize=fontsize_side)
             
-            axs[2,n].set_xlabel("mags")
-            axs[2,n].set_ylabel('Contamination, %')
+            axs[0,n].set_title(config.name_class_cls[n], fontsize=20)
+
+            axs[2,n].set_xlabel("mags", fontsize=fontsize_side)
+            #axs[2,n].set_ylabel('Contamination, %', fontsize=10)
+            axs[2,0].set_ylabel('Contamination, %', fontsize=fontsize_side)
 
             axs[2,n].set_xlim([min-1,max+1])
             axs[0,n].set_xlim([min-1,max+1])
             axs[1,n].set_xlim([min-1,max+1])
 
-            axs[2,n].legend()
-            axs[1,n].legend()
-            axs[0,n].legend()
+            axs[2,n].legend(fontsize=fontsize_legend)
+            axs[1,n].legend(fontsize=fontsize_legend)
+            axs[0,n].legend(fontsize=fontsize_legend)
             #axs[1,n].set_ylim([,])
         
+
+
         #fig.legend()
         fig.supxlabel(features_name, fontsize=30)
-        fig.set_size_inches(30,30)
+        fig.set_size_inches(20,20)
 
         fig.savefig(f'{config.path_pic}/{config.name_sample}_cm_contamination_by_{features_name}.png')
         plt.close(fig)
@@ -167,39 +187,53 @@ def contam_dist_pic(config):
     name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
     label = pd.read_csv(f'{config.path_eval}_custom_sm_{name}_prob.csv', header=0, sep=",")
     
-    data = pd.read_csv(f"{config.path_ml_data}/{config.name_main_sample}_all.csv", header=0, sep=',')
+    #data = pd.read_csv(f"{config.path_ml_data}/{config.name_main_sample}_all.csv", header=0, sep=',')
 
     for name in get_features(["mags"],config):
         data_temp = data[name]
         data_temp = pd.concat((data_temp,label),axis=1)
         contamination_distribution(data_temp,name,config)
 
+    
 
 def multigridplot(data, features, config):
     count = len(features)
-    fig, axs = plt.subplots(count,count)
-
-    fig.set_size_inches(30,30)
+    fig, axs = plt.subplots(count-1,count-1)
 
     #add input features weights
+
+    data = data.sample(10000,ignore_index=False)
 
     for index, name_index in enumerate(config.name_class_cls):
         data_class = data[data[name_index] == 1]
         for ii, name_ii in enumerate(features):
             for jj, name_jj in enumerate(features):
-                if(not ii==jj and ii > jj):
+                if(ii > jj):
                     data_common = pd.concat([data_class[name_ii],data_class[name_jj]], axis=1)
-                    sns.kdeplot(data=data_common, ax=axs[ii,jj], color=colors[index])
-                    axs[ii,jj].scatter(data_class[name_jj],data_class[name_ii], color = colors[index])
-                else:
-                    axs[ii,jj].remove()
-    
-    fig.legend()
+                    sns.kdeplot(data=data_common,x=name_jj,y=name_ii, ax=axs[ii-1,jj], color=colors[index])
+                    axs[ii-1,jj].scatter(data_class[name_jj],data_class[name_ii], color = colors[index], s=1, label=name_index)
+                    axs[ii-1,jj].set_xlabel("")
+                    axs[ii-1,jj].set_ylabel("")
+                    axs[ii-1,jj].legend(fontsize=5)
+                    print(ii,jj,"kdplot done")
+                if(jj == 0):
+                    axs[ii-1,jj].set_ylabel(name_ii)
+                if(ii == len(features)-1 and jj < count-1):
+                    axs[ii-1,jj].set_xlabel(name_jj)
+
+
+    for ii in range(len(features)-1):
+        if(ii < len(features)-2):
+            for ax in axs[ii,ii+1:]:
+                ax.remove()
+        
+    #fig.legend()
+    fig.set_size_inches(30,30)
 
     fig.savefig(f'{config.path_pic}/{config.name_sample}_multyhist_distribution.png')
     plt.close(fig)
 
-def picture_cm(config):
+def picture_confusion_matrix(config):
   def plot_cm(index,save_name):
     name = make_custom_index(index,config.hyperparam["model_variable"]["neuron_count"])
     data = pd.read_csv(f'{config.path_eval}_custom_sm_{name}_prob.csv', header=0, sep=",")
@@ -208,8 +242,16 @@ def picture_cm(config):
     y_prob = np.argmax(data[config.name_class_prob], axis=1).tolist()
 
     cm = confusion_matrix(y, y_prob)
+
+    new_cm = np.zeros((len(config.name_class_cls),len(config.name_class_cls)))
+    for i in range(len(config.name_class_cls)):
+        sum = cm[i,:].sum()
+        print(sum)
+        for j in range(len(config.name_class_cls)):
+            new_cm[i,j] = round(cm[i,j] / float(sum),5)*100
+    print(new_cm)
     fig = plt.figure(figsize=(5,5))
-    sns.heatmap(cm, annot=True, fmt="d")
+    sns.heatmap(new_cm, annot=True, fmt=".2f")
     plt.title('Confusion matrix')
     plt.ylabel('Actual label')
     plt.xlabel('Predicted label')
@@ -224,7 +266,37 @@ def picture_cm(config):
   #
   print("picture Confusion Matrix done")
 
-def picture_metrics(config):
+def colnamemb(col_value):
+    new_col_value = []
+    for col in col_value:
+        new_name = ""
+        for ind, ccol in enumerate(col.split("&")):
+            if(ind == 1):
+                new_name += "&"
+            if(len(ccol.split("_")) == 1):
+                new_name += ccol.split("mpro")[0]
+            else:
+                new_name += ccol.split("_")[1]
+        new_col_value.append(new_name)
+    return new_col_value
+    
+
+def picture_correlation_matrix(data,name,config):
+    #print(colnamemb(data.columns.values))
+    data = pd.DataFrame(data.values, columns=colnamemb(data.columns.values))
+    corr = data.corr()
+    
+    fig = plt.figure(figsize=(10,10))
+    graph = sns.heatmap(corr,
+                cmap='RdBu',
+                annot=True,
+                annot_kws = {'size': 8})
+    plt.yticks(rotation=60)
+    #plt.setp(graph.ax_heatmap.get_xticklabels(), rotation=60)
+    fig.savefig(f'{config.path_pic}/{config.name_sample}_{name}_correlation_matrix.png')
+    plt.close(fig)
+
+def picture_metrics(model,name,config):
     def plot_metrics(axs, name, history):
       metrics = ['loss', 'auc', 'precision', 'recall']
       #fig, axs = plt.subplots(2,2)
@@ -235,47 +307,28 @@ def picture_metrics(config):
         axs[i,j].plot(history.epoch, history.history[metric], color=colors[0], label='Train_' + name)
         axs[i,j].plot(history.epoch, history.history['val_'+metric],
                 color=colors[0], linestyle="--", label='Val_' + name)
-        axs[i,j].xlabel('Epoch')
-        axs[i,j].ylabel(name)
+        axs[i,j].set_xlabel('Epoch')
+        axs[i,j].set_ylabel(name)
+        axs[i,j].legend()
+        '''
         if metric == 'loss':
-          axs[i,j].ylim([0, plt.ylim()[1]])
+          axs[i,j].set_ylim([0, plt.ylim()[1]])
         elif metric == 'auc':
-          axs[i,j].ylim([0.8,1])
+          axs[i,j].set_ylim([0.8,1])
         else:
-          axs[i,j].ylim([0,1])
-
+          axs[i,j].set_ylim([0,1])
+        '''
         #axs[i,j].legend()
 
     fig, axs = plt.subplots(2,2)
 
-    for i in range(config.hyperparam["model_variable"]["kfold"]):
-        name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
-        model = LoadModel(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",config.hyperparam["optimizer"],config.hyperparam["loss"])
-        plot_metrics(axs, f"{i}_kfold", model)
+    plot_metrics(axs, name, model)
 
-    if(config.picture["main"]["work"] and config.picture["main"]["bound"]):
-        name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
-        model = LoadModel(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",config.hyperparam["optimizer"],config.hyperparam["loss"])
-        plot_metrics(axs, f"main", model)
+    fig.set_size_inches(13,7)
 
-    fig.legend()
-    fig.set_size_inches(30,20)
-    if(config.picture["main"]["work"] and config.picture["main"]["bound"]):
-        fig.savefig(f'{config.path_pic}/{config.name_sample}_kfold_main_summary_metrics_history.png')
-    else:
-        fig.savefig(f'{config.path_pic}/{config.name_sample}_kfold_summary_metrics_history.png')
+    fig.savefig(f'{config.path_pic}/{config.name_sample}_{name}_metrics_history.png')
        
     plt.close(fig)
-
-    if(config.picture["main"]["work"] and not config.picture["main"]["bound"]):
-        fig, axs = plt.subplots(2,2)
-        name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
-        model = LoadModel(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",optimizer,loss)
-        plot_metrics(axs, f"main", model)
-        fig.legend()
-        fig.set_size_inches(30,20)
-        fig.savefig(f'{config.path_pic}/{config.name_sample}_main_metrics_history.png')
-        plt.close(fig)        
 
 def picture_hist(config):
     
@@ -325,53 +378,28 @@ def picture_hist(config):
 
     print("picture Hist done")
 
-def picture_loss(optimizer,loss,config):
+def picture_loss(model,name,config):
 
-  def plot_loss(ax, history, label, n):
-    # Use a log scale on y-axis to show the wide range of values.
-    ax.semilogy(history.epoch, history.history['loss'],
-                color=colors[n], label='Train ' + label)
-    ax.semilogy(history.epoch, history.history['val_loss'],
-                color=colors[n], label='Val ' + label,
-                linestyle="--")
-    ax.xlabel('Epoch')
-    ax.ylabel('Loss')
+    def plot_loss(ax, history, label, n):
+        # Use a log scale on y-axis to show the wide range of values.
+        ax.semilogy(history.epoch, history.history['loss'],
+                    color=colors[n], label='Train ' + label)
+        ax.semilogy(history.epoch, history.history['val_loss'],
+                    color=colors[n], label='Val ' + label,
+                    linestyle="--")
+        ax.set_xlabel('Epoch')
+        ax.set_ylabel('Loss')
 
-  fig = plt.figure()
-  ax = fig.add_subplot(1,1,1)
-  
-  for i in range(config.hyperparam["model_variable"]["kfold"]):
-    name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
-    model = LoadModel(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",optimizer,loss)
-    model.fit()
-    plot_loss(ax,model,f"kfold_{i}",i)
-  #
-  if(config.picture["main"]["work"] and config.picture["main"]["bound"]):
-    name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
-    model = LoadModel(f"{config.path_model}_custom_sm_{name}",f"{config.path_weight}_custom_sm_{name}",optimizer,loss)
-    plot_loss(ax,model,f"main",config.hyperparam["model_variable"]["kfold"] + 1)
-  #
-  ax.set_label(config.name_sample)
-  ax.legend()
-  if(config.picture["main"]["work"] and config.picture["main"]["bound"]):
-    fig.savefig(f'{config.path_pic}/{config.name_sample}_kfold_main_summary_loss.png')     
-  else:
-    fig.savefig(f'{config.path_pic}/{config.name_sample}_kfold_summary_loss.png')
-
-  #for main
-  if(config.picture["main"]["work"] and not config.picture["main"]["bound"]):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
 
-    name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
-    model = LoadModel(f"{config.path_model}_custom_sm_{name}",f"{config.path_weights}_custom_sm_{name}",optimizer,loss)
-    plot_loss(ax,model,f"main",config.hyperparam["model_variable"]["kfold"] + 1)
-
+    plot_loss(ax,model,name,1)
+  
     ax.set_label(config.name_sample)
     ax.legend()
-    fig.savefig(f'{config.path_pic}/{config.name_sample}_main_loss.png')
-
-  del fig
+    
+    fig.savefig(f'{config.path_pic}/{config.name_sample}_{name}_loss.png')
+    plt.close(fig)
 
   
 

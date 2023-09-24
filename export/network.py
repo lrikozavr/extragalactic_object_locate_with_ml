@@ -6,7 +6,7 @@ import tempfile
 
 import math
 
-from keras.layers import Input, Dense, Dropout
+from keras.layers import Input, Dense, Dropout, Flatten
 from keras.models import Model
 from tensorflow import keras
 
@@ -119,7 +119,7 @@ from sklearn.manifold import TSNE
 
 def dimention_reduction_tsne(X_data,config):
 
-    new_plane_data = TSNE(n_components=2, learning_rate=20.0, perplexity=20, early_exaggeration=10,
+    new_plane_data = TSNE(n_components=2, learning_rate=200.0, perplexity=50, early_exaggeration=100,
                           n_iter=1000, n_iter_without_progress=200, min_grad_norm=1e-7,
                           metric="euclidean", init="pca", verbose=1, random_state=420, 
                           method='barnes_hut', #method='exact'
@@ -256,6 +256,98 @@ def redshift_predict(train,label,X_test,y_test,name,config):
 
     return clf_r
 
+from keras import layers
+
+def redshift_neural_network_API(train,label,X_test,y_test,name,config):
+        
+    def build_model(hp):
+        inputs = keras.Input(shape=(len(get_features(config.features["train"],config)),))
+        
+        #
+        #model.add(layers.Flatten())
+        
+        x = inputs
+        x = Flatten()(x)
+        # Tune the number of layers.
+        for i in range(hp.Int("num_layers", 1, 3)):
+            x = Dense(
+                    # Define the hyperparameter.
+                    # Tune number of units.
+                    units=hp.Int(f"units_{i}", min_value=128, max_value=512, step=128),
+                    # Tune the activation function to use.
+                    activation=hp.Choice("activation", ["relu", "tanh"]),
+                )(x)
+            
+        # Tune whether to use dropout.
+        if hp.Boolean("dropout"):
+            x = Dropout(rate=0.25)(x)
+        
+        outputs = Dense(1, activation="linear")(x)
+        model = Model(inputs=inputs, outputs=outputs)
+        
+        # Define the optimizer learning rate as a hyperparameter.
+        learning_rate = hp.Float("lr", min_value=1e-4, max_value=1e-2, sampling="log")
+        
+        model.compile(
+            optimizer=keras.optimizers.Adam(learning_rate=learning_rate), 
+            loss=tf.keras.losses.MeanSquaredError(reduction="auto", name="mean_squared_error"), 
+            metrics=tf.keras.metrics.MeanSquaredError(name="mean_squared_error", dtype=None),
+        )
+        
+        return model
+
+    import keras_tuner
+
+    #hp = keras_tuner.HyperParameters()
+    #model = build_model(hp)
+    
+    tuner = keras_tuner.RandomSearch(
+        hypermodel=build_model,
+        objective="val_accuracy",
+        max_trials=3,
+        executions_per_trial=2,
+        overwrite=True,
+        max_consecutive_failed_trials = 1000,
+        directory=f"{config.path_model}/keras_tuner",
+        project_name="redshift",
+    )
+
+    tuner.search_space_summary()
+
+    tuner.search(train[100000:], label[100000:], epochs=1, validation_data=(train[:100000], label[:100000]))
+
+    # Get the top 2 models.
+    models = tuner.get_best_models(num_models=2)
+    best_model = models[0]
+    # Build the model.
+    # Needed for `Sequential` without specified `input_shape`.
+    #best_model.build(input_shape=(len(get_features(config.features["train"],config)),))
+    best_model.summary()
+    #tuner.results_summary()
+
+    # Get the top 2 hyperparameters.
+    best_hps = tuner.get_best_hyperparameters(5)
+    # Build the model with the best hp.
+    model = build_model(best_hps[0])
+    # Fit with the entire dataset.
+    #x_all = np.concatenate((x_train, x_val))
+    #y_all = np.concatenate((y_train, y_val))
+    model.fit(x=train, y=label, epochs=20)
+
+    print("model_redshift fited")
+
+    predict_red = model.predict(X_test, batch_size=1024)
+
+    predict_red = pd.DataFrame(np.array(predict_red), columns=['redshift_pred'])
+    y_test = pd.DataFrame(np.array(y_test),columns=['actual_redshift'])
+    X_test = pd.DataFrame(np.array(X_test),columns=get_features(config.features["train"],config))
+    predict_red = pd.concat([X_test,predict_red,y_test], axis=1)
+    
+    predict_red.to_csv(f"{config.path_predict}_{name}_kerastuner_redshift.csv")
+
+    return model
+
+
 def model_volume(train,label,X_train,y_train,X_test,y_test,
 	model,optimizer,loss,sample_weight,class_weights,num_ep,batch_size,validation_split,
     path_save_eval,name,config):
@@ -278,7 +370,7 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
     model.load_weights(initial_weights)
     '''
     
-    model.fit(X_train, y_train,
+    history = model.fit(X_train, y_train,
         epochs=num_ep,
         #verbose=1,
         verbose=0,
@@ -289,8 +381,65 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
         #&&&????????????????????????????????????????????????????????????????????
         sample_weight=sample_weight
         )
-    
+
     print("model fited")
+
+    from graphic import picture_metrics, picture_loss
+    #а що як скористатися можливістю збереження через dump?
+    if(config.hyperparam["picture"]["metrics"]):
+        picture_metrics(history,name,config)
+    if(config.hyperparam["picture"]["loss"]):
+        picture_loss(history,name,config)
+
+    '''
+    import shap
+    #normalize data
+    
+    #X,y = shap.datasets.adult()
+    #print(X)
+    #print(y)
+    X_train = pd.DataFrame(X_train,columns=get_features(config.features["train"],config))
+    X_test = pd.DataFrame(X_test,columns=get_features(config.features["train"],config))
+    #print(X_train)
+    degree = [1,2,4]
+    def f(x):
+        pred = model.predict(x)
+        #rez = np.zeros(len(pred))
+        #rez[:] = pred[:,:].dot(degree)
+        rez = np.zeros((len(pred),1))
+        rez[:,0] = pred[:,:].dot(degree)
+        return rez
+    '''
+    #print(f(X_train.iloc[:10]))
+    #print(X_train.iloc[:10])
+    '''
+    #y_train_local = y_train[:,:].dot(degree)
+    #import xgboost
+    #clustering = shap.utils.hclust(X_train, y_train_local)
+    #masker = shap.maskers.Partition(X_train, clustering=clustering)
+    #explainer = shap.explainers.Exact(f,masker)
+    #shap_values = explainer(X_train.iloc[:100])
+    #shap.plots.bar(shap_values)
+    '''
+    '''
+    explainer = shap.explainers.Permutation(f,X_train)
+    
+    X_test = X_test.sample(2000, ignore_index=True)
+    shap_values = explainer(X_test)
+
+    shap.plots.beeswarm(shap_values)
+
+    #explainer = shap.explainers.Exact(f, X_train)
+    #shap_values = explainer(X_test.iloc[200000:200100])
+    
+    #print(shap_values)
+    #print(shap_values[0])
+    
+    #shap.plots.bar(shap_values)
+    #shap.plots.waterfall(shap_values[0])
+
+    exit()
+    '''
     #model.evaluate(X_test, y_test, verbose=1)
     #model.summary()
     SaveModel(model,f'{config.path_model}',f'{config.path_weight}',name)
@@ -343,10 +492,12 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
         path_save_eval,f"custom_sm_{name}",config)
 
         if(config.hyperparam["redshift"]["work"]):
-            clf_r = redshift_predict(X_train,red_train,X_test,red_test,name,config=config)
-            dump(clf_r,f'{config.path_model}_custom_sm_{name}_redshift_clf')
-            #model_red = redshift_predict(X_train,red_train,X_test,red_test,name,config=config)
-            #SaveModel(model_red,config.path_model,config.path_weight,f"custom_sm_{name}_redshift")
+            #####
+            #clf_r = redshift_predict(X_train,red_train,X_test,red_test,name,config=config)
+            #dump(clf_r,f'{config.path_model}_custom_sm_{name}_redshift_clf')
+            #####
+            model_red = redshift_neural_network_API(X_train,red_train,X_test,red_test,name,config=config)
+            SaveModel(model_red,config.path_model,config.path_weight,f"custom_sm_{name}_redshift")
 
         #SaveModel(model1,output_path_mod,output_path_weight,f"custom_sm_{name}")
     

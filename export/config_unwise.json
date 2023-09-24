@@ -86,7 +86,7 @@
         "loss": "categorical_crossentropy",
         "validation_split": 0.3,
         "model_variable":{
-                "work": false,
+                "work": true,
                 "kfold": 4,
                 "neuron_count": [64,64,64],
                 "activation": ["softsign","tanh","elu"],
@@ -107,40 +107,43 @@
             },
         "redshift": {
                 "work": true
-            }
+            },
+        "picture": {
+            "metrics": false,
+            "loss": false
+        }   
         },
     "picture":{
             "work": true,
+            "correlation_matrix": false,
             "tSNE": false,
             "contam_dist": {
                 "work": false,
                 "bins": 101
             },
-            "multigridplot": true,
+            "multigridplot": false,
             "main": {
                 "work": true,
                 "bound": true
             },
             "roc_prc": {
-                "work": true,
+                "work": false,
                 "flags": [1,2,3,4],
                 "lim_roc": [[-0.005,0.4],[0.95,1.005]],
                 "lim_prc": [[0.4,1.05],[0.9,1.01]]
                 },
-            "loss": true,
-            "cm": true,
+            "confusion_matrix": false,
             "hist": {
-                "work": true,
+                "work": false,
                 "bound": true,
                 "stacked": true,
                 "fill": true
-            },
-            "metrics_h":true
+            }
         },
     "statistic":{
         "metric": false
         },
-    "additional_name": "countbalanced",
+    "additional_name": "countbalanced_1111111",
     "base": ["ra","dec","z"],
     "name_class_column": "class",
     "features": {
