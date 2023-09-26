@@ -106,7 +106,8 @@
                 }
             },
         "redshift": {
-                "work": true
+                "work": true,
+                "picture": true
             },
         "picture": {
             "metrics": false,

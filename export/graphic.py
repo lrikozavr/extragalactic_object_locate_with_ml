@@ -33,6 +33,55 @@ def MCD_plot(name,d):
     fig.savefig(f"{save_path}/{name}_MCD_distance.png")
     plt.close(fig)    
 
+def redshift_estimation(config):
+
+    def redshift_estimation_picture(data,name):
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+
+        data['sigma'] = abs(data['redshift_pred']-data['actual_redshift'])/(1+data["actual_redshift"])
+        #https://www.aanda.org/articles/aa/full_html/2018/11/aa30763-17/aa30763-17.html#R29
+        sigma_NMAD = 1.48 * data['sigma'].median(axis=0)
+
+        min = data['actual_redshift'].min()
+        max = data['actual_redshift'].max()
+        #line 
+        redshift_line = lambda x,y: x + y*0.15*(1+x)
+        line_base_array = np.linspace(min,max,num=100)
+        line_value_dw_array = redshift_line(line_base_array,-1)
+        line_value_up_array = redshift_line(line_base_array,1)
+
+        ax.scatter(data['redshift_pred'],data['actual_redshift'], color='r', s=3)
+
+        ax.plot(line_base_array, line_value_dw_array, color = 'black', mark="-", s=10)
+        ax.plot(line_base_array, line_value_up_array, color = 'black', mark="-", s=10)
+
+        ax.plot(line_base_array, line_base_array, color="black", s=10)
+        
+        ax.text(100,10,f"$/sigma_NMAD = {sigma_NMAD}$", fontsize = 10)
+
+        fig.set_size_inches(10,10)
+        
+        fig.savefig(f"{config.path_pic}/{config.name_sample}_{name}_redshift.png")
+        plt.close(fig)
+
+
+    for i in range(config.hyperparam["model_variable"]["kfold"]):
+        name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
+        try:
+            data = pd.read_csv(f"{config.path_predict}_{name}_redshift.csv", header=0, sep=",")
+        except:
+            raise Exception("redshift estimation is not defined\nplease check config.hyperparam['redshift']['work']")
+        redshift_estimation_picture(data,name)
+
+    name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
+    try:
+        data = pd.read_csv(f"{config.path_predict}_main_redshift.csv", header=0, sep=",")
+    except:
+        raise Exception("redshift estimation is not defined\nplease check config.hyperparam['redshift']['work']")
+
+    
+
 def TSNE_pic(data_b,config):
     
     print("picture by tSNE")
