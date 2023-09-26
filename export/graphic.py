@@ -104,7 +104,7 @@ def contam_dist_pic(data,config):
             y_prob = np.argmax(data_temp[config.name_class_prob], axis=1).tolist()
             #        
             cm = confusion_matrix(y, y_prob)
-            if(len(cm)>2):
+            if(len(cm)>cls_n-1):
               #print(cm)
               #print(y,y_prob)
               for ii in range(cls_n):
