@@ -1,0 +1,180 @@
+{
+    "name_sample": "agn_old_sample",
+    "general_path": "/home/lrikozavr/ML_work/agn_old_sample",
+    "data_path": "/home/lrikozavr/github/ML_with_AGN/download_main_sample/all.csv",
+    "prediction_path": "_",
+    "flags":{
+        "data_downloading":{
+            "work": false,
+            "class_diff": false,
+            "radius": 1,
+            "slice_count": 100000,
+            "multi_thr":{
+                "work": true,
+                "MAX_WORKERS": 3,
+                "WAIT_UNTIL_REPEAT_ACCESS": 3,
+                "NUM_URL_ACCESS_ATTEMPTS": 10
+                },
+            "duplicate": false,
+            "filter": ["", 0],
+            "catalogs":{
+                "name": ["catwise","gaiaedr3"],
+                "VizieR": ["II/365/catwise","I/350/gaiaedr3"]
+                },
+            "remove":{
+                "origin": false,
+                "slice": false,
+                "catalog_cross_origin": [false, false],
+                "catalogs_cross_cut_duplicate": [false, false],
+                "dir": false
+                }
+            },
+        "data_preprocessing":{
+            "work": false,
+            "main_sample":{
+                "work": true,
+                "color":{
+                    "work": true,
+                    "mags": true,
+                    "err": true
+                    },
+                "outlire": {
+                    "work": false,
+                    "cut": false,
+                    "method": ["MCD"],
+                    "value": "color",
+                    "//comment_value": "[color,err,features]",
+                    "add_param": {
+                        "add": true,
+                        "method": "gauss",
+                        "additional_parametr": 0.005
+                        }
+                    },
+                "weight":{
+                    "method": ["fuzzy_err","fuzzy_dist"],
+                    "//comment_method": "[fuzzy_err,fuzzy_dist]",
+                    "value": ["features","color"],
+                    "//comment_value": "[color,err,features]"
+                    },
+                "deredded": {
+                    "work": true,
+                    "coef": ["W1","W2","G","BP","RP"],
+                    "dust_map_dir": "/home/lrikozavr/catalogs/dustmaps/",
+                    "threshold": 0.5,
+                    "mode": "nsimple",
+                    "cut": true
+                    },
+                "normalize": {
+                    "work": false,
+                    "features": ["mags","color"],
+                    "mode": "max"
+                }
+                },
+            "balanced": true
+            },
+        "prediction":{
+            "work": false,
+            "batch_count": 5000000,
+            "outlire": false
+            },
+        "system": "gpu"
+        },
+    "hyperparam":{
+        "batch_size": 1024,
+        "num_ep": 20,
+        "optimizer": "adam",
+        "loss": "categorical_crossentropy",
+        "validation_split": 0.3,
+        "model_variable":{
+                "work": false,
+                "kfold": 4,
+                "neuron_count": [64,64,64],
+                "activation": ["softsign","tanh","elu"],
+                "metric_culc": "test",
+                "//comment_metric_culc": ["test","train"],
+                "sample_weight": "",
+                "balanced": true,
+                "early_stopping": {
+                    "monitor": "val_prc",
+                    "patience": 10,
+                    "mode": "max",
+                    "restore_best_weights": true
+                },
+                "outlire":{
+                    "work": false,
+                    "threshold": 0.99
+                }
+            },
+        "redshift": {
+                "work": true,
+                "hyperparam": {
+                    "n_estimators": 100,
+                    "max_features": 3, 
+                    "criterion": "squared_error",
+                    "max_depth": 50,
+                    "bootstrap": true
+                },
+                "picture": true
+            },
+        "picture": {
+            "metrics": true,
+            "loss": true
+        }   
+        },
+    "picture":{
+            "work": true,
+            "correlation_matrix": false,
+            "tSNE": {
+                "work": true,
+                "n_components":2, 
+                "learning_rate":200.0, 
+                "perplexity":50, 
+                "early_exaggeration":100,
+                "n_iter":1000,
+                "n_iter_without_progress":200, 
+                "min_grad_norm":1e-7,
+                "metric":"euclidean",
+                "init":"pca",
+                "verbose":1,
+                "method":"barnes_hut",
+                "angle":0.5
+            },
+            "contam_dist": {
+                "work": true,
+                "bins": 101
+            },
+            "multigridplot": false,
+            "main": {
+                "work": true,
+                "bound": true
+            },
+            "roc_prc": {
+                "work": true,
+                "flags": [1,2,3,4],
+                "lim_roc": [[-0.005,0.6],[-0.005,1.005]],
+                "lim_prc": [[0.4,1.005],[-0.005,1.005]]
+                },
+            "confusion_matrix": true,
+            "hist": {
+                "work": false,
+                "bound": false,
+                "stacked": false,
+                "fill": false
+            }
+        },
+    "statistic":{
+        "metric": true
+        },
+    "additional_name": "countbalanced",
+    "base": ["RA","DEC","z"],
+    "name_class_column": "class_name",
+    "features": {
+        "data": ["W1mproPM","e_W1mproPM","W2mproPM","e_W2mproPM","phot_g_mean_mag","phot_g_mean_mag_error","phot_bp_mean_mag","phot_bp_mean_mag_error","phot_rp_mean_mag","phot_rp_mean_mag_error"],
+        "mod":"standart",
+        "//comment_features_mod":["standart","all"],
+        "range": [[11,19],[11,19],[14,21],[14,21],[14,21]],
+        "train": ["color"],
+        "//comment_train": ["color","mags","err_color","err_mags"]
+        },
+    "name_class": ["agn_type_1","agn_type_2","blazar","sfg"] 
+}

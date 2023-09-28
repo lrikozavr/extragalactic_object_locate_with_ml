@@ -36,6 +36,7 @@ def MCD_plot(name,d):
 def redshift_estimation(config):
 
     def redshift_estimation_picture(data,name):
+        bins = 100
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
 
@@ -47,18 +48,22 @@ def redshift_estimation(config):
         max = data['actual_redshift'].max()
         #line 
         redshift_line = lambda x,y: x + y*0.15*(1+x)
-        line_base_array = np.linspace(min,max,num=100)
+        line_base_array = np.linspace(min,max,num=bins)
         line_value_dw_array = redshift_line(line_base_array,-1)
         line_value_up_array = redshift_line(line_base_array,1)
 
-        ax.scatter(data['redshift_pred'],data['actual_redshift'], color='r', s=3)
+        ax.scatter(data['redshift_pred'],data['actual_redshift'], color='r', s=1)
 
-        ax.plot(line_base_array, line_value_dw_array, color = 'black', mark="-", s=10)
-        ax.plot(line_base_array, line_value_up_array, color = 'black', mark="-", s=10)
+        ax.plot(line_base_array, line_value_dw_array, color = 'black', linestyle="dashed")
+        ax.plot(line_base_array, line_value_up_array, color = 'black', linestyle="dashed")
 
-        ax.plot(line_base_array, line_base_array, color="black", s=10)
+        ax.plot(line_base_array, line_base_array, color="black")
         
-        ax.text(100,10,f"$/sigma_NMAD = {sigma_NMAD}$", fontsize = 10)
+        ax.text(line_base_array[bins//2],line_value_up_array[bins//2] + line_value_up_array[bins//2]*0.05 ,r"$|z_{pred}-z_{actual}| > 0.15*(1 + z_{actual})$", fontsize=10, rotation=180*np.arctan((line_value_up_array[-1]-line_value_up_array[0])/(max-min))/np.pi - 7)
+        ax.text(min,max,f"$/sigma_NMAD = {sigma_NMAD}$", fontsize = 10)
+
+        ax.set_xlabel("Prediction value", fontsize = 20)
+        ax.set_ylabel("Actual value", fontsize = 20)
 
         fig.set_size_inches(10,10)
         
@@ -71,14 +76,21 @@ def redshift_estimation(config):
         try:
             data = pd.read_csv(f"{config.path_predict}_{name}_redshift.csv", header=0, sep=",")
         except:
-            raise Exception("redshift estimation is not defined\nplease check config.hyperparam['redshift']['work']")
+            raise Exception(f"redshift estimation is not defined\nplease check config.hyperparam['redshift']['work']\n{config.path_predict}_{name}_redshift.csv")
         redshift_estimation_picture(data,name)
 
     name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
     try:
-        data = pd.read_csv(f"{config.path_predict}_main_redshift.csv", header=0, sep=",")
+        data = pd.read_csv(f"{config.path_predict}_{name}_redshift.csv", header=0, sep=",")
     except:
         raise Exception("redshift estimation is not defined\nplease check config.hyperparam['redshift']['work']")
+    
+    #https://iopscience.iop.org/article/10.1088/0004-637X/690/2/1236#fnref-apj292144r30
+    red_catastrophic_outlier = data[np.abs(data['redshift_pred']-data['actual_redshift']) > 0.15*(1+data['actual_redshift'])]
+
+    red_catastrophic_outlier.to_csv(f"{config.path_predict}_{name}_redshift_catastrophic_outlier.csv", index=False)
+
+    redshift_estimation_picture(data,name)
 
     
 
@@ -100,25 +112,58 @@ def TSNE_pic(data_b,config):
     
     data = pd.DataFrame(data)
     
+    multi_k = 0.05
+
+    x_min,y_min = data.iloc[:,0].min(axis=0)*(1 + multi_k),data.iloc[:,1].min(axis=0)*(1 + multi_k)
+    x_max,y_max = data.iloc[:,0].max(axis=0)*(1 + multi_k),data.iloc[:,1].max(axis=0)*(1 + multi_k)
+
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     
     for n, name in enumerate(config.name_class_cls):
         temp_data = data[label[name] == 1].values
         #print(temp_data)
-        ax.scatter(temp_data[:,0],temp_data[:,1], color = colors[n], label=name,s=1)
+        ax.scatter(temp_data[:,0],temp_data[:,1], color = colors[n%10], label=name,s=1)
         ax.legend()
         del temp_data
     
     #data.to_csv('',index=False)
-
-    del data, label
+    
+    ax.set_xlim([x_min,x_max])
+    ax.set_ylim([y_min,y_max])
+    #del data, label
 
     #fig.legend()
     fig.set_size_inches(10,10)
 
-    fig.savefig(f"{config.path_pic}/{config.name_sample}_tsne.png")
+    fig.savefig(f"{config.path_pic}/{config.name_sample}_main_tsne.png")
     plt.close(fig)
+
+    for n, name in enumerate(config.name_class_cls):
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        
+        temp_data = data[label[name] == 1].values
+        #print(temp_data)
+        ax.scatter(temp_data[:,0],temp_data[:,1], color = colors[n%10], label=name,s=1)
+        ax.legend()
+        del temp_data
+
+        ax.set_xlim([x_min,x_max])
+        ax.set_ylim([y_min,y_max])
+
+        #data.to_csv('',index=False)
+
+        #del data, label
+
+        #fig.legend()
+        fig.set_size_inches(10,10)
+
+        fig.savefig(f"{config.path_pic}/{config.name_sample}_{name}_tsne.png")
+        plt.close(fig)
+
+    del data, label
+
 
 
 def contam_dist_pic(data,config):
@@ -227,7 +272,7 @@ def contam_dist_pic(data,config):
 
         #fig.legend()
         fig.supxlabel(features_name, fontsize=30)
-        fig.set_size_inches(20,20)
+        fig.set_size_inches(cls_n*10,30)
 
         fig.savefig(f'{config.path_pic}/{config.name_sample}_cm_contamination_by_{features_name}.png')
         plt.close(fig)
@@ -246,15 +291,21 @@ def contam_dist_pic(data,config):
     
 
 def multigridplot(data, features, config):
+    print("picture Multigrid plot: start")
     count = len(features)
     fig, axs = plt.subplots(count-1,count-1)
 
     #add input features weights
 
-    data = data.sample(10000,ignore_index=False)
+    data = data.sample(10000,ignore_index=False,replace=True)
+
+    from network import loading_progress_bar
+    count_index = (count-1)*count*0.5
 
     for index, name_index in enumerate(config.name_class_cls):
         data_class = data[data[name_index] == 1]
+        index_count = 0
+        print("Features ",name_index)
         for ii, name_ii in enumerate(features):
             for jj, name_jj in enumerate(features):
                 if(ii > jj):
@@ -264,12 +315,15 @@ def multigridplot(data, features, config):
                     axs[ii-1,jj].set_xlabel("")
                     axs[ii-1,jj].set_ylabel("")
                     axs[ii-1,jj].legend(fontsize=5)
-                    print(ii,jj,"kdplot done")
+                    index_count+=1
+                    loading_progress_bar(index_count/count_index)
+                    #print(ii,jj,"kdplot done")
                 if(jj == 0):
                     axs[ii-1,jj].set_ylabel(name_ii)
                 if(ii == len(features)-1 and jj < count-1):
                     axs[ii-1,jj].set_xlabel(name_jj)
-
+        #print("\nFeatures ",name_index," done")
+        print()
 
     for ii in range(len(features)-1):
         if(ii < len(features)-2):
@@ -281,6 +335,9 @@ def multigridplot(data, features, config):
 
     fig.savefig(f'{config.path_pic}/{config.name_sample}_multyhist_distribution.png')
     plt.close(fig)
+
+    print("picture Multigrid plot: done")
+    
 
 def picture_confusion_matrix(config):
   def plot_cm(index,save_name):
@@ -295,15 +352,17 @@ def picture_confusion_matrix(config):
     new_cm = np.zeros((len(config.name_class_cls),len(config.name_class_cls)))
     for i in range(len(config.name_class_cls)):
         sum = cm[i,:].sum()
-        print(sum)
+        #print(sum)
         for j in range(len(config.name_class_cls)):
             new_cm[i,j] = round(cm[i,j] / float(sum),5)*100
-    print(new_cm)
-    fig = plt.figure(figsize=(5,5))
+    new_cm = pd.DataFrame(new_cm, columns=config.name_class_cls, index=config.name_class_cls)
+    #print(new_cm)
+    fig = plt.figure(figsize=(20,20))
     sns.heatmap(new_cm, annot=True, fmt=".2f")
     plt.title('Confusion matrix')
     plt.ylabel('Actual label')
     plt.xlabel('Predicted label')
+    plt.yticks(rotation=90)
     fig.savefig(f'{config.path_pic}/{save_name}_Confusion_matrix.png')
     plt.close(fig)
 

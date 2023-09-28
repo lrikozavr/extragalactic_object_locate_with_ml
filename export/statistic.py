@@ -8,6 +8,7 @@ from data_process import M, D
 from network import make_custom_index
 
 def metric_statistic(config):
+    print("make metrics stat")
     def eval(y,y_pred,n):
         count = 0
         TP, FP, TN, FN = 0,0,0,0
@@ -29,16 +30,56 @@ def metric_statistic(config):
                     TN += 1
                 else:
                     FN += 1
-        Acc = count/n
-        pur_a = TP/(TP+FP)
-        com_a = TP/(TP+FN)
-        f1 = 2*TP/(2*TP+FP+FN)
-        fpr = FP/(TN+FN)
-        tnr = TN/(TN+FN)
-        bAcc = (TP/(TP+FP)+TN/(TN+FN))/2.
-        k = 2*(TP*TN-FN*FP)/((TP+FP)*(FP+TN)+(TP+FN)*(FN+TN))
-        mcc = (TP*TN-FP*FN)/math.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
-        BinBs = (FP+FN)/(TP+FP+FN+TN)
+        try:
+            Acc = count/n
+        except:
+            print("Acc division by zero")
+            Acc = 999.0
+        try:        
+            pur_a = TP/(TP+FP)
+        except:
+            print("pur_a division by zero")
+            pur_a = 999.0
+        try:
+            com_a = TP/(TP+FN)
+        except:
+            print("com_a division by zero")
+            com_a = 999.0
+        try:
+            f1 = 2*TP/(2*TP+FP+FN)
+        except:
+            print("f1 division by zero")
+            f1 = 999.0
+        try:
+            fpr = FP/(TN+FN)
+        except:
+            print("fpr division by zero")
+            fpr = 999.0
+        try:
+            tnr = TN/(TN+FN)
+        except:
+            print("tnr division by zero")
+            tnr = 999.0
+        try:
+            bAcc = (TP/(TP+FP)+TN/(TN+FN))/2.
+        except:
+            print("bAcc division by zero")
+            bAcc = 999.0
+        try:
+            k = 2*(TP*TN-FN*FP)/((TP+FP)*(FP+TN)+(TP+FN)*(FN+TN))
+        except:
+            print("k division by zero")
+            k = 999.0
+        try:
+            mcc = (TP*TN-FP*FN)/math.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
+        except:
+            print("mcc division by zero")
+            mcc = 999.0
+        try:
+            BinBs = (FP+FN)/(TP+FP+FN+TN)
+        except:
+            print("BinBs division by zero")
+            BinBs = 999.0
 
         #print(np.array([Acc,pur_a,com_a,f1,fpr,tnr,bAcc,k,mcc,BinBs]))
         ev = pd.DataFrame([np.array([Acc,pur_a,com_a,f1,fpr,tnr,bAcc,k,mcc,BinBs])], 
@@ -83,14 +124,3 @@ def metric_statistic(config):
         ev_data_temp.to_csv(f"{config.path_stat}/{config.name_sample}_{name}_main_metric.csv")
 
     del data
-
-#https://iopscience.iop.org/article/10.1088/0004-637X/690/2/1236#fnref-apj292144r30
-def redshift_creterion(x,y):
-    x = np.array(x)
-    y = np.array(y)
-    #NMAD
-    sigma = 1.48*np.median(np.abs(y-x)/(1+x))
-    red = pd.DataFrame(np.array([x,y]),columns=['r','p'])
-    red_catastrophic_outlier = red[np.abs(red['p']-red['r']) > 0.15*(1+red['r'])]
-    del red, x, y
-    return sigma, red_catastrophic_outlier.index.values

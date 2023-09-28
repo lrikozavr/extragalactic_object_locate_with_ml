@@ -98,32 +98,31 @@ def LogisticRegression(features):
     model = Model(input_array,output_array)
     return model
 
-def somemodel(features):
-    if output_bias is not None:
-        output_bias = tf.keras.initializers.Constant(output_bias)
-    input_array = Input(shape=(features,))
-
-    return
-
-def reconstruct_NN():
-    return
-
-from sklearn.ensemble import ExtraTreesClassifier
+#from sklearn.ensemble import ExtraTreesClassifier
 from sklearn import svm
-from sklearn.model_selection import RandomizedSearchCV,ShuffleSplit
+#from sklearn.model_selection import RandomizedSearchCV,ShuffleSplit
 #from sklearn.utils.fixes import loguniform
-#from pyod.models.ocsvm import OCSVM
+from pyod.models.ocsvm import OCSVM
 from joblib import dump,load
 
 from sklearn.manifold import TSNE
 
 def dimention_reduction_tsne(X_data,config):
 
-    new_plane_data = TSNE(n_components=2, learning_rate=200.0, perplexity=50, early_exaggeration=100,
-                          n_iter=1000, n_iter_without_progress=200, min_grad_norm=1e-7,
-                          metric="euclidean", init="pca", verbose=1, random_state=420, 
-                          method='barnes_hut', #method='exact'
-                          angle=0.5, n_jobs=-1).fit_transform(X_data)
+    new_plane_data = TSNE(n_components=config.picture["tSNE"]["n_components"], 
+                          learning_rate=config.picture["tSNE"]["learning_rate"], 
+                          perplexity=config.picture["tSNE"]["perplexity"], 
+                          early_exaggeration=config.picture["tSNE"]["early_exaggeration"],
+                          n_iter=config.picture["tSNE"]["n_iter"], 
+                          n_iter_without_progress=config.picture["tSNE"]["n_iter_without_progress"], 
+                          min_grad_norm=config.picture["tSNE"]["min_grad_norm"],
+                          metric=config.picture["tSNE"]["metric"], 
+                          init=config.picture["tSNE"]["init"], 
+                          verbose=config.picture["tSNE"]["verbose"], 
+                          random_state=777, 
+                          method=config.picture["tSNE"]["method"], #method='exact'
+                          angle=config.picture["tSNE"]["angle"], 
+                          n_jobs=-1).fit_transform(X_data)
 
     return new_plane_data
 
@@ -170,7 +169,7 @@ def outlire(train,data_test,class_weight,name,config):
         print("raw outlier scores:\t",clf.decision_function(zero))
         print("binary outlier scores:\t",clf.predict(zero))
     except:
-        print("aboba")
+        print("failure")
     
     #print("data predict one_class_svm:\n",data_test["predict"])
     
@@ -188,11 +187,11 @@ def redshift_predict(train,label,X_test,y_test,name,config):
     features_count = train.shape[1]
     from sklearn.ensemble import RandomForestRegressor
 
-    clf_r = RandomForestRegressor(n_estimators=100,
-                                  max_features=3, 
-                                  criterion="squared_error",
-                                  max_depth=50,
-                                  bootstrap=True,
+    clf_r = RandomForestRegressor(n_estimators=config.hyperparam["redshift"]["hyperparam"]["n_estimators"],
+                                  max_features=config.hyperparam["redshift"]["hyperparam"]["max_features"], 
+                                  criterion=config.hyperparam["redshift"]["hyperparam"]["criterion"],
+                                  max_depth=config.hyperparam["redshift"]["hyperparam"]["max_depth"],
+                                  bootstrap=config.hyperparam["redshift"]["hyperparam"]["bootstrap"],
                                   random_state=777,
                                   n_jobs=-1,
                                   verbose=1)
@@ -206,7 +205,7 @@ def redshift_predict(train,label,X_test,y_test,name,config):
     X_test = pd.DataFrame(np.array(X_test),columns=get_features(config.features["train"],config))
     predict_red = pd.concat([X_test,predict_red,y_test], axis=1)
     
-    predict_red.to_csv(f"{config.path_predict}_{name}_redshift.csv")
+    predict_red.to_csv(f"{config.path_predict}_{name}_redshift.csv", index=False)
     
     '''
     early_stopping = keras.callbacks.EarlyStopping(
@@ -493,11 +492,11 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
 
         if(config.hyperparam["redshift"]["work"]):
             #####
-            #clf_r = redshift_predict(X_train,red_train,X_test,red_test,name,config=config)
-            #dump(clf_r,f'{config.path_model}_custom_sm_{name}_redshift_clf')
+            clf_r = redshift_predict(X_train,red_train,X_test,red_test,name,config=config)
+            dump(clf_r,f'{config.path_model}_custom_sm_{name}_redshift_clf')
             #####
-            model_red = redshift_neural_network_API(X_train,red_train,X_test,red_test,name,config=config)
-            SaveModel(model_red,config.path_model,config.path_weight,f"custom_sm_{name}_redshift")
+            #model_red = redshift_neural_network_API(X_train,red_train,X_test,red_test,name,config=config)
+            #SaveModel(model_red,config.path_model,config.path_weight,f"custom_sm_{name}_redshift")
 
         #SaveModel(model1,output_path_mod,output_path_weight,f"custom_sm_{name}")
     

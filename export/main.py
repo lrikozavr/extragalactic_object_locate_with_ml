@@ -187,7 +187,7 @@ if(config.picture["work"]):
     from graphic import picture_confusion_matrix, picture_roc_prc, picture_hist, TSNE_pic, contam_dist_pic, multigridplot, picture_correlation_matrix
     
     if(config.picture["correlation_matrix"]):
-        picture_correlation_matrix(data[get_features(["mags"],config)],"mags",config)
+        picture_correlation_matrix(data[get_features(config.features["train"],config)],"mags",config)
     
     if(config.picture["tSNE"]):
         TSNE_pic(data,config)
@@ -196,7 +196,7 @@ if(config.picture["work"]):
         contam_dist_pic(data,config)
 
     if(config.picture["multigridplot"]):
-        multigridplot(data,get_features(["color"],config),config)
+        multigridplot(data,get_features(config.features["train"],config),config)
 
     if(config.picture["roc_prc"]["work"]):
         picture_roc_prc(config)
