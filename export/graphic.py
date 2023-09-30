@@ -70,27 +70,24 @@ def redshift_estimation(config):
         fig.savefig(f"{config.path_pic}/{config.name_sample}_{name}_redshift.png")
         plt.close(fig)
 
+    def red_s(index):
+        name = make_custom_index(index,config.hyperparam["model_variable"]["neuron_count"])
+        for class_name in config.name_class_cls:
+            try:
+                data = pd.read_csv(f"{config.path_eval}_{name}_{class_name}_redshift.csv", header=0, sep=",")
+            except:
+                raise Exception(f"redshift estimation is not defined\nplease check config.hyperparam['redshift']['work']\n{config.path_predict}_{name}_redshift.csv")
+            redshift_estimation_picture(data,f"{name}_{class_name}")
+    
+            #https://iopscience.iop.org/article/10.1088/0004-637X/690/2/1236#fnref-apj292144r30
+            red_catastrophic_outlier = data[np.abs(data['redshift_pred']-data['actual_redshift']) > 0.15*(1+data['actual_redshift'])]
+
+            red_catastrophic_outlier.to_csv(f"{config.path_eval}_{name}_{class_name}_redshift_catastrophic_outlier.csv", index=False)
 
     for i in range(config.hyperparam["model_variable"]["kfold"]):
-        name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
-        try:
-            data = pd.read_csv(f"{config.path_predict}_{name}_redshift.csv", header=0, sep=",")
-        except:
-            raise Exception(f"redshift estimation is not defined\nplease check config.hyperparam['redshift']['work']\n{config.path_predict}_{name}_redshift.csv")
-        redshift_estimation_picture(data,name)
+        red_s(i)
 
-    name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
-    try:
-        data = pd.read_csv(f"{config.path_predict}_{name}_redshift.csv", header=0, sep=",")
-    except:
-        raise Exception("redshift estimation is not defined\nplease check config.hyperparam['redshift']['work']")
-    
-    #https://iopscience.iop.org/article/10.1088/0004-637X/690/2/1236#fnref-apj292144r30
-    red_catastrophic_outlier = data[np.abs(data['redshift_pred']-data['actual_redshift']) > 0.15*(1+data['actual_redshift'])]
-
-    red_catastrophic_outlier.to_csv(f"{config.path_predict}_{name}_redshift_catastrophic_outlier.csv", index=False)
-
-    redshift_estimation_picture(data,name)
+    red_s("00")    
 
     
 

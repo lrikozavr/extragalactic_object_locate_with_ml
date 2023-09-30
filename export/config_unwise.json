@@ -61,7 +61,7 @@
                     "coef": ["W1","W2","G","BP","RP"],
                     "dust_map_dir": "/home/lrikozavr/catalogs/dustmaps/",
                     "threshold": 0.5,
-                    "mode": "nsimple",
+                    "mode": "simple",
                     "cut": true
                     },
                 "normalize": {
@@ -73,7 +73,7 @@
             "balanced": true
             },
         "prediction":{
-            "work": false,
+            "work": true,
             "batch_count": 5000000,
             "outlire": false
             },
@@ -86,7 +86,7 @@
         "loss": "categorical_crossentropy",
         "validation_split": 0.3,
         "model_variable":{
-                "work": true,
+                "work": false,
                 "kfold": 4,
                 "neuron_count": [64,64,64],
                 "activation": ["softsign","tanh","elu"],
@@ -107,6 +107,13 @@
             },
         "redshift": {
                 "work": true,
+                "hyperparam": {
+                    "n_estimators": 100,
+                    "max_features": 3, 
+                    "criterion": "squared_error",
+                    "max_depth": 50,
+                    "bootstrap": true
+                },
                 "picture": true
             },
         "picture": {
@@ -117,7 +124,21 @@
     "picture":{
             "work": true,
             "correlation_matrix": false,
-            "tSNE": false,
+            "tSNE": {
+                "work": false,
+                "n_components":2, 
+                "learning_rate":200.0, 
+                "perplexity":50, 
+                "early_exaggeration":100,
+                "n_iter":1000,
+                "n_iter_without_progress":200, 
+                "min_grad_norm":1e-7,
+                "metric":"euclidean",
+                "init":"pca",
+                "verbose":1,
+                "method":"barnes_hut",
+                "angle":0.5
+            },
             "contam_dist": {
                 "work": false,
                 "bins": 101

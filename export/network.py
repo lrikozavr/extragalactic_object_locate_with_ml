@@ -132,12 +132,13 @@ def outlire(train,data_test,class_weight,name,config):
     from sklearn.preprocessing import MinMaxScaler
 
     clf = OCSVM(verbose=False,cache_size=10000,max_iter=1000)
-    rng = np.random.default_rng(seed=13)
-    smpl = rng.choice(train,50000)
+    #rng = np.random.default_rng(seed=777)
+    #smpl = rng.choice(train,50000)
+    smpl = train.sample(50000,random_state=777).values
     scaler = MinMaxScaler(feature_range=(-1,1))
     sclr_smpl = scaler.fit_transform(smpl)
     clf.fit(sclr_smpl)
-    pd.DataFrame(sclr_smpl).to_csv(f'{config.path_stat}/scaler_fuck.csv',index=False)
+    pd.DataFrame(sclr_smpl).to_csv(f'{config.path_stat}/scaler_values.csv',index=False)
     print(sclr_smpl)
     #clf.fit(smpl)
     dump(clf,f'{config.path_model}_{name}_outlier_clf')
@@ -154,7 +155,7 @@ def outlire(train,data_test,class_weight,name,config):
         restore_best_weights=config.hyperparam["model_variable"]["early_stopping"]["restore_best_weights"])
     '''
 
-    data_test = pd.DataFrame(data_test)
+    #data_test = pd.DataFrame(data_test)
     data_test_scaler = scaler.transform(data_test.values)
     data_test["predict"] = clf.predict(data_test_scaler)
     print("test data outlier label:\t", data_test["predict"])
@@ -196,16 +197,16 @@ def redshift_predict(train,label,X_test,y_test,name,config):
                                   n_jobs=-1,
                                   verbose=1)
 
-    clf_r.fit(train,label)
+    clf_r.fit(train.values,label.values)
 
-    predict_red = clf_r.predict(X_test)
+    predict_red = clf_r.predict(X_test.values)
     
     predict_red = pd.DataFrame(np.array(predict_red), columns=['redshift_pred'])
     y_test = pd.DataFrame(np.array(y_test),columns=['actual_redshift'])
-    X_test = pd.DataFrame(np.array(X_test),columns=get_features(config.features["train"],config))
+    #X_test = pd.DataFrame(np.array(X_test),columns=get_features(config.features["train"],config))
     predict_red = pd.concat([X_test,predict_red,y_test], axis=1)
     
-    predict_red.to_csv(f"{config.path_predict}_{name}_redshift.csv", index=False)
+    predict_red.to_csv(f"{config.path_eval}_{name}_redshift.csv", index=False)
     
     '''
     early_stopping = keras.callbacks.EarlyStopping(
@@ -255,8 +256,6 @@ def redshift_predict(train,label,X_test,y_test,name,config):
 
     return clf_r
 
-from keras import layers
-
 def redshift_neural_network_API(train,label,X_test,y_test,name,config):
         
     def build_model(hp):
@@ -300,13 +299,11 @@ def redshift_neural_network_API(train,label,X_test,y_test,name,config):
     #hp = keras_tuner.HyperParameters()
     #model = build_model(hp)
     
-    tuner = keras_tuner.RandomSearch(
+    tuner = keras_tuner.Hyperband(
         hypermodel=build_model,
         objective="val_accuracy",
-        max_trials=3,
-        executions_per_trial=2,
-        overwrite=True,
-        max_consecutive_failed_trials = 1000,
+        max_epochs=10,
+        factor=3,
         directory=f"{config.path_model}/keras_tuner",
         project_name="redshift",
     )
@@ -369,7 +366,7 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
     model.load_weights(initial_weights)
     '''
     
-    history = model.fit(X_train, y_train,
+    history = model.fit(X_train.values, y_train.values,
         epochs=num_ep,
         #verbose=1,
         verbose=0,
@@ -449,16 +446,17 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
             data_test, outlire_index = outlire(X_train,X_test,None,name,config)
             pd_label = pd.DataFrame(np.array(y_test[outlire_index]), columns=config.name_class_cls)
         else:
-            data_test = X_test
+            data_test = X_test.values
             pd_label = pd.DataFrame(np.array(y_test), columns=config.name_class_cls)
         Class = model.predict(data_test, batch_size)
     else:
         Class = model.predict(train, batch_size)
-        pd_label = pd.DataFrame(np.array(label), columns=config.name_class_cls)
+        #pd_label = pd.DataFrame(np.array(label), columns=config.name_class_cls)
+
     #param from config (columns)
     res = pd.DataFrame(np.array(Class), columns=config.name_class_prob)
     #print(pd_label)
-    res = pd.concat([res, pd_label], axis=1)
+    res = pd.concat([res, label], axis=1)
     
     res.to_csv(f'{path_save_eval}_{name}_prob.csv', index=False)
 
@@ -491,9 +489,20 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
         path_save_eval,f"custom_sm_{name}",config)
 
         if(config.hyperparam["redshift"]["work"]):
+            
+            for class_name in config.name_class_cls:
+                X_train_temp_class = X_train[y_train[class_name] == 1]
+                red_train_temp_class = red_train[y_train[class_name] == 1]
+                X_test_temp_class = X_test[y_test[class_name] == 1]
+                red_test_temp_class = red_test[y_test[class_name] == 1]
+                
             #####
-            clf_r = redshift_predict(X_train,red_train,X_test,red_test,name,config=config)
-            dump(clf_r,f'{config.path_model}_custom_sm_{name}_redshift_clf')
+                clf_r = redshift_predict(X_train_temp_class,
+                                         red_train_temp_class,
+                                         X_test_temp_class,
+                                         red_test_temp_class,
+                                         f"{name}_{class_name}",config=config)
+                dump(clf_r,f'{config.path_model}_custom_sm_{name}_{class_name}_redshift_clf')
             #####
             #model_red = redshift_neural_network_API(X_train,red_train,X_test,red_test,name,config=config)
             #SaveModel(model_red,config.path_model,config.path_weight,f"custom_sm_{name}_redshift")
@@ -521,13 +530,13 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
     for train_index, test_index in kfold.split(train):
         #print("train len ",len(train_index),"test len ",len(test_index))
         #train len  358845 test len  89712
-        X_train = train[train_index]
-        y_train = label[train_index]
-        red_train = red_label[train_index]
+        X_train = train.iloc[train_index]
+        y_train = label.iloc[train_index]
+        red_train = red_label.iloc[train_index]
     
-        X_test = train[test_index]
-        y_test = label[test_index]
-        red_test = red_label[test_index]
+        X_test = train.iloc[test_index]
+        y_test = label.iloc[test_index]
+        red_test = red_label.iloc[test_index]
         
         custom_index = []
         #print(index)
@@ -620,36 +629,53 @@ def large_file_prediction(config):
 
     def ml(output_path_mod,output_path_weight,data,config):
         model = LoadModel(output_path_mod,output_path_weight,config.hyperparam["optimizer"],config.hyperparam["loss"])
-        if(config.hyperparam["redshift"]["work"]):
-            #rf_model = LoadModel(f"{output_path_mod}_redshift",f"{output_path_weight}_redshift",config.hyperparam["optimizer"],config.hyperparam["loss"])
-            rf_model = load(f'{output_path_mod}_redshift_clf')
+        data_col_name = np.concatenate(([config.base[0]],[config.base[1]],get_features(["mags"], config)),axis=0)
         print(data)
-        data_temp = deredded(data.replace('null',0.0),config)
+        data_temp = deredded(data.replace('null',0.0)[data_col_name].astype(float),config)
         select_index_values = data_temp.index.values
         data = data.iloc[select_index_values].reset_index(drop=True)
         print("deredded")
         del select_index_values
-        data_temp_tr = data_temp[config.features['data']].astype(float).reset_index(drop=True)
+        data_temp = data_temp.reset_index(drop=True)
         print("cut null")
-        data = pd.concat([data,data_temp_tr],axis=1)
-        del data_temp
-        data_transform = DataTransform(data_temp_tr,config)
+        data = pd.concat([data,data_temp],axis=1)
+        #del data_temp
+        data_transform = DataTransform(data_temp,config)
         print("Data Transform")
-        del data_temp_tr
-        predicted = model.predict(data_transform, config.hyperparam["batch_size"])
+        del data_temp
+        predicted = model.predict(data_transform.values, config.hyperparam["batch_size"])
+        predicted = pd.DataFrame(np.array(predicted), columns=config.name_class_prob)
         if(config.hyperparam["redshift"]["work"]):
-            rf_predicted = rf_model.predict(data_transform)
+            #rf_model = LoadModel(f"{output_path_mod}_redshift",f"{output_path_weight}_redshift",config.hyperparam["optimizer"],config.hyperparam["loss"])
+            rf_predicted = pd.DataFrame()
+            for n, class_name in enumerate(config.name_class_prob):
+                class_data = data_transform[predicted[class_name] > 0.5]    
+                rf_model = load(f'{output_path_mod}_{config.name_class_cls[n]}_redshift_clf')
+                rf_class_predicted = rf_model.predict(class_data)
+                rf_class_predicted = pd.DataFrame(np.array(rf_class_predicted), columns=['redshift'], index=class_data.index.values)
+                rf_predicted = pd.concat([rf_predicted,rf_class_predicted],axis=0)
+                del rf_model
+                del class_data
         print("predicted")
         data = pd.concat([data,data_transform], axis=1)
         del data_transform
-        predicted = pd.DataFrame(np.array(predicted), columns=config.name_class_prob)
-        if(config.hyperparam["redshift"]["work"]):
-            rf_predicted = pd.DataFrame(np.array(rf_predicted), columns=['redshift'])
         #
         data = pd.concat([data,predicted], axis=1)
         del predicted
         if(config.hyperparam["redshift"]["work"]):
+            #print(data)
+            #print(np.sort(rf_predicted.index.values), len(rf_predicted.index.values),rf_predicted)
+            #print(rf_predicted.iloc[264347])
+            #list_d = np.sort(rf_predicted.index.values)
+            #iii = 0
+            #for i in list_d:
+            #    if(iii != i):
+            #        print(iii)
+            #        iii = i
+            #    iii+=1
             data = pd.concat([data,rf_predicted], axis=1)
+            #print(data.iloc[141485])
+            #print(data)
             del rf_predicted
         return data
     
@@ -691,9 +717,9 @@ def large_file_prediction(config):
     for line in f:
         
         LINE_COUNT += 1
-        if(LINE_COUNT < count*7.5):
+        if(LINE_COUNT < count*1.5):
             continue
-        if(LINE_COUNT > count*7.6):
+        if(LINE_COUNT > count*8.6):
             break
         
         if(i // count == index):

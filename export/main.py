@@ -170,7 +170,7 @@ if(config.hyperparam["model_variable"]["work"]):
         raise Exception("data don't have initiated features, check config.features['train'] value and WARNINGs above")
 
     if(config.hyperparam["model_variable"]["work"]):
-        NN(data[features].values,data[config.name_class_cls].values,data['z'].values,sample_weight,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
+        NN(data[features],data[config.name_class_cls],data['z'],sample_weight,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
         output_path_predict = config.path_predict,
         output_path_mod = config.path_model,
         output_path_weight = config.path_weight,
@@ -189,7 +189,7 @@ if(config.picture["work"]):
     if(config.picture["correlation_matrix"]):
         picture_correlation_matrix(data[get_features(config.features["train"],config)],"mags",config)
     
-    if(config.picture["tSNE"]):
+    if(config.picture["tSNE"]["work"]):
         TSNE_pic(data,config)
 
     if(config.picture["contam_dist"]["work"]):
