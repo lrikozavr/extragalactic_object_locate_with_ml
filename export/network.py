@@ -451,12 +451,12 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
         Class = model.predict(data_test, batch_size)
     else:
         Class = model.predict(train, batch_size)
-        #pd_label = pd.DataFrame(np.array(label), columns=config.name_class_cls)
+        pd_label = label
 
     #param from config (columns)
     res = pd.DataFrame(np.array(Class), columns=config.name_class_prob)
     #print(pd_label)
-    res = pd.concat([res, label], axis=1)
+    res = pd.concat([res, pd_label], axis=1)
     
     res.to_csv(f'{path_save_eval}_{name}_prob.csv', index=False)
 
@@ -717,7 +717,7 @@ def large_file_prediction(config):
     for line in f:
         
         LINE_COUNT += 1
-        if(LINE_COUNT < count*1.5):
+        if(LINE_COUNT < count*8.5):
             continue
         if(LINE_COUNT > count*8.6):
             break
