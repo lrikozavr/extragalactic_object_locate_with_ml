@@ -18,8 +18,8 @@
             "duplicate": false,
             "filter": ["", 0],
             "catalogs":{
-                "name": ["catwise","gaiaedr3"],
-                "VizieR": ["II/365/catwise","I/350/gaiaedr3"]
+                "name": ["catwise","gaiadr3"],
+                "VizieR": ["II/365/catwise","I/355/gaiadr3"]
                 },
             "remove":{
                 "origin": false,
@@ -33,6 +33,14 @@
             "work": false,
             "main_sample":{
                 "work": true,
+                "flux":{
+                    "work": true,
+                    "var": true,
+                    "color": true
+                },
+                "astrometry":{
+                    "work": true
+                },
                 "color":{
                     "work": true,
                     "mags": true,
@@ -61,7 +69,7 @@
                     "coef": ["W1","W2","G","BP","RP"],
                     "dust_map_dir": "/home/lrikozavr/catalogs/dustmaps/",
                     "threshold": 0.5,
-                    "mode": "nsimple",
+                    "mode": "simple",
                     "cut": true
                     },
                 "normalize": {
@@ -86,7 +94,7 @@
         "loss": "categorical_crossentropy",
         "validation_split": 0.3,
         "model_variable":{
-                "work": false,
+                "work": true,
                 "kfold": 4,
                 "neuron_count": [64,64,64],
                 "activation": ["softsign","tanh","elu"],
@@ -169,12 +177,23 @@
     "base": ["RA","DEC","z"],
     "name_class_column": "class_name",
     "features": {
-        "data": ["W1mproPM","e_W1mproPM","W2mproPM","e_W2mproPM","phot_g_mean_mag","phot_g_mean_mag_error","phot_bp_mean_mag","phot_bp_mean_mag_error","phot_rp_mean_mag","phot_rp_mean_mag_error"],
-        "mod":"standart",
+        "data": {
+            "astrometry": ["PM","Plx","e_Plx"],
+            "flux": ["nW1","FW1pm","e_FW1pm","nW2","FW2pm","e_FW2pm","o_Gmag","FG","e_FG","o_BPmag","FBP","e_FBP","o_RPmag","FRP","e_FRP"],
+            "photometry": ["W1mproPM","e_W1mproPM","W2mproPM","e_W2mproPM","Gmag","e_Gmag","BPmag","e_BPmag","RPmag","e_RPmag"]
+            },
+        "mod":"all",
         "//comment_features_mod":["standart","all"],
-        "range": [[11,19],[11,19],[14,21],[14,21],[14,21]],
-        "train": ["color"],
-        "//comment_train": ["color","mags","err_color","err_mags"]
+        "range": {
+            "photometry": [[11,19],[11,19],[14,21],[14,21],[14,21]]},
+        "train": {
+            "astrometry": ["raw"],
+            "flux": ["var"],
+            "photometry": ["color"]},
+        "//comment_train": {
+            "astrometry": ["raw"],
+            "flux": ["var","flux_color"],
+            "photometry": ["color","mags","err_color","err_mags"]}
         },
     "name_class": ["agn_type_1","agn_type_2","blazar","sfg"] 
 }

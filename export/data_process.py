@@ -118,6 +118,36 @@ def colors(data):
     colours_error = pd.DataFrame(colours_error, columns=colours_error_name)
     return colours, colours_error
 
+def flux_var(data):
+    count = data.shape[0]
+    mags = int(data.shape[1]//3)
+    list_name = data.columns.values
+
+    data = np.array(data)
+
+    print(data)
+    data_var = np.empty((count,mags))
+    data_var_name = []
+    for j in range(0,mags*3,3):
+        data_var[:,j//3] = np.power(data[:,j],0.5)*(data[:,j+2]/data[:,j+1])
+        data_var_name.append(f"{list_name[j+1]}_var")
+    data_var = pd.DataFrame(data_var, columns=data_var_name)
+
+    num_colours = sum(i for i in range(mags))
+    data_color = np.empty((count,num_colours))
+    data_color_name = []
+    index=0
+    for j in range(mags):
+        for i in range(j, mags):
+            if(i!=j):
+                data_color_name.append(f"{list_name[j*3+1]}&{list_name[i*3+1]}")
+                data_color[:,index] = data[:,j*3+1]/(data[:,j*3+2]*data[:,j*3]) - data[:,i*3+1]/(data[:,i*3+2]*data[:,i*3])
+                index += 1                
+    print(data_color_name,data_var_name)
+    data_color = pd.DataFrame(data_color, columns=data_color_name)
+    #print(data_var, data_color)
+    return data_var, data_color
+
 def T0(data,n):
     vec = []
     for j in data.columns.values:
@@ -177,6 +207,7 @@ def MCD(data,deep_i,config):
     gauss, outlire = Gauss_cut(d,count,threshold=config.flags['data_preprocessing']['main_sample']['outlire']['add_param']['additional_parametr'])
 
     return d, gauss, outlire
+
 '''
 def redded_des(data):
     def dust_SFD(ra,dec):
@@ -210,18 +241,37 @@ def get_features(features_list,config):
 
     colours_name, colours_error_name = [], []
     mags_name, mags_error_name = [], []
+    flux_color = []
+    flux_var_name = []
 
-    list_name = config.features["data"]
-    mags = int(len(list_name)/2)
-    for j in range(mags):
-        for i in range(j, mags):
+    photometry_list = config.features["data"]["photometry"]
+    flux_list = config.features["data"]["flux"]
+
+    mags_count = int(len(photometry_list)/2)
+    for j in range(mags_count):
+        for i in range(j, mags_count):
             if(i!=j):
-                colours_name.append(f"{list_name[j*2]}&{list_name[i*2]}")
-                colours_error_name.append(f"{list_name[j*2+1]}&{list_name[i*2+1]}")
-        mags_name.append(f"{list_name[j*2]}")
-        mags_error_name.append(f"{list_name[j*2+1]}")
+                colours_name.append(f"{photometry_list[j*2]}&{photometry_list[i*2]}")
+                colours_error_name.append(f"{photometry_list[j*2+1]}&{photometry_list[i*2+1]}")
+                flux_var_name.append(f"{flux_list[j*3+1]}_var")
+                flux_color.append(f"{flux_list[j*3+1]}&{flux_list[i*3+1]}")
+        mags_name.append(f"{photometry_list[j*2]}")
+        mags_error_name.append(f"{photometry_list[j*2+1]}")
 
-    for features_flag in features_list:
+    def check_features(features_list):
+        temp_features_list = []
+        try:
+            for name in features_list.keys():
+                temp_features_list.extend(features_list[name])
+                #print(features_list[name][0])
+            return temp_features_list
+        except:
+            return features_list
+
+    local_features_list = check_features(features_list)
+    #print(local_features_list)
+
+    for features_flag in local_features_list:
         match features_flag:
             #може потрібно тут ставити запобіжник?
             case "color":
@@ -236,6 +286,14 @@ def get_features(features_list,config):
                     print("WARNING: data may don't have a property columns\ncheck config.flags['data_preprocessing']['main_sample']['color']['work']\nand\nconfig.flags['data_preprocessing']['main_sample']['color']['err']\nand\nconfig.features['train']\n")
             case "err_mags":
                 features.extend(mags_error_name)
+            case "var":
+                features.extend(flux_var_name)
+
+            case "flux_color":
+                features.extend(flux_color)
+
+            case "raw":
+                features.extend(config.features["data"]["astrometry"])
             case _:
                 raise Exception('unknown config value config.features["train"]')
     
@@ -310,7 +368,7 @@ def process(path_sample,name,save_path, config):
     #data_mags = data.drop(['RA','DEC','z','CatName','Class'], axis=1)
     data = pd.read_csv(f"{path_sample}/{name}.csv", header=0, sep=',')
     print(f"read data {name}")
-
+    print(data)
     #Check variable zero value
     data = data.fillna(0)
             
@@ -327,23 +385,37 @@ def process(path_sample,name,save_path, config):
                 else:
                     raise Exception('cant made outlire by color, \ncheck flags["data_preprocessing"]["main_sample"]["color"]["work"] in config')
             case 'features':
-                return data[config.features["data"]]
+                return data[config.features["data"]["photometry"]]
             case _:
                 raise Exception('wrong value flags["data_preprocessing"]["main_sample"]["weight"]["value"]')
+    
     #deredded
     if(config.flags['data_preprocessing']['main_sample']['deredded']['work']):
         data = deredded(data,config)
-        print(name, " deredded complite")
+        print(name, "deredded complite")
 
     #range cut
-    if(len(config.features["range"]) == len(config.features["data"]) // 2):
-        for i in range(len(config.features["data"]) // 2):
-           data = data[(data[config.features["data"][i*2]] > config.features["range"][i][0]) & (data[config.features["data"][i*2]] < config.features["range"][i][1])]
+    if(len(config.features["range"]["photometry"]) == len(config.features["data"]["photometry"]) // 2):
+        for i in range(len(config.features["data"]["photometry"]) // 2):
+           data = data[(data[config.features["data"]["photometry"][i*2]] > config.features["range"]["photometry"][i][0]) & (data[config.features["data"]["photometry"][i*2]] < config.features["range"]["photometry"][i][1])]
         data = data.reset_index()
+
+    if(config.features["mod"] == "all"):
+        if(config.flags['data_preprocessing']['main_sample']['flux']['work']):
+            data_flux_var, data_flux_color = flux_var(data[config.features["data"]["flux"]])
+            print(name," complite flux")
+            if(config.flags['data_preprocessing']['main_sample']['flux']['var']):
+                data = pd.concat([data,data_flux_var],axis=1)
+            if(config.flags['data_preprocessing']['main_sample']['flux']['color']):
+                data = pd.concat([data,data_flux_color],axis=1)
+        else:
+            data = data.drop(config.features["data"]["astrometry"].extend(config.features["data"]["flux"]), axis=1)
+
+
 
     #print(name, 'deredded complite')
     if(config.flags['data_preprocessing']['main_sample']['color']['work']):
-        data_color, data_err = colors(data[config.features["data"]])
+        data_color, data_err = colors(data[config.features["data"]["photometry"]])
         print(name," complite colors")
         if(config.flags['data_preprocessing']['main_sample']['color']['mags']):
             data = pd.concat([data,data_color],axis=1)

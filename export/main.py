@@ -182,6 +182,7 @@ from statistic import metric_statistic
 if(config.statistic["metric"]):
     metric_statistic(config)
 
+print(data)
 #picture
 if(config.picture["work"]):
     from graphic import picture_confusion_matrix, picture_roc_prc, picture_hist, TSNE_pic, contam_dist_pic, multigridplot, picture_correlation_matrix

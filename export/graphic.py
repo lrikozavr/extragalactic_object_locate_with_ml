@@ -529,6 +529,7 @@ def picture_roc_prc(config):
     #plt.close(fig)
 
   def plot_prc(ax, name, labels, predictions, **kwargs):
+      #print(labels, predictions)
       precision, recall, _ = precision_recall_curve(labels, predictions)
 
       ax.plot(precision, recall, label=name, linewidth=2, **kwargs)
@@ -553,7 +554,7 @@ def picture_roc_prc(config):
     name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
     data = pd.read_csv(f'{config.path_eval}_custom_sm_{name}_prob.csv', header=0, sep=",")
     data_mass.append(data)
-  
+  #print(data_mass[0])
   for key in config.picture["roc_prc"]["flags"]:
     match key:
         case 1:

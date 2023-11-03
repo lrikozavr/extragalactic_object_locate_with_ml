@@ -13,11 +13,19 @@ def get_col_list(columns,config):
     #print(columns)
     for column in config.base:
         col.append(columns.index(column))
-    for column in config.features["data"]:
-        try:
-            col.append(columns.index(column))
-        except:
-            continue
+    if(type(config.features["data"]) is type(dict())):
+        for key in config.features["data"].keys():
+            for column in config.features["data"][key]:
+                try:
+                    col.append(columns.index(column))
+                except:
+                    continue
+    else:                
+        for column in config.features["data"]:
+            try:
+                col.append(columns.index(column))
+            except:
+                continue
     return col
 
 def diff_class(config):
