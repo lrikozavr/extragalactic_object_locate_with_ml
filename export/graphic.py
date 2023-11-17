@@ -306,9 +306,9 @@ def multigridplot(data, features, config):
         for ii, name_ii in enumerate(features):
             for jj, name_jj in enumerate(features):
                 if(ii > jj):
-                    data_common = pd.concat([data_class[name_ii],data_class[name_jj]], axis=1)
-                    sns.kdeplot(data=data_common,x=name_jj,y=name_ii, ax=axs[ii-1,jj], color=colors[index])
-                    axs[ii-1,jj].scatter(data_class[name_jj],data_class[name_ii], color = colors[index], s=1, label=name_index)
+                    data_common = pd.concat([data_class[name_ii],data_class[name_jj]], axis=1).reset_index(drop=True)
+                    sns.kdeplot(data=data_common,x=name_jj,y=name_ii, ax=axs[ii-1,jj], color=colors[index%9])
+                    axs[ii-1,jj].scatter(data_class[name_jj],data_class[name_ii], color = colors[index%10], s=1, label=name_index)
                     axs[ii-1,jj].set_xlabel("")
                     axs[ii-1,jj].set_ylabel("")
                     axs[ii-1,jj].legend(fontsize=5)

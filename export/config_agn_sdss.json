@@ -1,11 +1,11 @@
 {
-    "name_sample": "agn_old_sample",
+    "name_sample": "agn_old_sample_nofilter",
     "general_path": "/home/lrikozavr/ML_work/agn_old_sample",
     "data_path": "/home/lrikozavr/github/ML_with_AGN/download_main_sample/all.csv",
     "prediction_path": "_",
     "flags":{
         "data_downloading":{
-            "work": false,
+            "work": true,
             "class_diff": false,
             "radius": 1,
             "slice_count": 100000,
@@ -16,7 +16,7 @@
                 "NUM_URL_ACCESS_ATTEMPTS": 10
                 },
             "duplicate": false,
-            "filter": ["", 0],
+            "filter": [],
             "catalogs":{
                 "name": ["catwise","gaiadr3"],
                 "VizieR": ["II/365/catwise","I/355/gaiadr3"]
@@ -30,7 +30,7 @@
                 }
             },
         "data_preprocessing":{
-            "work": false,
+            "work": true,
             "main_sample":{
                 "work": true,
                 "flux":{

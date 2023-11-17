@@ -86,8 +86,6 @@ def out(line,col,fout,config):
     for i in col:
         ##########
         if (n[i] in config.flags["data_downloading"]["filter"]):
-        #if(n[i] == "" or n[i] == 0):
-            #empty_count = 1
             empty_count = 0
         if index == len(col)-1 :
             if(len(n[i].split('\n')) == 1):

@@ -125,7 +125,7 @@ def flux_var(data):
 
     data = np.array(data)
 
-    print(data)
+    #print(data)
     data_var = np.empty((count,mags))
     data_var_name = []
     for j in range(0,mags*3,3):
@@ -143,7 +143,7 @@ def flux_var(data):
                 data_color_name.append(f"{list_name[j*3+1]}&{list_name[i*3+1]}")
                 data_color[:,index] = data[:,j*3+1]/(data[:,j*3+2]*data[:,j*3]) - data[:,i*3+1]/(data[:,i*3+2]*data[:,i*3])
                 index += 1                
-    print(data_color_name,data_var_name)
+    #print(data_color_name,data_var_name)
     data_color = pd.DataFrame(data_color, columns=data_color_name)
     #print(data_var, data_color)
     return data_var, data_color

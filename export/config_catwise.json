@@ -1,11 +1,11 @@
 {
-    "name_sample": "test_catwise",
-    "general_path": "/home/lrikozavr/ML_work/test_catwise",
+    "name_sample": "test_agn_sdss",
+    "general_path": "/home/lrikozavr/ML_work/agn_sdss",
     "data_path": "/home/lrikozavr/catalogs/elewen/exit_notlamost.csv",
     "prediction_path": "/home/lrikozavr/ML_work/test_catwise/ml/data/test_catwise_gal_main_sample_test.csv",
     "flags":{
         "data_downloading":{
-            "work": false,
+            "work": true,
             "class_diff": false,
             "radius": 1,
             "slice_count": 100000,
@@ -16,10 +16,10 @@
                 "NUM_URL_ACCESS_ATTEMPTS": 10
                 },
             "duplicate": false,
-            "filter": ["", 0],
+            "filter": [],
             "catalogs":{
-                "name": ["catwise","gaiaedr3"],
-                "VizieR": ["II/365/catwise","I/350/gaiaedr3"]
+                "name": ["catwise","gaiadr3"],
+                "VizieR": ["II/365/catwise","I/355/gaiadr3"]
                 },
             "remove":{
                 "origin": false,
@@ -30,9 +30,17 @@
                 }
             },
         "data_preprocessing":{
-            "work": false,
+            "work": true,
             "main_sample":{
                 "work": true,
+                "flux":{
+                    "work": true,
+                    "var": true,
+                    "color": true
+                },
+                "astrometry":{
+                    "work": true
+                },
                 "color":{
                     "work": true,
                     "mags": true,
@@ -40,7 +48,7 @@
                     },
                 "outlire": {
                     "work": true,
-                    "cut": false,
+                    "cut": true,
                     "method": ["MCD"],
                     "value": "color",
                     "//comment_value": "[color,err,features]",
@@ -59,18 +67,21 @@
                 "deredded": {
                     "work": true,
                     "coef": ["W1","W2","G","BP","RP"],
-                    "dust_map_dir": "/home/lrikozavr/catalogs/dustmaps/"
+                    "dust_map_dir": "/home/lrikozavr/catalogs/dustmaps/",
+                    "threshold": 0.5,
+                    "mode": "simple",
+                    "cut": true
                     },
                 "normalize": {
                     "work": false,
-                    "features": ["color"],
+                    "features": ["mags","color"],
                     "mode": "max"
                 }
                 },
             "balanced": true
             },
         "prediction":{
-            "work": true,
+            "work": false,
             "batch_count": 10000000,
             "outlire": false
             },
@@ -103,11 +114,44 @@
                 }
             },
         "redshift": {
-                "work": true
-            }
+                "work": true,
+                "hyperparam": {
+                    "n_estimators": 100,
+                    "max_features": 3, 
+                    "criterion": "squared_error",
+                    "max_depth": 50,
+                    "bootstrap": true
+                },
+                "picture": true
+            },
+        "picture": {
+            "metrics": true,
+            "loss": true
+        }  
         },
     "picture":{
-            "work": false,
+            "work": true,
+            "correlation_matrix": true,
+            "tSNE": {
+                "work": false,
+                "n_components":2, 
+                "learning_rate":200.0, 
+                "perplexity":50, 
+                "early_exaggeration":100,
+                "n_iter":1000,
+                "n_iter_without_progress":200, 
+                "min_grad_norm":1e-7,
+                "metric":"euclidean",
+                "init":"pca",
+                "verbose":1,
+                "method":"barnes_hut",
+                "angle":0.5
+            },
+            "contam_dist": {
+                "work": true,
+                "bins": 101
+            },
+            "multigridplot": false,
             "main": {
                 "work": true,
                 "bound": true
@@ -115,29 +159,41 @@
             "roc_prc": {
                 "work": true,
                 "flags": [1,2,3,4],
-                "lim_roc": [[-0.005,0.4],[0.95,1.005]],
-                "lim_prc": [[0.4,1.05],[0.9,1.01]]
+                "lim_roc": [[-0.005,0.6],[-0.005,1.005]],
+                "lim_prc": [[0.4,1.005],[-0.005,1.005]]
                 },
-            "loss": true,
-            "cm": true,
+            "confusion_matrix": true,
             "hist": {
-                "work": true,
-                "bound": true,
-                "stacked": true,
-                "fill": true
-            },
-            "metrics_h":true
+                "work": false,
+                "bound": false,
+                "stacked": false,
+                "fill": false
+            }
         },
     "statistic":{
-        "metric": false
+        "metric": true
         },
-    "additional_name": "deredded4",
+    "additional_name": "deredded",
     "base": ["RA","DEC","z"],
     "name_class_column": "class",
     "features": {
-        "data": ["W1mproPM","e_W1mproPM","W2mproPM","e_W2mproPM","phot_g_mean_mag","phot_g_mean_mag_error","phot_bp_mean_mag","phot_bp_mean_mag_error","phot_rp_mean_mag","phot_rp_mean_mag_error"],
-        "train": ["mags","color"],
-        "//comment_train": ["color","mags","err_color","err_mags"]
+        "data": {
+            "astrometry": ["PM","Plx","e_Plx"],
+            "flux": ["nW1","FW1pm","e_FW1pm","nW2","FW2pm","e_FW2pm","o_Gmag","FG","e_FG","o_BPmag","FBP","e_FBP","o_RPmag","FRP","e_FRP"],
+            "photometry": ["W1mproPM","e_W1mproPM","W2mproPM","e_W2mproPM","Gmag","e_Gmag","BPmag","e_BPmag","RPmag","e_RPmag"]
+            },
+        "mod":"all",
+        "//comment_features_mod":["standart","all"],
+        "range": {
+            "photometry": [[11,19],[11,19],[14,21],[14,21],[14,21]]},
+        "train": {
+            "astrometry": ["raw"],
+            "flux": ["var"],
+            "photometry": ["color"]},
+        "//comment_train": {
+            "astrometry": ["raw"],
+            "flux": ["var","flux_color"],
+            "photometry": ["color","mags","err_color","err_mags"]}
         },
-    "name_class": ["star","qso","gal"]
+    "name_class": ["q_b","q_agn","q_sb_stg","g_b","g_agn","g_sb","g_stg"]
 }
