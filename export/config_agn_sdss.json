@@ -1,11 +1,11 @@
 {
-    "name_sample": "agn_old_sample_nofilter",
-    "general_path": "/home/lrikozavr/ML_work/agn_old_sample",
-    "data_path": "/home/lrikozavr/github/ML_with_AGN/download_main_sample/all.csv",
+    "name_sample": "agn_sdss_diploma_sample",
+    "general_path": "/home/lrikozavr/ML_work/agn_sdss",
+    "data_path": "/home/lrikozavr/catalogs/sdssdr17/SDSS.csv",
     "prediction_path": "_",
     "flags":{
         "data_downloading":{
-            "work": true,
+            "work": false,
             "class_diff": false,
             "radius": 1,
             "slice_count": 100000,
@@ -34,12 +34,12 @@
             "main_sample":{
                 "work": true,
                 "flux":{
-                    "work": true,
-                    "var": true,
-                    "color": true
+                    "work": false,
+                    "var": false,
+                    "color": false
                 },
                 "astrometry":{
-                    "work": true
+                    "work": false
                 },
                 "color":{
                     "work": true,
@@ -47,8 +47,8 @@
                     "err": true
                     },
                 "outlire": {
-                    "work": false,
-                    "cut": false,
+                    "work": true,
+                    "cut": true,
                     "method": ["MCD"],
                     "value": "color",
                     "//comment_value": "[color,err,features]",
@@ -101,7 +101,7 @@
                 "metric_culc": "test",
                 "//comment_metric_culc": ["test","train"],
                 "sample_weight": "",
-                "balanced": true,
+                "balanced": false,
                 "early_stopping": {
                     "monitor": "val_prc",
                     "patience": 10,
@@ -131,7 +131,7 @@
         },
     "picture":{
             "work": true,
-            "correlation_matrix": false,
+            "correlation_matrix": true,
             "tSNE": {
                 "work": true,
                 "n_components":2, 
@@ -151,7 +151,7 @@
                 "work": true,
                 "bins": 101
             },
-            "multigridplot": false,
+            "multigridplot": true,
             "main": {
                 "work": true,
                 "bound": true
@@ -164,8 +164,8 @@
                 },
             "confusion_matrix": true,
             "hist": {
-                "work": false,
-                "bound": false,
+                "work": true,
+                "bound": true,
                 "stacked": false,
                 "fill": false
             }
@@ -173,13 +173,13 @@
     "statistic":{
         "metric": true
         },
-    "additional_name": "countbalanced",
-    "base": ["RA","DEC","z"],
+    "additional_name": "deredded_balanced_outlirecut",
+    "base": ["RA","DEC","z","z_err"],
     "name_class_column": "class_name",
     "features": {
         "data": {
-            "astrometry": ["PM","Plx","e_Plx"],
-            "flux": ["nW1","FW1pm","e_FW1pm","nW2","FW2pm","e_FW2pm","o_Gmag","FG","e_FG","o_BPmag","FBP","e_FBP","o_RPmag","FRP","e_FRP"],
+            "astrometry": [],
+            "flux": [],
             "photometry": ["W1mproPM","e_W1mproPM","W2mproPM","e_W2mproPM","Gmag","e_Gmag","BPmag","e_BPmag","RPmag","e_RPmag"]
             },
         "mod":"all",
@@ -187,13 +187,13 @@
         "range": {
             "photometry": [[11,19],[11,19],[14,21],[14,21],[14,21]]},
         "train": {
-            "astrometry": ["raw"],
-            "flux": ["var"],
+            "astrometry": [],
+            "flux": [],
             "photometry": ["color"]},
         "//comment_train": {
             "astrometry": ["raw"],
             "flux": ["var","flux_color"],
             "photometry": ["color","mags","err_color","err_mags"]}
         },
-    "name_class": ["agn_type_1","agn_type_2","blazar","sfg"] 
+    "name_class": ["agn_type_1","agn_type_2","star_burst","sfg","other"]
 }

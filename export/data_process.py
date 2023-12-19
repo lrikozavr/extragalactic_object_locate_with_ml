@@ -253,8 +253,12 @@ def get_features(features_list,config):
             if(i!=j):
                 colours_name.append(f"{photometry_list[j*2]}&{photometry_list[i*2]}")
                 colours_error_name.append(f"{photometry_list[j*2+1]}&{photometry_list[i*2+1]}")
-                flux_var_name.append(f"{flux_list[j*3+1]}_var")
-                flux_color.append(f"{flux_list[j*3+1]}&{flux_list[i*3+1]}")
+                try:
+                    flux_var_name.append(f"{flux_list[j*3+1]}_var")
+                    flux_color.append(f"{flux_list[j*3+1]}&{flux_list[i*3+1]}")
+                except:
+                    print()
+                
         mags_name.append(f"{photometry_list[j*2]}")
         mags_error_name.append(f"{photometry_list[j*2+1]}")
 
@@ -408,8 +412,8 @@ def process(path_sample,name,save_path, config):
                 data = pd.concat([data,data_flux_var],axis=1)
             if(config.flags['data_preprocessing']['main_sample']['flux']['color']):
                 data = pd.concat([data,data_flux_color],axis=1)
-        else:
-            data = data.drop(config.features["data"]["astrometry"].extend(config.features["data"]["flux"]), axis=1)
+        #else:
+            #data = data.drop(config.features["data"]["astrometry"].extend(config.features["data"]["flux"]), axis=1)
 
 
 

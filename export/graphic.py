@@ -436,6 +436,7 @@ def picture_metrics(model,name,config):
     plt.close(fig)
 
 def picture_hist(config):
+    from matplotlib.ticker import PercentFormatter
     
     def Hist1(ax,x,mag,label, **kwargs):
         ax.set_xlabel(mag,fontsize=40)
@@ -443,7 +444,8 @@ def picture_hist(config):
         ax.tick_params(axis='x', labelsize=30)
         ax.tick_params(axis='y', labelsize=30)
         #ax.set_title(name,fontsize = 50)
-        ax.hist(x,bins=200, label=label,**kwargs)
+        ax.hist(x,bins=200, label=label, weights=np.ones(len(x)) / len(x),**kwargs)
+        ax.gca().yaxis.set_major_formatter(PercentFormatter(1))
   
     dir(config.path_pic,'hist')
 

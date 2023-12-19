@@ -207,9 +207,9 @@ if(config.picture["work"]):
     if(config.picture["hist"]["work"]):
         picture_hist(config)
 
-from graphic import redshift_estimation
-if(config.hyperparam["redshift"]["picture"]):
-    redshift_estimation(config)
+    from graphic import redshift_estimation
+    if(config.hyperparam["redshift"]["picture"]):
+        redshift_estimation(config)
 
 #prediction
 if(config.flags["prediction"]["work"]):
