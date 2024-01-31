@@ -83,6 +83,12 @@ def out(line,col,fout,config):
     line_out = ''
     index = 0
     empty_count = 1
+    #gate
+    try:
+        if (float(n[0]) > config.flags["data_downloading"]["gate"]):
+            empty_count = 0
+    except:
+        print()
     for i in col:
         ##########
         if (n[i] in config.flags["data_downloading"]["filter"]):

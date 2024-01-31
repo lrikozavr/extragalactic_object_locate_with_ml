@@ -397,7 +397,7 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
     X_train = pd.DataFrame(X_train,columns=get_features(config.features["train"],config))
     X_test = pd.DataFrame(X_test,columns=get_features(config.features["train"],config))
     #print(X_train)
-    degree = [1,2,4]
+    degree = np.sort(np.array([1,2,4,8,16]))
     def f(x):
         pred = model.predict(x)
         #rez = np.zeros(len(pred))
@@ -418,23 +418,21 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
     #shap.plots.bar(shap_values)
     '''
     '''
-    explainer = shap.explainers.Permutation(f,X_train)
+    #explainer = shap.explainers.Permutation(f,X_train)
     
-    X_test = X_test.sample(2000, ignore_index=True)
+    X_test = X_test.sample(200, ignore_index=True)
+    #shap_values = explainer(X_test)
+
+    #shap.plots.beeswarm(shap_values)
+
+    explainer = shap.explainers.Exact(f, X_train)
     shap_values = explainer(X_test)
-
-    shap.plots.beeswarm(shap_values)
-
-    #explainer = shap.explainers.Exact(f, X_train)
-    #shap_values = explainer(X_test.iloc[200000:200100])
     
     #print(shap_values)
     #print(shap_values[0])
     
-    #shap.plots.bar(shap_values)
+    shap.plots.bar(shap_values)
     #shap.plots.waterfall(shap_values[0])
-
-    exit()
     '''
     #model.evaluate(X_test, y_test, verbose=1)
     #model.summary()

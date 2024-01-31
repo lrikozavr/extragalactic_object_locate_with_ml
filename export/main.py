@@ -205,7 +205,7 @@ if(config.picture["work"]):
     if(config.picture["confusion_matrix"]):
         picture_confusion_matrix(config)
     if(config.picture["hist"]["work"]):
-        picture_hist(config)
+        picture_hist(data,config)
 
     from graphic import redshift_estimation
     if(config.hyperparam["redshift"]["picture"]):

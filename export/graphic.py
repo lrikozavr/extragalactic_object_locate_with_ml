@@ -120,7 +120,7 @@ def TSNE_pic(data_b,config):
     for n, name in enumerate(config.name_class_cls):
         temp_data = data[label[name] == 1].values
         #print(temp_data)
-        ax.scatter(temp_data[:,0],temp_data[:,1], color = colors[n%10], label=name,s=1)
+        ax.scatter(temp_data[:,0],temp_data[:,1], color = colors[n%10], label=config.name_class[n],s=1)
         ax.legend()
         del temp_data
     
@@ -142,7 +142,7 @@ def TSNE_pic(data_b,config):
         
         temp_data = data[label[name] == 1].values
         #print(temp_data)
-        ax.scatter(temp_data[:,0],temp_data[:,1], color = colors[n%10], label=name,s=1)
+        ax.scatter(temp_data[:,0],temp_data[:,1], color = colors[n%10], label=config.name_class[n],s=2)
         ax.legend()
         del temp_data
 
@@ -435,7 +435,7 @@ def picture_metrics(model,name,config):
        
     plt.close(fig)
 
-def picture_hist(config):
+def picture_hist(data,config):
     from matplotlib.ticker import PercentFormatter
     
     def Hist1(ax,x,mag,label, **kwargs):
@@ -444,14 +444,14 @@ def picture_hist(config):
         ax.tick_params(axis='x', labelsize=30)
         ax.tick_params(axis='y', labelsize=30)
         #ax.set_title(name,fontsize = 50)
-        ax.hist(x,bins=200, label=label, weights=np.ones(len(x)) / len(x),**kwargs)
-        ax.gca().yaxis.set_major_formatter(PercentFormatter(1))
-  
+        ax.hist(x,bins=200, label=label,density=True,**kwargs) #density=True
+        
     dir(config.path_pic,'hist')
 
     data_mass = []
     for class_name in config.name_class:
         data_temp = pd.read_csv(f"{config.path_ml_data}/{config.name_main_sample}_{class_name}_main_sample.csv", header=0, sep=',')       
+        #data_temp = data[data[f"{class_name}_cls"] == 1]
         data_mass.append(data_temp)
 
     columns = data_mass[0].drop(config.base, axis=1).columns.values

@@ -130,7 +130,7 @@ def flux_var(data):
     data_var_name = []
     for j in range(0,mags*3,3):
         data_var[:,j//3] = np.power(data[:,j],0.5)*(data[:,j+2]/data[:,j+1])
-        data_var_name.append(f"{list_name[j+1]}_var")
+        data_var_name.append(f"var_{list_name[j+1]}")
     data_var = pd.DataFrame(data_var, columns=data_var_name)
 
     num_colours = sum(i for i in range(mags))
@@ -249,12 +249,15 @@ def get_features(features_list,config):
 
     mags_count = int(len(photometry_list)/2)
     for j in range(mags_count):
+        try:
+            flux_var_name.append(f"var_{flux_list[j*3+1]}")
+        except:
+            print()
         for i in range(j, mags_count):
             if(i!=j):
                 colours_name.append(f"{photometry_list[j*2]}&{photometry_list[i*2]}")
                 colours_error_name.append(f"{photometry_list[j*2+1]}&{photometry_list[i*2+1]}")
                 try:
-                    flux_var_name.append(f"{flux_list[j*3+1]}_var")
                     flux_color.append(f"{flux_list[j*3+1]}&{flux_list[i*3+1]}")
                 except:
                     print()
@@ -341,7 +344,8 @@ def deredded(data,config_local):
     
     if(config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["mode"] == "simple"):
         for name in mags:
-            data[name] = data[name].astype(float) - data['E(B-V)']*EXTINCTION_COEFFICIENT_config_mass_value.loc[0,(name)]
+            ext = EXTINCTION_COEFFICIENT_config_mass_value.loc[0,name]
+            data[name] = data[name].astype(float) - data['E(B-V)']*ext
     else:
         
         def culc(DATA,EBV,BP_RP,BAND):
