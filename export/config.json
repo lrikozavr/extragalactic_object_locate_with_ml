@@ -178,6 +178,7 @@
     "base": ["RA","DEC","z"],
     "name_class_column": "class",
     "features": {
+        "mod": "all",
         "data": {
             "astrometry": ["PM","Plx","e_Plx"],
             "flux": ["nW1","FW1pm","e_FW1pm","nW2","FW2pm","e_FW2pm","o_Gmag","FG","e_FG","o_BPmag","FBP","e_FBP","o_RPmag","FRP","e_FRP"],
