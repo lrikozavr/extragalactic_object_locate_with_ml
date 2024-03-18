@@ -1,20 +1,5 @@
 # -*- coding: utf-8 -*-
 
-'''
-CONFIG FEATURES
-class
-features
-filename
-general_path
-save_path
-path_ml
-path_sample
-'''
+from extinction_coefficient import extinction_coefficient
 
-def read_config(config_file):
-    config = ''
-    return config
-
-def write_config(config_file,config):
-    pass
-
+print(extinction_coefficient('G', EBV=0.5, Teff=5500))

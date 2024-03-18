@@ -471,7 +471,7 @@ def make_custom_index(index,list):
 
 def NN(train,label,red_label,sample_weight,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
 output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
-    
+    """
     features = train.shape[1]
     initial_weights = os.path.join(tempfile.mkdtemp(), 'initial_weights')
 
@@ -549,6 +549,18 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
     #hyperparam from config
     custom_index.append(make_custom_index(index,config.hyperparam["model_variable"]["neuron_count"]))
     model_activate(config.flags["system"],custom_index,train,label,red_label,red_label,train,label)
+    """
+    if(open(config.test_path[0])):
+        print()
+    name = f"custom_sm_{make_custom_index('00',config.hyperparam['model_variable']['neuron_count'])}"
+    model = LoadModel(f'{config.path_model}_{name}',f'{config.path_weight}_{name}',optimizer,loss)
+    features = get_features(config.features["train"],config)
+    for filename in config.test_path:
+        test_data = pd.read_csv(filename, header=0, sep=',')
+        temp_class = model.predict(test_data[features], batch_size)
+        res = pd.DataFrame(np.array(temp_class), columns = config.name_class_prob)
+        res = pd.concat([res, test_data[config.name_class_cls]], axis=1)
+        res.to_csv(f"{path_save_eval}_{filename.split('/')[-1].split('.')[0]}_prob.csv")
 
 
 def large_file_prediction(config):

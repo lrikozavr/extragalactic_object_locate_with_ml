@@ -337,9 +337,8 @@ def multigridplot(data, features, config):
     
 
 def picture_confusion_matrix(config):
-  def plot_cm(index,save_name):
-    name = make_custom_index(index,config.hyperparam["model_variable"]["neuron_count"])
-    data = pd.read_csv(f'{config.path_eval}_custom_sm_{name}_prob.csv', header=0, sep=",")
+  def plot_cm(save_name,filename):
+    data = pd.read_csv(filename, header=0, sep=",")
     
     y = np.argmax(data[config.name_class_cls], axis=1).tolist()
     y_prob = np.argmax(data[config.name_class_prob], axis=1).tolist()
@@ -354,7 +353,7 @@ def picture_confusion_matrix(config):
             new_cm[i,j] = round(cm[i,j] / float(sum),5)*100
     new_cm = pd.DataFrame(new_cm, columns=config.name_class_cls, index=config.name_class_cls)
     #print(new_cm)
-    fig = plt.figure(figsize=(20,20))
+    fig = plt.figure(figsize=(10,10))
     sns.heatmap(new_cm, annot=True, fmt=".2f")
     plt.title('Confusion matrix')
     plt.ylabel('Actual label')
@@ -364,11 +363,17 @@ def picture_confusion_matrix(config):
     plt.close(fig)
 
   for i in range(config.hyperparam["model_variable"]["kfold"]):
-    plot_cm(i,f"{config.name_sample}_{i}_kfold")
+    name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
+    plot_cm(f"{config.name_sample}_{i}_kfold",f'{config.path_eval}_custom_sm_{name}_prob.csv')
   #
   if(config.picture["main"]["work"]):
-    plot_cm('00',f"{config.name_sample}_main")
+    name = make_custom_index("00",config.hyperparam["model_variable"]["neuron_count"])
+    plot_cm(f"{config.name_sample}_main",f'{config.path_eval}_custom_sm_{name}_prob.csv')
   #
+  for filename in config.test_path:
+    name = filename.split('/')[-1].split('.')[0]
+    plot_cm(f"{config.name_sample}_{name}",f"{config.path_eval}_{name}_prob.csv")
+
   print("picture Confusion Matrix done")
 
 def colnamemb(col_value):
@@ -444,7 +449,7 @@ def picture_hist(data,config):
         ax.tick_params(axis='x', labelsize=30)
         ax.tick_params(axis='y', labelsize=30)
         #ax.set_title(name,fontsize = 50)
-        ax.hist(x,bins=200, label=label,density=True,**kwargs) #density=True
+        ax.hist(x,bins=200, label=label,**kwargs) #density=True
         
     dir(config.path_pic,'hist')
 

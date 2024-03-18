@@ -38,6 +38,7 @@ class Config():
         self.general_path = config['general_path']
         self.data_path = config['data_path']
         self.prediction_path = config['prediction_path']
+        self.test_path = config['test_path'] ############
         self.flags = config['flags']
         self.hyperparam = config['hyperparam']
         self.features = config['features']
@@ -146,6 +147,7 @@ if(config.hyperparam["model_variable"]["work"]):
         from sklearn.utils import class_weight
         y = np.zeros(data.shape[0])
         cl = np.array(data[config.name_class_cls].values)
+        #print(cl)
         for i in range(data.shape[0]):
             y[i] = np.argmax(cl[i,:])
         class_weights = dict(enumerate(class_weight.compute_class_weight(class_weight = 'balanced',classes = np.unique(y),y = y)))
