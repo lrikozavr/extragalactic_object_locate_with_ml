@@ -8,6 +8,77 @@ import os
 
 DELTA = 1e-7
 
+def get_features(features_list,config):
+    features = []
+
+    colours_name, colours_error_name = [], []
+    mags_name, mags_error_name = [], []
+    flux_color = []
+    flux_var_name = []
+
+    photometry_list = config.features["data"]["photometry"]
+    flux_list = config.features["data"]["flux"]
+
+    mags_count = int(len(photometry_list)/2)
+    for j in range(mags_count):
+        try:
+            flux_var_name.append(f"var_{flux_list[j*3+1]}")
+        except:
+            print()
+        for i in range(j, mags_count):
+            if(i!=j):
+                colours_name.append(f"{photometry_list[j*2]}&{photometry_list[i*2]}")
+                colours_error_name.append(f"{photometry_list[j*2+1]}&{photometry_list[i*2+1]}")
+                try:
+                    flux_color.append(f"{flux_list[j*3+1]}&{flux_list[i*3+1]}")
+                except:
+                    print()
+                
+        mags_name.append(f"{photometry_list[j*2]}")
+        mags_error_name.append(f"{photometry_list[j*2+1]}")
+
+    def check_features(features_list):
+        temp_features_list = []
+        try:
+            for name in features_list.keys():
+                temp_features_list.extend(features_list[name])
+                #print(features_list[name][0])
+            return temp_features_list
+        except:
+            return features_list
+
+    local_features_list = check_features(features_list)
+    #print(local_features_list)
+
+    for features_flag in local_features_list:
+        match features_flag:
+            #може потрібно тут ставити запобіжник?
+            case "color":
+                features.extend(colours_name)
+                if not (config.flags['data_preprocessing']['main_sample']['color']['work'] and config.flags['data_preprocessing']['main_sample']['color']['mags']):
+                    print("WARNING: data may don't have a property columns, check: \nconfig.flags['data_preprocessing']['main_sample']['color']['work']\nand\nconfig.flags['data_preprocessing']['main_sample']['color']['mags']\nand\nconfig.features['train']\n")
+            case "mags":
+                features.extend(mags_name)
+            case "err_color":
+                features.extend(colours_error_name)
+                if not (config.flags['data_preprocessing']['main_sample']['color']['work'] and config.flags['data_preprocessing']['main_sample']['color']['err']):
+                    print("WARNING: data may don't have a property columns\ncheck config.flags['data_preprocessing']['main_sample']['color']['work']\nand\nconfig.flags['data_preprocessing']['main_sample']['color']['err']\nand\nconfig.features['train']\n")
+            case "err_mags":
+                features.extend(mags_error_name)
+            case "var":
+                features.extend(flux_var_name)
+
+            case "flux_color":
+                features.extend(flux_color)
+
+            case "raw":
+                features.extend(config.features["data"]["astrometry"])
+            case _:
+                raise Exception('unknown config value config.features["train"]')
+    
+    return features
+
+
 def M(data,n):
     sum = 0
     #data = data.reset_index(drop=True)

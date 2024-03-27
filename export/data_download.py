@@ -14,15 +14,78 @@ from astropy.coordinates import SkyCoord
 from astropy.table import Table
 from astropy.io.votable import from_table, writeto
 
+import math
 
-def cross_match(table_1,table_2,flag):
+def cross_match(table_1,table_2,radius: float = 1.,flag: int = 1):
 
+    def compare(cor1,cor2):
+        return
     
+    table_2_count = len(table_2)
+    table_1_count = len(table_1)
+
+    table_2_flag = np.zeros(table_2_count)
+
+    table_1_index = np.zeros(table_1_count)
+
+    flag_check = False
+
+    j_start, j_finish = 0, table_2_count
+    for index_1 in range(table_1):
+        ra_1, dec_1 = table_1[index_1][0], table_1[index_1][1]
+        
+        delta_min, delta_min_jindex = 1e5, -1
+        for jindex_2 in range(j_start,j_finish,1):
+            ra_2, dec_2 = table_2[jindex_2][0], table_2[jindex_2][1]
+            if(dec_1 + radius > dec_2 and dec_1 - radius < dec_2):
+                if(flag_check == False):
+                    j_start = jindex_2
+                    flag_check = True
+                if(ra_1 + radius > ra_2 and ra_1 - radius < ra_2):
+                    if(table_2_flag[jindex_2] == 0):
+                        delta = pow(pow(ra_1-ra_2,2) + pow(dec_1-dec_2,2),2)/math.cos(dec_1)
+                        if(delta < radius):
+                            if(delta < delta_min):
+                                delta_min = delta
+                                delta_min_jindex = jindex_2
+                    
+            elif(dec_1 + radius <= dec_2):
+                flag_check = False
+                break
+
+        if(not delta_min_jindex == -1):
+            table_2_flag[delta_min_jindex] = 1
+            table_1_index[index_1] = delta_min_jindex
+
+    '''    
     c = SkyCoord(ra=table_1["RA"]*u.degree, dec=table_1["DEC"]*u.degree)
     catalog = SkyCoord(ra=table_1["RA"]*u.degree, dec=table_2["DEC"]*u.degree)
     idx, d2d, d3d = c.match_to_catalog_sky(catalog)
     return catalog[idx]
+    '''
 
+def cut_cut_pd(data: pd.DataFrame, col1: list, col2: list):
+    '''
+    Видаляє дублікати по колонкам ``col1`` та ``col2``
+
+    Input:
+    ------
+        ``data`` --- DataFrame з даними\n
+        ``col1`` --- Колонки які характеризують дублікати\n
+        ``col2`` --- Див. ``col1``\n
+    
+    Output:
+    -------
+        DataFrame без дублікатів
+    
+    '''
+
+    data_duplicate_1 = data.duplicated(subset=col1, keep=False)
+    data_duplicate_2 = data.duplicated(subset=col2, keep=False)
+
+    index = data[((data_duplicate_1 == True | data_duplicate_2 == True))].index
+
+    return data.drop(axis=0, index=index).reset_index(drop=True)
 
 def download_data_style_catalog(filename: str, url: str, cat: dict):
     """
@@ -428,7 +491,7 @@ class Download():
         
         Input:
         ------
-            ``catalog_name`` --- ім'я каталогу у форматі VizieR\n
+            ``catalog_name`` --- ім'я каталогу у форматі VizieR / або ім'я файлу\n
             ``filename_in`` --- ім'я файлу вводу\n
             ``filename_out`` --- ім'я файлу виводу
         
@@ -442,6 +505,11 @@ class Download():
             value.radius
         """
 
+        if(os.path.isfile(catalog_name)):
+            c = Table.read(f'{catalog_name}.csv', format = 'ascii.csv')
+            c_votable = from_table(c)
+            writeto(c_votable,f'{catalog_name}.vot')
+
         t = Table.read(f'{filename_in}.csv', format = 'ascii.csv') 
         votable = from_table(t)
         writeto(votable, f'{filename_in}.vot')
@@ -453,17 +521,31 @@ class Download():
         attempts = 0
         while attempts < NUM_URL_ACCESS_ATTEMPTS:
             try:
-                r = requests.post('http://cdsxmatch.u-strasbg.fr/xmatch/api/v1/sync',
-                                data={  'request': 'xmatch', 
-                                        'distMaxArcsec': self.value.radius, 
-                                        'RESPONSEFORMAT': 'csv',
-                                        'cat2': f'vizier:{catalog_name}', 'colRA1': 'RA', 'colDec1': 'DEC'},
-                                        files={'cat1': open(f'{filename_in}.vot', 'r')})
+                if(not os.path.isfile(catalog_name)):
+                    r = requests.post('http://cdsxmatch.u-strasbg.fr/xmatch/api/v1/sync',
+                                    data={  'request': 'xmatch', 
+                                            'distMaxArcsec': self.value.radius, 
+                                            'RESPONSEFORMAT': 'csv',
+                                            'cat2': f'vizier:{catalog_name}', 'colRA1': 'RA', 'colDec1': 'DEC'},
+                                            files={'cat1': open(f'{filename_in}.vot', 'r')})
+                else:
+                    r = requests.post('http://cdsxmatch.u-strasbg.fr/xmatch/api/v1/sync',
+                                    data={  'request': 'xmatch',
+                                            'distMaxArcsec': self.value.radius, 
+                                            'RESPONSEFORMAT': 'csv',
+                                            'colRA1': 'RA', 'colDec1': 'DEC',
+                                            'colRA2': 'RA', 'colDec2': 'DEC'},
+                                            files={'cat1': open(f'{filename_in}.vot', 'r'),
+                                                   'cat2': open(f'{catalog_name}.vot', 'r')})
+
                 if(r.ok):
                     os.remove(f'{filename_in}.vot')
+                    if(not os.path.isfile(catalog_name)):
+                        os.remove(f'{catalog_name}.vot')
                     h = open(f'{filename_out}', 'w')
                     h.write(r.text)
                     h.close()
+                    print(r.text)
                     break
                 else:
                     raise Exception(r.raise_for_status())
@@ -472,8 +554,9 @@ class Download():
                 attempts += 1
         
         if(attempts == NUM_URL_ACCESS_ATTEMPTS):
-            raise Exception('')
+            raise Exception('NUM_URL_ACCESS_ATTEMPTS')
 
+        
 
 
     #download from VizieR

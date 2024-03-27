@@ -7,8 +7,8 @@ import sys
 import argparse
 
 from network import NN
-from data_process import data_preparation
-from data_download import class_download, diff_class
+from data_process import data_preparation, get_features
+from data_download import Download
 
 #argument parse
 def parse_arg():
@@ -91,26 +91,35 @@ dir(config.path_ml,'eval')
 dir(config.path_ml,'prediction')
 dir(config.path_ml,'picture')
 
-#data download
+
+"""
+
+Input:
+------
+
+Output:
+-------
+-------
+self:
+-----
+
+"""
+
+#DOWNLOADING
+config_base = dict(name_class=config.name_class,
+                   base=config.base,
+                   features=get_features(config.features["data"],config),
+                   path_sample=config.path_sample)
+
+dow = Download(config_spec=config.flags["data_downloading"],config_base=config_base)
+
 if(config.flags["data_downloading"]["class_diff"]):
-    diff_class(config)
+    dow.diff_class(config.data_path,config.name_class_column)
 
 if(config.flags["data_downloading"]["work"]):
-    #stat_mass = []
-    sum_mass = pd.DataFrame()
+    dow.all_class_download(config.path_stat)
 
-    for name in config.name_class:
-        stat = class_download(name, config.path_sample,config)
-        stat.to_csv(f'{config.path_stat}/{name}_slice.log', index=False)
-        stat = pd.read_csv(f'{config.path_stat}/{name}_slice.log',header=0,sep=",")
-        #print(np.array(stat.sum(axis=0)))
-        sum = pd.DataFrame([np.array(stat.sum(axis=0))], columns = stat.columns.values, index = [name])
-        #print(sum)
-        sum_mass = pd.concat([sum_mass,sum], ignore_index=False)
-        #stat_mass.append(stat)
-    sum_mass.to_csv(f'{config.path_stat}/classes.log')
-    print(sum_mass)
-
+del dow
 
 data = pd.DataFrame()
 #data preparation
@@ -128,7 +137,7 @@ else:
 if(config.statistic["metric"]):
     data.describe().transpose().to_csv(f'{config.path_stat}/{config.name_main_sample}_stat.log')
 
-from data_process import get_features
+
 #network training
 if(config.hyperparam["model_variable"]["work"]):
     #features from config
