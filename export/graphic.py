@@ -461,6 +461,12 @@ def picture_hist(data,config):
 
     columns = data_mass[0].drop(config.base, axis=1).columns.values
 
+    from data_process import Gauss_cut
+    for col in columns:
+        for i, class_name in enumerate(config.name_class):
+            _, outlire = Gauss_cut(data_mass[i][col],data_mass[i].shape[0],0.001)
+            data_mass[i] = data_mass[i].drop(outlire)
+
     if(not config.picture["hist"]["bound"]):
         for col in columns:
             for i, class_name in enumerate(config.name_class):

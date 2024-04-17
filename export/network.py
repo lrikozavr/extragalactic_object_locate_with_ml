@@ -19,6 +19,10 @@ import numpy as np
 import sklearn.metrics as skmetrics
 from data_process import get_features, deredded
 
+tf.random.set_seed(777)
+keras.utils.set_random_seed(777)
+np.random.seed(777)
+
 #from main import hyperparam, flags, name_class
 
 def loading_progress_bar(percent):
@@ -134,7 +138,10 @@ def outlire(train,data_test,class_weight,name,config):
     clf = OCSVM(verbose=False,cache_size=10000,max_iter=1000)
     #rng = np.random.default_rng(seed=777)
     #smpl = rng.choice(train,50000)
-    smpl = train.sample(50000,random_state=777).values
+    if(train.shape[0] < 50000):
+        smpl = train.values
+    else:
+        smpl = train.sample(50000,random_state=777).values
     scaler = MinMaxScaler(feature_range=(-1,1))
     sclr_smpl = scaler.fit_transform(smpl)
     clf.fit(sclr_smpl)
@@ -157,12 +164,12 @@ def outlire(train,data_test,class_weight,name,config):
 
     #data_test = pd.DataFrame(data_test)
     data_test_scaler = scaler.transform(data_test.values)
-    data_test["predict"] = clf.predict(data_test_scaler)
-    print("test data outlier label:\t", data_test["predict"])
+    predict = clf.predict(data_test_scaler)
+    print("test data outlier label:\t", predict)
     #print("test data outlier scores:\t",clf.decision_function(data_test.drop(["predict"], axis=1).values))
 
     print(data_test)
-    zero = pd.DataFrame(np.full((5,data_test.shape[1]-1),-20))
+    zero = pd.DataFrame(np.full((5,data_test.shape[1]),-20))
     print(zero)
     zero = scaler.transform(zero)
     print(zero)
@@ -171,12 +178,12 @@ def outlire(train,data_test,class_weight,name,config):
         print("binary outlier scores:\t",clf.predict(zero))
     except:
         print("failure")
-    
+
     #print("data predict one_class_svm:\n",data_test["predict"])
-    
-    data_test = data_test[data_test["predict"] == 0] #config.hyperparam["model_variable"]["outlire"]["threshold"]]
+
+    data_test = data_test[predict == 0] #config.hyperparam["model_variable"]["outlire"]["threshold"]]
     #print(data_test)
-    data_test = data_test.drop(["predict"], axis=1)
+    #data_test = data_test.drop(["predict"], axis=1)
     #print(data_test)
     print(data_test)
     
@@ -207,52 +214,6 @@ def redshift_predict(train,label,X_test,y_test,name,config):
     predict_red = pd.concat([X_test,predict_red,y_test], axis=1)
     
     predict_red.to_csv(f"{config.path_eval}_{name}_redshift.csv", index=False)
-    
-    '''
-    early_stopping = keras.callbacks.EarlyStopping(
-        monitor="mean_squared_error", 
-        verbose=1,
-        patience=10,
-        mode="min",
-        restore_best_weights=True)
-    
-    train = normalize(train, axis=0)
-    print("normalize complete")
-    model_red = DNN(features_count)
-    optim = tf.keras.optimizers.Adam(learning_rate=1e-3)
-    #optim = tf.keras.optimizers.SGD(momentum=0.9,nesterov=True)
-    def custom_loss(y_true,y_pred):
-        return tf.math.divide_no_nan(tf.math.divide_no_nan(tf.math.square(y_true - y_pred), tf.abs(y_true) + 1e-4), 2.0)
-        
-
-    model_red.compile(optimizer=optim,
-                      #loss = custom_loss,
-                      loss = tf.keras.losses.MeanSquaredError(reduction="auto", name="mean_squared_error"),
-                      #loss = tf.keras.losses.CosineSimilarity(axis=1),
-                      #loss = tf.keras.losses.Huber(delta=2., reduction="auto", name="huber_loss"),
-                      #loss = tf.keras.losses.LogCosh(reduction="auto", name="log_cosh"),
-                      #loss = tf.keras.losses.MeanSquaredLogarithmicError(reduction="auto", name="mean_squared_logarithmic_error"),
-                      #loss = tf.keras.losses.MeanAbsolutePercentageError(reduction="auto", name="mean_absolute_percentage_error"),
-                      #loss = tf.keras.losses.MeanAbsoluteError(reduction="auto", name="mean_absolute_error"),
-                      metrics=tf.keras.metrics.MeanSquaredError(name="mean_squared_error", dtype=None))
-
-    model_red.fit(train,label,
-                  epochs=200,
-                  batch_size=1024,
-                  validation_split=0.3,
-                  callbacks=[early_stopping])
-    print("model_redshift fited")
-
-    predict_red = model_red.predict(X_test, batch_size=1024)
-
-    predict_red = pd.DataFrame(np.array(predict_red), columns=['redshift_pred'])
-    y_test = pd.DataFrame(np.array(y_test),columns=['actual_redshift'])
-    predict_red = pd.concat([predict_red,y_test], axis=1)
-    
-    predict_red.to_csv(f"{config.path_predict}_{name}_redshift.csv")
-
-    return model_red
-    '''
 
     return clf_r
 
@@ -442,7 +403,7 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
     if(config.hyperparam["model_variable"]["metric_culc"] == "test"):
         if(config.hyperparam["model_variable"]["outlire"]["work"]):
             data_test, outlire_index = outlire(X_train,X_test,None,name,config)
-            pd_label = pd.DataFrame(np.array(y_test[outlire_index]), columns=config.name_class_cls)
+            pd_label = pd.DataFrame(np.array(y_test.loc[outlire_index,:]), columns=config.name_class_cls)
         else:
             data_test = X_test.values
             pd_label = pd.DataFrame(np.array(y_test), columns=config.name_class_cls)
@@ -471,7 +432,7 @@ def make_custom_index(index,list):
 
 def NN(train,label,red_label,sample_weight,validation_split,batch_size,num_ep,optimizer,loss,class_weights,
 output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
-    """
+    
     features = train.shape[1]
     initial_weights = os.path.join(tempfile.mkdtemp(), 'initial_weights')
 
@@ -561,7 +522,7 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
         res = pd.DataFrame(np.array(temp_class), columns = config.name_class_prob)
         res = pd.concat([res, test_data[config.name_class_cls]], axis=1)
         res.to_csv(f"{path_save_eval}_{filename.split('/')[-1].split('.')[0]}_prob.csv")
-
+    """
 
 def large_file_prediction(config):
     

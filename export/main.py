@@ -108,9 +108,9 @@ self:
 #DOWNLOADING
 config_base = dict(name_class=config.name_class,
                    base=config.base,
-                   features=get_features(config.features["data"],config),
+                   features=config.features["data"],
                    path_sample=config.path_sample)
-
+#print(config_base["features"])
 dow = Download(config_spec=config.flags["data_downloading"],config_base=config_base)
 
 if(config.flags["data_downloading"]["class_diff"]):
@@ -168,7 +168,7 @@ if(config.hyperparam["model_variable"]["work"]):
     print("Features mode list:\t",config.features["train"])
     features = get_features(config.features["train"],config)
     print("Features train values:\t",features)
-
+    
     sample_weight = None
     if(config.hyperparam["model_variable"]["sample_weight"] in config.flags['data_preprocessing']['main_sample']['weight']['method']):
         #sample_weight = data[config.hyperparam["model_variable"]["sample_weight"]].values

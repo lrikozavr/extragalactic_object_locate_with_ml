@@ -16,6 +16,12 @@ from astropy.io.votable import from_table, writeto
 
 import math
 
+def loading_progress_bar(percent):
+    bar_length = 50
+    filled_length = int(percent * bar_length)
+    bar = '█' * filled_length + '-' * (bar_length - filled_length)
+    print(f'\rProgress: |{bar}| {percent*100:.2f}% ', end='')
+
 def cross_match(table_1,table_2,radius: float = 1.,flag: int = 1):
 
     def compare(cor1,cor2):
@@ -121,7 +127,7 @@ def download_data_style_catalog(filename: str, url: str, cat: dict):
     return pd.DataFrame(mass,columns=cat.keys())
 
 #sample_path = f'{general_path}/sample'
-def get_col_list(columns = list(), base_columns = list(), features = list()):
+def get_col_list(columns: list, base_columns: list, features: dict | list):
     '''
     Створює масив індексів знаходження значень списків ``base_columns`` та ``features`` у списку ``columns``
 
@@ -142,7 +148,7 @@ def get_col_list(columns = list(), base_columns = list(), features = list()):
         col.append(columns.index(column))
     if(type(features) is type(dict())):
         for key in features.keys():
-            for column in [key]:
+            for column in features[key]:
                 try:
                     col.append(columns.index(column))
                 except:
@@ -233,7 +239,7 @@ def slice(filename: str, foldername: str, count: int):
     index_name = 1
     fout = open(f"{foldername}/0.csv","w")
     fin = open(filename,'r')
-    base = fin.readline().strip('\n')
+    base = fin.readline().strip('\n').split(",")
     print('Origin catalog columns:\t',base)
     for line in fin:
         index+=1
@@ -262,6 +268,7 @@ class Download():
     path = SimpleNamespace()
     columns = SimpleNamespace()
 
+    download_progress_bar_value = 0
     #data = SimpleNamespace()
 
     def __init__(self, config_spec: dict = {}, config_base: dict = {}):
@@ -371,14 +378,15 @@ class Download():
             #
             line_out = ','.join(base_array) + '\n'
             #
-            if(type(n[name_class_column_index]) is type(int)):
+            try:
                 label = int(n[name_class_column_index])
-            elif(n[name_class_column_index] in self.columns.name_class):
-                label = self.columns.name_class.index(n[name_class_column_index])
-            else:
-                continue
-            
-            count[int(n[name_class_column_index])] += 1
+            except:
+                if(n[name_class_column_index] in self.columns.name_class):
+                    label = self.columns.name_class.index(n[name_class_column_index])
+                else:
+                    continue
+                
+            count[label] += 1
             #
             data_file[label].write(line_out)
             # with pandas
@@ -420,7 +428,9 @@ class Download():
         #
         f = open(filein,'r')
         col = get_col_list(f.readline().strip('\n').split(','), self.columns.base, self.columns.features)
-        #print(col)
+        print(filein)
+        print(self.columns.features)
+        print(col)
         #
         gc1 = col[0]
         gc2 = col[1]
@@ -505,7 +515,7 @@ class Download():
             value.radius
         """
 
-        if(os.path.isfile(catalog_name)):
+        if(os.path.isfile(f'{catalog_name}.csv')):
             c = Table.read(f'{catalog_name}.csv', format = 'ascii.csv')
             c_votable = from_table(c)
             writeto(c_votable,f'{catalog_name}.vot')
@@ -521,13 +531,14 @@ class Download():
         attempts = 0
         while attempts < NUM_URL_ACCESS_ATTEMPTS:
             try:
-                if(not os.path.isfile(catalog_name)):
+                if(not os.path.isfile(f'{catalog_name}.csv')):
                     r = requests.post('http://cdsxmatch.u-strasbg.fr/xmatch/api/v1/sync',
                                     data={  'request': 'xmatch', 
                                             'distMaxArcsec': self.value.radius, 
                                             'RESPONSEFORMAT': 'csv',
                                             'cat2': f'vizier:{catalog_name}', 'colRA1': 'RA', 'colDec1': 'DEC'},
                                             files={'cat1': open(f'{filename_in}.vot', 'r')})
+                    #print(r.text)
                 else:
                     r = requests.post('http://cdsxmatch.u-strasbg.fr/xmatch/api/v1/sync',
                                     data={  'request': 'xmatch',
@@ -540,12 +551,12 @@ class Download():
 
                 if(r.ok):
                     os.remove(f'{filename_in}.vot')
-                    if(not os.path.isfile(catalog_name)):
+                    if(os.path.isfile(f'{catalog_name}.csv')):
                         os.remove(f'{catalog_name}.vot')
                     h = open(f'{filename_out}', 'w')
                     h.write(r.text)
                     h.close()
-                    print(r.text)
+                    #print(r.text)
                     break
                 else:
                     raise Exception(r.raise_for_status())
@@ -607,6 +618,8 @@ class Download():
 
             columns.extend([name,f'{name}_cut'])
 
+            self.download_progress_bar_value += 1
+
         count_mass = pd.DataFrame([np.array(count_mass)], columns=columns)
 
         return count_mass
@@ -645,11 +658,17 @@ class Download():
                     count_mass.append(count_mass_temp)
         except:
             raise Exception("Except: download part have issue. \nCheck your Ethernet conection, \nor config->flags->data_downloading variable, \nor origin catalog purity")
-            
+        
+        #from threading import Thread
+        #t = Thread(target=loading_progress_bar, args=[(100 / (len(catalogs_name)*len(filename_list))) * self.download_progress_bar_value])
+        #t.start()
+
         stat = pd.DataFrame()
         for i in range(len(count_mass)):
             stat = pd.concat([stat,count_mass[i].result()],ignore_index=True)
         
+        #t.s
+
         return stat
     
     def unslice(self,filename_list: list,foldername: str,filename_out: str):
