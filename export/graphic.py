@@ -461,11 +461,16 @@ def picture_hist(data,config):
 
     columns = data_mass[0].drop(config.base, axis=1).columns.values
 
-    from data_process import Gauss_cut
+    def qq(data,low,hi):
+        q_low=data.quantile(low)
+        q_hi=data.quantile(hi)
+        outlier_index=data[(data > q_hi) | (data < q_low)].index
+        return outlier_index
+
     for col in columns:
         for i, class_name in enumerate(config.name_class):
-            _, outlire = Gauss_cut(data_mass[i][col],data_mass[i].shape[0],0.001)
-            data_mass[i] = data_mass[i].drop(outlire)
+            outlier = qq(data_mass[i][col],0.0001,0.9999)
+            data_mass[i] = data_mass[i].drop(outlier)
 
     if(not config.picture["hist"]["bound"]):
         for col in columns:
