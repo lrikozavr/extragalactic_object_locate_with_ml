@@ -142,7 +142,7 @@ def get_col_list(columns: list, base_columns: list, features: dict | list):
         ``col`` --- список індексів\n
 
     '''
-    col = []
+    col = list()
     #print(columns)
     for column in base_columns:
         col.append(columns.index(column))
@@ -150,13 +150,13 @@ def get_col_list(columns: list, base_columns: list, features: dict | list):
         for key in features.keys():
             for column in features[key]:
                 try:
-                    col.append(columns.index(column))
+                    col.extend([i for i, value in enumerate(columns) if value == column])
                 except:
                     continue
     else:                
         for column in features:
             try:
-                col.append(columns.index(column))
+                col.extend([i for i, value in enumerate(columns) if value == column])
             except:
                 continue
     return col
@@ -209,6 +209,8 @@ def out(line: str, col: list, fout, gate: int, filter: list):
         index += 1
     if(empty_count):
         fout.write(line_out)
+        return 1
+    return 0
 
 #division into pieces of define count
 def slice(filename: str, foldername: str, count: int):
@@ -427,19 +429,34 @@ class Download():
         fout = open(fileout,'w')
         #
         f = open(filein,'r')
-        col = get_col_list(f.readline().strip('\n').split(','), self.columns.base, self.columns.features)
+        first_line = f.readline().strip('\n').split(',')
+        col = get_col_list(first_line, self.columns.base, self.columns.features)
         print(filein)
         print(self.columns.features)
         print(col)
         #
         gc1 = col[0]
         gc2 = col[1]
+        #
+        gc21 = first_line.index("RAdeg")
+        gc22 = first_line.index("DEdeg")
+        #
+
         #kill duplicate algorithm
         def f1():
+            first_flag, second_flag = 0, 0
+            first_result_line, first_result_line = "", ""
+            #
             index_in,index_out = 0,0
+            result_index_out = 0
+            #
             i=1
             z=0
             l=""
+            #
+            i2=1
+            z2=0
+            l2=""
             for line in open(filein):
                 n = line.split(',')
                 #duplicate algorithm
@@ -448,8 +465,10 @@ class Download():
                         ran=n[gc1]
                         decn=n[gc2]
                         if (z==1):
-                            out(str(l),col,fout,self.value.gate,self.value.filter)
-                            index_out+=1
+                            first_result_line = str(l)
+                            first_flag = 1
+                            #out(str(l),col,fout,self.value.gate,self.value.filter)
+                            #index_out+=1
                         l=str(line)
                         z=1                    
                     else:
@@ -460,11 +479,37 @@ class Download():
                     i=2
                     z=1
                     l=str(line)
+                #
+                if (i2>1):
+                    if (decn2!=n[gc22]) or (ran2!=n[gc21]):
+                        ran2=n[gc21]
+                        decn2=n[gc22]
+                        if (z2==1):
+                            second_result_line = str(l2)
+                            second_flag = 1
+                            #out(str(l2),col,fout,self.value.gate,self.value.filter)
+                            #index_out+=1
+                        l2=str(line)
+                        z2=1                    
+                    else:
+                        z2+=1
+                else:
+                    ran2=n[gc21]
+                    decn2=n[gc22]
+                    i2=2
+                    z2=1
+                    l2=str(line)
+                
+                if((first_flag and second_flag) and (first_result_line is second_result_line)):
+                    result_index_out += out(str(first_result_line),col,fout,self.value.gate,self.value.filter)
+                    first_flag, second_flag = 0, 0
+                    index_out+=1
+
                 index_in+=1
-            if (z==1):
-                out(str(l),col,fout,self.value.gate,self.value.filter)
+            if ((z2==1 and z==1) and (l is l2)):
+                result_index_out += out(str(l),col,fout,self.value.gate,self.value.filter)
                 index_out+=1
-            return index_in, index_out
+            return index_in, index_out, result_index_out
         
         #1-st of dublicate
         def f2():
@@ -486,7 +531,7 @@ class Download():
                     out(str(line),col,fout,self.value.gate,self.value.filter)
                     index_out+=1
                 index_in+=1
-            return index_in, index_out
+            return index_in, index_out, 0
         
         if (self.flag.duplicate):
             return f2()
@@ -596,7 +641,7 @@ class Download():
         """
         
         filepath_temp = filepath
-        count_mass = np.zeros(len(catalogs_name_list)*2)
+        count_mass = np.zeros(len(catalogs_name_list)*3)
         columns = []
         for n, name in enumerate(catalogs_name_list):
             fin = filepath_temp.split(".")[0]
@@ -611,12 +656,12 @@ class Download():
             filepath_temp = f"{temp.split('.')[0]}_cut.csv"
             
             #
-            count_mass[n*2],count_mass[n*2+1] = self.cut_cut_file(temp,filepath_temp)
+            count_mass[n*3],count_mass[n*3+1],count_mass[n*3+2] = self.cut_cut_file(temp,filepath_temp)
             
             if(self.flag.remove["catalog_cross_origin"][n]):
                 os.remove(temp)
 
-            columns.extend([name,f'{name}_cut'])
+            columns.extend([name,f'{name}_cut',f'{name}_cut_filter'])
 
             self.download_progress_bar_value += 1
 
@@ -747,7 +792,7 @@ class Download():
         filename_list = []
         for i in range(stat_count.shape[0]):
             line = str(i)
-            for j in range(2,stat_count.shape[1],2):
+            for j in range(2,stat_count.shape[1] - 1,3):
                 line += "_" + stat_count.columns.values[j]
             filename_list.append(f'{line}.csv')
         #
