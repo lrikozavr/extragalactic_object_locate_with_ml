@@ -649,7 +649,7 @@ def picture_roc_prc(config):
                     plt.close(fig)
   
   if(config.picture["main"]["work"] and not config.picture["main"]["bound"]):
-      if(4, 1 in config.picture["roc_prc"]):
+      if(4, 1 in config.picture["roc_prc"]["flags"]):
           for class_name in config.name_class:
               fig = plt.figure()
               ax_prc = fig.add_subplot(1,2,2)
@@ -663,7 +663,7 @@ def picture_roc_prc(config):
               #fig.legend()
               fig.savefig(f'{config.path_pic}/roc_prc/{config.name_sample}_{class_name}_main_roc_prc.png')
               plt.close(fig)
-      elif(2, 3 in config.picture["roc_prc"]):
+      elif(2, 3 in config.picture["roc_prc"]["flags"]):
           fig = plt.figure()
           ax_prc = fig.add_subplot(1,2,2)
           ax_roc = fig.add_subplot(1,2,1)

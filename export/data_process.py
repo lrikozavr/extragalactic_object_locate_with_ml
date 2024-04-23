@@ -165,7 +165,7 @@ def fuzzy_err(data):
     return summ
 
 def colors(data):
-    print(data)
+    #print(data)
     list_name = data.columns.values
     count = data.shape[0]
     mags = int(data.shape[1]/2)
@@ -347,7 +347,7 @@ def get_features(features_list,config):
             return features_list
 
     local_features_list = check_features(features_list)
-    #print(local_features_list)
+    print(local_features_list)
 
     for features_flag in local_features_list:
         match features_flag:
@@ -406,6 +406,8 @@ def deredded(data,config_local):
     data['E(B-V)'] = rezult
     del rezult
 
+    data_count_input = data.shape[0]
+
     threshold = config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["threshold"]
 
     if(config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["cut"]):
@@ -416,7 +418,7 @@ def deredded(data,config_local):
     if(config_local.flags["data_preprocessing"]["main_sample"]["deredded"]["mode"] == "simple"):
         for name in mags:
             ext = EXTINCTION_COEFFICIENT_config_mass_value.loc[0,name]
-            data[name] = data[name].astype(float) - data['E(B-V)']*ext
+            data.loc[:,name] -= data.loc[:,'E(B-V)']*ext
     else:
         
         def culc(DATA,EBV,BP_RP,BAND):
@@ -440,6 +442,10 @@ def deredded(data,config_local):
 
         del bp_rp
     #data = data.drop(['E(B-V)'], axis=1)
+    
+    print("DEREDDED PROCESS")
+    print(f"Input: {data_count_input} | Output: {data.shape[0]}")
+    
     return data
 
 
@@ -475,9 +481,14 @@ def process(path_sample,name,save_path, config):
 
     #range cut
     if(len(config.features["range"]["photometry"]) == len(config.features["data"]["photometry"]) // 2):
+        data_count_input = data.shape[0]
+        #
         for i in range(len(config.features["data"]["photometry"]) // 2):
            data = data[(data[config.features["data"]["photometry"][i*2]] > config.features["range"]["photometry"][i][0]) & (data[config.features["data"]["photometry"][i*2]] < config.features["range"]["photometry"][i][1])]
-        data = data.reset_index()
+        data = data.reset_index(drop=True)
+        #
+        print("RANGE CUT PROCESS")
+        print(f"Input: {data_count_input} | Output: {data.shape[0]}")
 
     if(config.features["mod"] == "all"):
         if(config.flags['data_preprocessing']['main_sample']['flux']['work']):
@@ -495,7 +506,9 @@ def process(path_sample,name,save_path, config):
     #print(name, 'deredded complite')
     if(config.flags['data_preprocessing']['main_sample']['color']['work']):
         data_color, data_err = colors(data[config.features["data"]["photometry"]])
+        #
         print(name," complite colors")
+        #
         if(config.flags['data_preprocessing']['main_sample']['color']['mags']):
             data = pd.concat([data,data_color],axis=1)
         if(config.flags['data_preprocessing']['main_sample']['color']['err']):
@@ -504,6 +517,8 @@ def process(path_sample,name,save_path, config):
 
     if(config.flags['data_preprocessing']['main_sample']['outlire']['work']):
         if("MCD" in config.flags['data_preprocessing']['main_sample']['outlire']['method'] ):
+            data_count_input = data.shape[0]
+            #
             mcd_d, gauss_d, outlire = MCD(data_issue(config.flags['data_preprocessing']['main_sample']['outlire']['value']),0,config)
             print(name," complite MCD")
             if(config.flags['data_preprocessing']['main_sample']['outlire']['add_param']['add']):
@@ -514,7 +529,10 @@ def process(path_sample,name,save_path, config):
                 data = data.drop(outlire)
                 data_color = data_color.drop(outlire)
                 data_err = data_err.drop(outlire)
-    
+            #
+            print("MCS CUT PROCESS")
+            print(f"Input: {data_count_input} | Output: {data.shape[0]}")
+
     
     #additional weight
     if('fuzzy_err' in config.flags['data_preprocessing']['main_sample']['weight']['method']):        
@@ -528,6 +546,7 @@ def process(path_sample,name,save_path, config):
         data['fuzzy_dist'] = Normali(data_dist, max)
         print(name," complite fuzzy_dist")
 
+    print(data)
 
     data.to_csv(f'{save_path}/{config.name_main_sample}_{name}_main_sample.csv', index=False)
 

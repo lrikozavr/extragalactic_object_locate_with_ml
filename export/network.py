@@ -67,8 +67,8 @@ def DeepCustomNN_sm(features, l2, l3, l4, a2, a3, a4, output): #16, 8, 4
     layer_2 = Dense(l2, activation=a2, kernel_initializer='he_uniform' )(layer_1)
     layer_3 = Dense(l3, activation=a3, kernel_initializer='he_uniform' )(layer_2)
     layer_4 = Dense(l4, activation=a4, kernel_initializer='he_uniform' )(layer_3)
-    #layer_last = Dropout(.2)(layer_4)
-    output_array = Dense(output, activation='softmax', kernel_initializer='he_uniform')(layer_4)
+    layer_last = Dropout(.2, seed = 777)(layer_4)
+    output_array = Dense(output, activation='softmax', kernel_initializer='he_uniform')(layer_last)
 
     #Выдает прописной вариант названия активатора
     #keras.activations.serialize(keras.activations.hard_sigmoid)
