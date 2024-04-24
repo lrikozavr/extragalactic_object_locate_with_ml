@@ -94,19 +94,26 @@ def D(data,n):
         sum += (i - m)**2
     return math.sqrt(sum/float(n))
 
-def Gauss_cut(data,n,threshold = 0.005):
+def Gauss_cut(data,n,threshold = 3):
+    
+    gauss_func = lambda x,m,sigma: math.e**(-((x-m)**2)/(2*sigma**2))/(sigma*math.sqrt(2*math.pi))
+    
     m=M(data,n)
     d=D(data,n)
     #
+    outlire = []
+    #
+    sigma = math.sqrt(d)
+    gauss_sigma = gauss_func(m+sigma*threshold,m,sigma)
+    #
     gauss = np.zeros(n)
     for i in range(n):
-        gauss[i] = math.e**(-((data[i]-m)**2)/(2*d**2))/(d*math.sqrt(2*math.pi))
-    #
-    outlire = []
-    
-    for i in range(n):
-        if(gauss[i] < threshold):
+        gauss[i] = gauss_func(data[i],m,sigma)
+        if(gauss[i] < gauss_sigma):
             outlire.append(i)
+
+    print(f"M: {m} | D: {d} | sigma: {sigma}")
+    #print(np.array(outlire))
 
     return gauss, outlire
 
@@ -530,7 +537,7 @@ def process(path_sample,name,save_path, config):
                 data_color = data_color.drop(outlire)
                 data_err = data_err.drop(outlire)
             #
-            print("MCS CUT PROCESS")
+            print("MCD CUT PROCESS")
             print(f"Input: {data_count_input} | Output: {data.shape[0]}")
 
     
