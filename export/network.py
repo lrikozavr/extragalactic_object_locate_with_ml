@@ -65,9 +65,11 @@ def DeepCustomNN_sm(features, l2, l3, l4, a2, a3, a4, output): #16, 8, 4
     input_array = Input(shape=(features,))
     layer_1 = Dense(features, activation='linear', kernel_initializer='he_uniform')(input_array)
     layer_2 = Dense(l2, activation=a2, kernel_initializer='he_uniform' )(layer_1)
+    #layer_last = Dropout(.2, seed = 777)(layer_4)
     layer_3 = Dense(l3, activation=a3, kernel_initializer='he_uniform' )(layer_2)
-    layer_4 = Dense(l4, activation=a4, kernel_initializer='he_uniform' )(layer_3)
-    layer_last = Dropout(.2, seed = 777)(layer_4)
+    #layer_last = Dropout(.2, seed = 777)(layer_4)
+    layer_last = Dense(l4, activation=a4, kernel_initializer='he_uniform' )(layer_3)
+    #layer_last = Dropout(.2, seed = 777)(layer_4)
     output_array = Dense(output, activation='softmax', kernel_initializer='he_uniform')(layer_last)
 
     #Выдает прописной вариант названия активатора
@@ -310,7 +312,7 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
     path_save_eval,name,config):
 
     early_stopping = keras.callbacks.EarlyStopping(
-        monitor=config.hyperparam["model_variable"]["early_stopping"]["monitor"], 
+        monitor=config.hyperparam["model_variable"]["early_stopping"]["monitor"], #"val_auc"
         verbose=1,
         patience=config.hyperparam["model_variable"]["early_stopping"]["patience"],
         mode=config.hyperparam["model_variable"]["early_stopping"]["mode"],
@@ -329,8 +331,8 @@ def model_volume(train,label,X_train,y_train,X_test,y_test,
     
     history = model.fit(X_train.values, y_train.values,
         epochs=num_ep,
-        #verbose=1,
-        verbose=0,
+        verbose=1,
+        #verbose=0,
         batch_size=batch_size,
         validation_split=validation_split,
         callbacks=[early_stopping],

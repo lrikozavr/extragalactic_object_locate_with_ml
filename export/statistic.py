@@ -91,12 +91,12 @@ def metric_statistic(config):
     def metric_stat(data):
         res = pd.DataFrame()
         for name in data.columns.values:
-            average = M(data[name],data.shape[0])
-            dispersion = D(data[name],data.shape[0])
+            average = data[name].mean()
+            dispersion = data[name].std()
             max = data[name].max()
             min = data[name].min()
             #print([average,dispersion,max,min])
-            df = pd.DataFrame(np.array([average,dispersion,max,min]), columns=[name], index=["average","dispersion","max","min"]).transpose()
+            df = pd.DataFrame(np.array([average,dispersion,max,min]), columns=[name], index=["mean","std","max","min"]).transpose()
             #print(df)
             res = pd.concat([res,df], axis=0)
         #res = res.transpose()
@@ -119,7 +119,7 @@ def metric_statistic(config):
     #main
     name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
     data = pd.read_csv(f"{config.path_eval}_custom_sm_{name}_prob.csv", header=0, sep=",")
-    for n in range(len(config.name_class)):
+    for n, name in enumerate(config.name_class):
         ev_data_temp = eval(data[config.name_class_prob[n]].values,data[config.name_class_cls[n]].values,data.shape[0])
         ev_data_temp.to_csv(f"{config.path_stat}/{config.name_sample}_{name}_main_metric.csv")
 

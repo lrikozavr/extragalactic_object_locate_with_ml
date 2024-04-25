@@ -99,11 +99,10 @@ def Gauss_cut(data,n,threshold = 3):
     gauss_func = lambda x,m,sigma: math.e**(-((x-m)**2)/(2*sigma**2))/(sigma*math.sqrt(2*math.pi))
     
     m=M(data,n)
-    d=D(data,n)
+    sigma=D(data,n)
     #
     outlire = []
     #
-    sigma = math.sqrt(d)
     gauss_sigma = gauss_func(m+sigma*threshold,m,sigma)
     #
     gauss = np.zeros(n)
@@ -112,7 +111,7 @@ def Gauss_cut(data,n,threshold = 3):
         if(gauss[i] < gauss_sigma):
             outlire.append(i)
 
-    print(f"M: {m} | D: {d} | sigma: {sigma}")
+    print(f"M: {m} | sigma: {sigma}")
     #print(np.array(outlire))
 
     return gauss, outlire
