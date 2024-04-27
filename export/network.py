@@ -65,11 +65,11 @@ def DeepCustomNN_sm(features, l2, l3, l4, a2, a3, a4, output): #16, 8, 4
     input_array = Input(shape=(features,))
     layer_1 = Dense(features, activation='linear', kernel_initializer='he_uniform')(input_array)
     layer_2 = Dense(l2, activation=a2, kernel_initializer='he_uniform' )(layer_1)
-    #layer_last = Dropout(.2, seed = 777)(layer_4)
-    layer_3 = Dense(l3, activation=a3, kernel_initializer='he_uniform' )(layer_2)
-    #layer_last = Dropout(.2, seed = 777)(layer_4)
-    layer_last = Dense(l4, activation=a4, kernel_initializer='he_uniform' )(layer_3)
-    #layer_last = Dropout(.2, seed = 777)(layer_4)
+    layer_d_2 = Dropout(.2, seed = 777)(layer_2)
+    layer_3 = Dense(l3, activation=a3, kernel_initializer='he_uniform' )(layer_d_2)
+    layer_d_3 = Dropout(.2, seed = 777)(layer_3)
+    layer_4 = Dense(l4, activation=a4, kernel_initializer='he_uniform' )(layer_d_3)
+    layer_last = Dropout(.2, seed = 777)(layer_4)
     output_array = Dense(output, activation='softmax', kernel_initializer='he_uniform')(layer_last)
 
     #Выдает прописной вариант названия активатора
@@ -206,7 +206,7 @@ def redshift_predict(train,label,X_test,y_test,name,config):
                                   n_jobs=-1,
                                   verbose=1)
 
-    clf_r.fit(train.values,label.values)
+    clf_r.fit(train.values,label.values,)
 
     predict_red = clf_r.predict(X_test.values)
     

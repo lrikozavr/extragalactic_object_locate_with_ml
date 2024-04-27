@@ -9,29 +9,36 @@ from network import make_custom_index
 
 def metric_statistic(config):
     print("make metrics stat")
-    def eval(y,y_pred,n):
+
+    thr = lambda x: 1 if x >= 0.5 else 0
+
+    def eval(y_prediction,y_actual):
         count = 0
         TP, FP, TN, FN = 0,0,0,0
-        Y = 0
-        for i in range(n):
-            if(y[i]<0.5):
-                Y = 0
-            if(y[i]>=0.5):
-                Y = 1
-            if(Y==y_pred[i]):
+        #Y = 0
+        Y = y_prediction.apply(thr)
+        TP = Y[(1 == y_actual) & (Y == 1)].shape[0]
+        FP = Y[(0 == y_actual) & (Y == 1)].shape[0]
+        TN = Y[(0 == y_actual) & (Y == 0)].shape[0]
+        FN = Y[(1 == y_actual) & (Y == 0)].shape[0]
+        '''
+        for i in range(y_prediction.shape[0]):
+            Y = thr(y_prediction[i],0.5)
+            if(Y==y_actual[i]):
                 count+=1
             if(Y==1):
-                if(Y==y_pred[i]):
+                if(Y==y_actual[i]):
                     TP += 1
                 else:
                     FP += 1
             if(Y==0):
-                if(Y==y_pred[i]):
+                if(Y==y_actual[i]):
                     TN += 1
                 else:
                     FN += 1
+        '''
         try:
-            Acc = count/n
+            Acc = Y[Y == y_actual].shape[0]/Y.shape[0]
         except:
             print("Acc division by zero")
             Acc = 999.0
@@ -107,7 +114,8 @@ def metric_statistic(config):
         name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
         data = pd.read_csv(f"{config.path_eval}_custom_sm_{name}_prob.csv", header=0, sep=",")
         for n in range(len(config.name_class)):
-            ev_data_temp = eval(data[config.name_class_prob[n]].values,data[config.name_class_cls[n]].values,data.shape[0])
+            ev_data_temp = eval(data.loc[data[config.name_class_cls[n]] == 1,config.name_class_prob[n]],
+                                data.loc[data[config.name_class_cls[n]] == 1,config.name_class_cls[n]])
             ev_data[n] = pd.concat([ev_data[n],ev_data_temp],ignore_index=True)
     
     for i, name in enumerate(config.name_class):
@@ -120,7 +128,38 @@ def metric_statistic(config):
     name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
     data = pd.read_csv(f"{config.path_eval}_custom_sm_{name}_prob.csv", header=0, sep=",")
     for n, name in enumerate(config.name_class):
-        ev_data_temp = eval(data[config.name_class_prob[n]].values,data[config.name_class_cls[n]].values,data.shape[0])
+        ev_data_temp = eval(data.loc[data[config.name_class_cls[n]] == 1,config.name_class_prob[n]],
+                            data.loc[data[config.name_class_cls[n]] == 1,config.name_class_cls[n]])
         ev_data_temp.to_csv(f"{config.path_stat}/{config.name_sample}_{name}_main_metric.csv")
 
     del data
+
+def metric_sklearn(y_actual, y_prediction, threshold = 0.5):
+
+    thr = lambda x: 1 if x >= threshold else 0
+
+    from sklearn import metrics as m
+
+    Y = np.apply_along_axis(thr,0,y_prediction)
+
+    skmetrics = lambda x,y: pd.DataFrame(np.array([m.accuracy_score(x,y),
+                                        m.precision_score(x,y),
+                                        m.recall_score(x,y),
+                                        m.f1_score(x,y),
+                                        m.balanced_accuracy_score(x,y),
+                                        m.cohen_kappa_score(x,y),
+                                        m.matthews_corrcoef(x,y),
+                                        m.roc_auc_score(x,y)]),
+                            columns=['accuracy','precision','recall','f1',
+                                        'bacc','k','mcc','roc'])
+
+    fpr, tpr, thresholds = m.roc_curve(y_actual,y_prediction)
+    roc_curve_df = pd.DataFrame({"fpr": fpr, "tpr": tpr,
+									"thresholds": thresholds})
+
+    precision, recall, thresholds = m.precision_recall_curve(y_actual,y_prediction)
+    pr_curve_df = pd.DataFrame({"precision": precision, "recall": recall, 
+                                    "thresholds": np.append(thresholds, 1)})
+
+    return skmetrics(y_actual,Y), roc_curve_df, pr_curve_df
+
