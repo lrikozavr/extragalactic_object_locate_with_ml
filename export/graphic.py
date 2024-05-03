@@ -121,7 +121,7 @@ def TSNE_pic(data_b,config):
         temp_data = data[label[name] == 1].values
         #print(temp_data)
         ax.scatter(temp_data[:,0],temp_data[:,1], color = colors[n%10], label=config.name_class[n],s=1)
-        ax.legend(prop={'size':10})
+        ax.legend(prop={'size':15})
         del temp_data
     
     #data.to_csv('',index=False)

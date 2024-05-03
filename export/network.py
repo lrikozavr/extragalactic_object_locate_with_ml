@@ -137,24 +137,31 @@ def outlire(train,data_test,class_weight,name,config):
 
     from sklearn.preprocessing import MinMaxScaler
 
-    clf = OCSVM(verbose=False,cache_size=10000,max_iter=1000)
-    #rng = np.random.default_rng(seed=777)
-    #smpl = rng.choice(train,50000)
-    if(train.shape[0] < 50000):
-        smpl = train.values
+    if(os.path.isfile(f'{config.path_model}_{name}_outlier_clf')):
+        clf = load(f'{config.path_model}_{name}_outlier_clf')
     else:
-        smpl = train.sample(50000,random_state=777).values
-    scaler = MinMaxScaler(feature_range=(-1,1))
-    sclr_smpl = scaler.fit_transform(smpl)
-    clf.fit(sclr_smpl)
-    pd.DataFrame(sclr_smpl).to_csv(f'{config.path_stat}/scaler_values.csv',index=False)
-    print(sclr_smpl)
+        clf = OCSVM(verbose=False,cache_size=10000,max_iter=100)
+        #rng = np.random.default_rng(seed=777)
+        #smpl = rng.choice(train,50000)
+        if(train.shape[0] < 50000):
+            smpl = train.values
+        else:
+            smpl = train.sample(50000,random_state=777).values
+        scaler = MinMaxScaler(feature_range=(-1,1))
+        sclr_smpl = scaler.fit_transform(smpl)
+        clf.fit(sclr_smpl)
+        pd.DataFrame(sclr_smpl).to_csv(f'{config.path_stat}/scaler_values.csv',index=False)
+        print(sclr_smpl)
     #clf.fit(smpl)
-    dump(clf,f'{config.path_model}_{name}_outlier_clf')
-    dump(scaler,f'{config.path_model}_{name}_outlier_scaler')
+        dump(clf,f'{config.path_model}_{name}_outlier_clf')
+        dump(scaler,f'{config.path_model}_{name}_outlier_scaler')
+    
     scaler = load(f'{config.path_model}_{name}_outlier_scaler')
-    print("binary label:\t", clf.labels_)
-    print("raw scores:\t", clf.decision_scores_)
+    try:
+        print("binary label:\t", clf.labels_)
+        print("raw scores:\t", clf.decision_scores_)
+    except:
+        print()
     '''
     early_stopping = keras.callbacks.EarlyStopping(
         monitor=config.hyperparam["model_variable"]["early_stopping"]["monitor"], 

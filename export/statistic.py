@@ -134,13 +134,13 @@ def metric_statistic(config):
 
     del data
 
-def metric_sklearn(y_actual, y_prediction, threshold = 0.5):
+def metric_sklearn(y_actual, y_prediction: pd.DataFrame, threshold = 0.5):
 
     thr = lambda x: 1 if x >= threshold else 0
 
     from sklearn import metrics as m
 
-    Y = np.apply_along_axis(thr,0,y_prediction)
+    Y = y_prediction.apply(thr)
 
     skmetrics = lambda x,y: pd.DataFrame(np.array([m.accuracy_score(x,y),
                                         m.precision_score(x,y),
@@ -148,10 +148,17 @@ def metric_sklearn(y_actual, y_prediction, threshold = 0.5):
                                         m.f1_score(x,y),
                                         m.balanced_accuracy_score(x,y),
                                         m.cohen_kappa_score(x,y),
-                                        m.matthews_corrcoef(x,y),
-                                        m.roc_auc_score(x,y)]),
-                            columns=['accuracy','precision','recall','f1',
-                                        'bacc','k','mcc','roc'])
+                                        m.matthews_corrcoef(x,y)
+                                        ,m.roc_auc_score(x,y)
+                                        ]).reshape((1,8)),
+                                        columns=['accuracy','precision','recall','f1',
+                                                    'bacc','k','mcc','roc'], 
+                                        index=[0])
+
+    return skmetrics(y_actual,Y)
+
+def curve_sklearn(y_actual,y_prediction):
+    from sklearn import metrics as m
 
     fpr, tpr, thresholds = m.roc_curve(y_actual,y_prediction)
     roc_curve_df = pd.DataFrame({"fpr": fpr, "tpr": tpr,
@@ -160,6 +167,77 @@ def metric_sklearn(y_actual, y_prediction, threshold = 0.5):
     precision, recall, thresholds = m.precision_recall_curve(y_actual,y_prediction)
     pr_curve_df = pd.DataFrame({"precision": precision, "recall": recall, 
                                     "thresholds": np.append(thresholds, 1)})
+    
+    return roc_curve_df, pr_curve_df
 
-    return skmetrics(y_actual,Y), roc_curve_df, pr_curve_df
+def metric_(y_actual, y_prediction: pd.DataFrame, threshold = 0.5):
+    thr = lambda x: 1 if x >= 0.5 else 0
+    
+    Y = y_prediction.apply(thr)
+    
+    result = pd.DataFrame(columns=['tp','fp','tn','fn'],index=[0])
 
+    result.loc[0,'tp'] = Y[(1 == y_actual) & (Y == 1)].shape[0]
+    result.loc[0,'fp'] = Y[(0 == y_actual) & (Y == 1)].shape[0]
+    result.loc[0,'tn'] = Y[(0 == y_actual) & (Y == 0)].shape[0]
+    result.loc[0,'fn'] = Y[(1 == y_actual) & (Y == 0)].shape[0]
+
+    return result
+
+def kfold_metrics(config):
+    from network import make_custom_index
+    mass_cycle_kfold = []
+
+    for i in range(config.hyperparam["model_variable"]["kfold"]):
+        one_ml_cycle_kfold = pd.DataFrame(columns=config.name_class,index=['accuracy','precision','recall','f1','bacc','k','mcc','roc'])
+
+        name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
+        data = pd.read_csv(f"{config.path_eval}_custom_sm_{name}_prob.csv", header=0, sep=",")
+        for n, name in enumerate(config.name_class):
+            stat = metric_sklearn( data.loc[:,config.name_class_cls[n]],
+                                    data.loc[:,config.name_class_prob[n]])
+            #stat.to_csv(f"{config.path_stat}/{config.name_sample}_{name}_main_metric.csv")
+            one_ml_cycle_kfold.loc[:,name] = stat.loc[0, :]
+
+        mass_cycle_kfold.append(one_ml_cycle_kfold)
+    #
+    one_ml_cycle_all_kfold = pd.DataFrame(columns=config.name_class,
+                                      index=pd.MultiIndex.from_product([['accuracy','precision','recall','f1','bacc','k','mcc','roc'],
+                                                                        ['mean','std','min','max']]))
+
+    for index in mass_cycle_kfold[0].index.values:
+        for column in mass_cycle_kfold[0].columns.values:
+            temp_mass = np.zeros(config.hyperparam["model_variable"]["kfold"])
+            for i in range(config.hyperparam["model_variable"]["kfold"]):
+                temp_mass[i] = mass_cycle_kfold[i].loc[index,column]
+            one_ml_cycle_all_kfold.loc[index,column] = np.array([np.mean(temp_mass),np.std(temp_mass,ddof=0),np.min(temp_mass),np.max(temp_mass)])
+
+    return one_ml_cycle_all_kfold
+
+def main_metrics(config):
+    from network import make_custom_index
+
+    one_ml_cycle_main = pd.DataFrame(columns=config.name_class,index=['accuracy','precision','recall','f1','bacc','k','mcc','roc'])
+    one_ml_cycle_main_metr = pd.DataFrame(columns=config.name_class,index=['tp','fp','tn','fn'])
+
+    name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
+    data = pd.read_csv(f"{config.path_eval}_custom_sm_{name}_prob.csv", header=0, sep=",")
+    #print(data.shape[0])
+    for n, name in enumerate(config.name_class):
+        stat = metric_sklearn( data.loc[:,config.name_class_cls[n]],
+                                data.loc[:,config.name_class_prob[n]])
+        #stat.to_csv(f"{config.path_stat}/{config.name_sample}_{name}_main_metric.csv")
+        one_ml_cycle_main.loc[:,name] = stat.loc[0, :]
+
+        one_ml_cycle_main_metr.loc[:,name] = metric_( data.loc[:,config.name_class_cls[n]],
+                                                data.loc[:,config.name_class_prob[n]])
+
+        roc_curve, pr_curve = curve_sklearn(data.loc[:,config.name_class_cls[n]],
+                                            data.loc[:,config.name_class_prob[n]])
+        
+        roc_curve.to_csv(f"{config.path_stat}/{config.name_sample}_{name}_main_roc_curve.csv")
+        pr_curve.to_csv(f"{config.path_stat}/{config.name_sample}_{name}_main_pr_curve.csv")
+
+
+    one_ml_cycle_main.to_csv(f"{config.path_stat}/{config.name_sample}_main_metric.csv")
+    return one_ml_cycle_main, one_ml_cycle_main_metr
