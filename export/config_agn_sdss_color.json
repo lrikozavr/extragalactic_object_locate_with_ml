@@ -6,8 +6,8 @@
     "test_path": [], "//test_path":["/home/lrikozavr/ML_work/agn_sdss/ml/data/agn_sdss_diploma_sample_very_very_old_sample_from_xray&other_main_sample_1.csv"],
     "flags":{
         "data_downloading":{
-            "work": true,
-            "class_diff": true,
+            "work": false,
+            "class_diff": false,
             "radius": 1,
             "gate": 1,
             "slice_count": 100000,
@@ -91,7 +91,7 @@
         },
     "hyperparam":{
         "batch_size": 1024,
-        "num_ep": 20,
+        "num_ep": 200,
         "optimizer": "adam",
         "loss": "categorical_crossentropy",
         "validation_split": 0.2,
@@ -108,10 +108,10 @@
                     "monitor": "val_recall",
                     "patience": 100,
                     "mode": "max",
-                    "restore_best_weights": true
+                    "restore_best_weights": false
                 },
                 "outlire":{
-                    "work": false,
+                    "work": true,
                     "threshold": 0.99
                 }
             },
@@ -175,7 +175,7 @@
     "statistic":{
         "metric": true
         },
-    "additional_name": "_wbalanced_e20_v02_arelu_erecall_ldropout_var_color",
+    "additional_name": "_wbalanced_e200_v02_arelu_erecall_ldropout_color",
     "base": ["RA","DEC","z","z_err"],
     "name_class_column": "class_name",
     "features": {
@@ -190,7 +190,7 @@
             "photometry": [[11,19],[11,19],[14,22],[14,21],[14,21]]},
         "train": {
             "astrometry": [],
-            "flux": ["var"],
+            "flux": [],
             "photometry": ["color"]},
         "//comment_train": {
             "astrometry": ["raw"],
