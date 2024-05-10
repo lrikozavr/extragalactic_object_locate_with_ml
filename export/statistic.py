@@ -134,6 +134,16 @@ def metric_statistic(config):
 
     del data
 
+def argmax(data,config):
+    """
+    Функція визначає найбільше значення для передбачення класу не користуючись пороговим значенням
+    """
+    arg_rez = data.loc[:,config.name_class_prob].apply(np.argmax,axis=1)
+    temp = np.zeros((data.shape[0],len(config.name_class_prob)))
+    temp[np.arange(data.shape[0]), arg_rez] = 1
+    data.loc[:,config.name_class_prob] = temp
+    return data
+
 def metric_sklearn(y_actual, y_prediction: pd.DataFrame, threshold = 0.5):
 
     thr = lambda x: 1 if x >= threshold else 0
@@ -184,7 +194,7 @@ def metric_(y_actual, y_prediction: pd.DataFrame, threshold = 0.5):
 
     return result
 
-def kfold_metrics(config):
+def kfold_metrics(argmax_flag,config):
     from network import make_custom_index
     mass_cycle_kfold = []
 
@@ -193,6 +203,8 @@ def kfold_metrics(config):
 
         name = make_custom_index(i,config.hyperparam["model_variable"]["neuron_count"])
         data = pd.read_csv(f"{config.path_eval}_custom_sm_{name}_prob.csv", header=0, sep=",")
+        if(argmax_flag):
+            data = argmax(data,config)
         for n, name in enumerate(config.name_class):
             stat = metric_sklearn( data.loc[:,config.name_class_cls[n]],
                                     data.loc[:,config.name_class_prob[n]])
@@ -214,7 +226,7 @@ def kfold_metrics(config):
 
     return one_ml_cycle_all_kfold
 
-def main_metrics(config):
+def main_metrics(argmax_flag,config):
     from network import make_custom_index
 
     one_ml_cycle_main = pd.DataFrame(columns=config.name_class,index=['accuracy','precision','recall','f1','bacc','k','mcc','roc'])
@@ -222,6 +234,8 @@ def main_metrics(config):
 
     name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
     data = pd.read_csv(f"{config.path_eval}_custom_sm_{name}_prob.csv", header=0, sep=",")
+    if(argmax_flag):
+        data = argmax(data,config)
     #print(data.shape[0])
     for n, name in enumerate(config.name_class):
         stat = metric_sklearn( data.loc[:,config.name_class_cls[n]],

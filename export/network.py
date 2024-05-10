@@ -199,7 +199,7 @@ def outlire(train,data_test,class_weight,name,config):
     return np.array(data_test), data_test.index
 
 
-def redshift_predict(train,label,X_test,y_test,name,config):
+def redshift_predict(train,label,X_test,y_test,sample_weight,name,config):
     from sklearn.preprocessing import normalize
     features_count = train.shape[1]
     from sklearn.ensemble import RandomForestRegressor
@@ -213,7 +213,7 @@ def redshift_predict(train,label,X_test,y_test,name,config):
                                   n_jobs=-1,
                                   verbose=1)
 
-    clf_r.fit(train.values,label.values,)
+    clf_r.fit(train.values,label.values,sample_weight=sample_weight)
 
     predict_red = clf_r.predict(X_test.values)
     
@@ -445,7 +445,7 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
     features = train.shape[1]
     initial_weights = os.path.join(tempfile.mkdtemp(), 'initial_weights')
 
-    def cust_model(name,X_train,y_train,red_train,red_test,X_test,y_test):
+    def cust_model(name,sample_weight_kfold,X_train,y_train,red_train,red_test,X_test,y_test):
         n = name.split("n")
         l2,l3,l4 = n[1],n[2],n[3]
         a = config.hyperparam["model_variable"]["activation"]
@@ -453,7 +453,7 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
         
         #model1 = 
         model_volume(train,label,X_train,y_train,X_test,y_test,
-        model,optimizer,loss,sample_weight,class_weights,num_ep,batch_size,validation_split,
+        model,optimizer,loss,sample_weight_kfold,class_weights,num_ep,batch_size,validation_split,
         path_save_eval,f"custom_sm_{name}",config)
 
         if(config.hyperparam["redshift"]["work"]):
@@ -463,13 +463,18 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
                 red_train_temp_class = red_train[y_train[class_name] == 1]
                 X_test_temp_class = X_test[y_test[class_name] == 1]
                 red_test_temp_class = red_test[y_test[class_name] == 1]
-                
+                try:
+                    temp_sample_weight = sample_weight_kfold[y_train[class_name] == 1]
+                except:
+                    temp_sample_weight = None
             #####
                 clf_r = redshift_predict(X_train_temp_class,
                                          red_train_temp_class,
                                          X_test_temp_class,
                                          red_test_temp_class,
-                                         f"{name}_{class_name}",config=config)
+                                         temp_sample_weight,
+                                         f"{name}_{class_name}",
+                                         config=config)
                 dump(clf_r,f'{config.path_model}_custom_sm_{name}_{class_name}_redshift_clf')
             #####
             #model_red = redshift_neural_network_API(X_train,red_train,X_test,red_test,name,config=config)
@@ -477,12 +482,12 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
 
         #SaveModel(model1,output_path_mod,output_path_weight,f"custom_sm_{name}")
     
-    def model_activate(flag,custom_index,X_train,y_train,red_train,red_test,X_test,y_test):
+    def model_activate(flag,custom_index,sample_weight_kfold,X_train,y_train,red_train,red_test,X_test,y_test):
         #param from config 'gpu', 'cpu'
         print(flag)
         if(flag == 'gpu'):
             for name in custom_index:
-                cust_model(name,X_train,y_train,red_train,red_test,X_test,y_test)
+                cust_model(name,sample_weight_kfold,X_train,y_train,red_train,red_test,X_test,y_test)
         #add multithread resolve
         if(flag == 'cpu'):
             import multiprocessing
@@ -490,7 +495,7 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
             from concurrent.futures import ThreadPoolExecutor
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
                 for name in custom_index:
-                    executor.submit(cust_model,name,X_train,y_train,red_train,red_test,X_test,y_test)
+                    executor.submit(cust_model,name,sample_weight_kfold,X_train,y_train,red_train,red_test,X_test,y_test)
     
     #hyperparam from config
     kfold = KFold(n_splits=config.hyperparam["model_variable"]["kfold"], shuffle=False)
@@ -506,19 +511,24 @@ output_path_predict,output_path_mod,output_path_weight,path_save_eval,config):
         y_test = label.iloc[test_index]
         red_test = red_label.iloc[test_index]
         
+        try:
+            sample_weight_kfold = sample_weight[train_index]
+        except:
+            sample_weight_kfold = None
+
         custom_index = []
         #print(index)
         #hyperparam from config
         custom_index.append(make_custom_index(index,config.hyperparam["model_variable"]["neuron_count"]))
         #print(custom_index)
-        model_activate(config.flags["system"],custom_index,X_train,y_train,red_train,red_test,X_test,y_test)
+        model_activate(config.flags["system"],custom_index,sample_weight_kfold,X_train,y_train,red_train,red_test,X_test,y_test)
         index+=1
     #
     index = '00'
     custom_index = []
     #hyperparam from config
     custom_index.append(make_custom_index(index,config.hyperparam["model_variable"]["neuron_count"]))
-    model_activate(config.flags["system"],custom_index,train,label,red_label,red_label,train,label)
+    model_activate(config.flags["system"],custom_index,sample_weight,train,label,red_label,red_label,train,label)
     """
     if(open(config.test_path[0])):
         print()
