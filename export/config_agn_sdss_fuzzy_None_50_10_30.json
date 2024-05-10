@@ -1,0 +1,201 @@
+{
+    "name_sample": "sdss_diploma_sample_dereddedcut_rangecut_flux_color_mcdcut_cbalancedfalse",
+    "general_path": "/home/lrikozavr/ML_work/agn_sdss",
+    "data_path": "/media/lrikozavr/0402A64D02A64390/Users/lrik/Work/SDSS.csv",
+    "prediction_path": "_",
+    "test_path": [], "//test_path":["/home/lrikozavr/ML_work/agn_sdss/ml/data/agn_sdss_diploma_sample_very_very_old_sample_from_xray&other_main_sample_1.csv"],
+    "flags":{
+        "data_downloading":{
+            "work": false,
+            "class_diff": false,
+            "radius": 1,
+            "gate": 1,
+            "slice_count": 100000,
+            "multi_thr":{
+                "work": true,
+                "MAX_WORKERS": 3,
+                "WAIT_UNTIL_REPEAT_ACCESS": 3,
+                "NUM_URL_ACCESS_ATTEMPTS": 10
+                },
+            "duplicate": false,
+            "filter": [],
+            "catalogs":{
+                "name": ["catwise","gaiadr3"],
+                "VizieR": ["II/365/catwise","I/355/gaiadr3"]
+                },
+            "remove":{
+                "origin": false,
+                "slice": false,
+                "catalog_cross_origin": [false, false],
+                "catalogs_cross_cut_duplicate": [false, false],
+                "dir": false
+                }
+            },
+        "data_preprocessing":{
+            "work": false,
+            "main_sample":{
+                "work": false,
+                "flux":{
+                    "work": true,
+                    "var": true,
+                    "color": false
+                },
+                "astrometry":{
+                    "work": true
+                },
+                "color":{
+                    "work": true,
+                    "mags": true,
+                    "err": true
+                    },
+                "outlire": {
+                    "work": true,
+                    "cut": true,
+                    "method": ["MCD"],
+                    "value": "color",
+                    "//comment_value": "[color,err,features]",
+                    "add_param": {
+                        "add": true,
+                        "method": "gauss",
+                        "additional_parametr": 3
+                        }
+                    },
+                "weight":{
+                    "method": ["fuzzy_err","fuzzy_dist"],
+                    "//comment_method": "[fuzzy_err,fuzzy_dist]",
+                    "value": ["features","color"],
+                    "//comment_value": "[color,err,features]"
+                    },
+                "deredded": {
+                    "work": true,
+                    "coef": ["W1","W2","G","BP","RP"],
+                    "dust_map_dir": "/home/lrikozavr/catalogs/dustmaps/",
+                    "threshold": 0.5,
+                    "mode": "simple",
+                    "cut": true
+                    },
+                "normalize": {
+                    "work": false,
+                    "features": ["mags","color"],
+                    "mode": "max"
+                }
+                },
+            "balanced": false
+            },
+        "prediction":{
+            "work": false,
+            "batch_count": 5000000,
+            "outlire": false
+            },
+        "system": "gpu"
+        },
+    "hyperparam":{
+        "batch_size": 1024,
+        "num_ep": 1,
+        "optimizer": "adam",
+        "loss": "categorical_crossentropy",
+        "validation_split": 0.2,
+        "model_variable":{
+                "work": true,
+                "kfold": 4,
+                "neuron_count": [64,64,64],
+                "activation": ["softsign","relu","elu"],
+                "metric_culc": "test",
+                "//comment_metric_culc": ["test","train"],
+                "sample_weight": "",
+                "balanced": true,
+                "early_stopping": {
+                    "monitor": "val_recall",
+                    "patience": 100,
+                    "mode": "max",
+                    "restore_best_weights": true
+                },
+                "outlire":{
+                    "work": false,
+                    "threshold": 0.99
+                }
+            },
+        "redshift": {
+                "work": true,
+                "hyperparam": {
+                    "n_estimators": 50,
+                    "max_features": 10, 
+                    "criterion": "squared_error",
+                    "max_depth": 30,
+                    "bootstrap": true
+                },
+                "picture": true
+            },
+        "picture": {
+            "metrics": true,
+            "loss": true
+        }   
+        },
+    "picture":{
+            "work": true,
+            "correlation_matrix": true,
+            "tSNE": {
+                "work": false,
+                "n_components":2, 
+                "learning_rate":200.0, 
+                "perplexity":100, 
+                "early_exaggeration":100,
+                "n_iter":1000,
+                "n_iter_without_progress":200, 
+                "min_grad_norm":1e-7,
+                "metric":"euclidean",
+                "init":"pca",
+                "verbose":1,
+                "method":"barnes_hut",
+                "angle":0.5
+            },
+            "contam_dist": {
+                "work": true,
+                "bins": 101
+            },
+            "multigridplot": false,
+            "main": {
+                "work": true,
+                "bound": false
+            },
+            "roc_prc": {
+                "work": true,
+                "flags": [2, 3],
+                "lim_roc": [[-0.005,0.6],[-0.005,1.005]],
+                "lim_prc": [[-0.05,1.005],[-0.005,1.005]]
+                },
+            "confusion_matrix": true,
+            "hist": {
+                "work": true,
+                "bound": true,
+                "stacked": false,
+                "fill": false
+            }
+        },
+    "statistic":{
+        "metric": true
+        },
+    "additional_name": "_wbalanced_e1_v02_arelu_erecall_ldropout_fuzzy_None_50_10_30",
+    "base": ["RA","DEC","z","z_err"],
+    "name_class_column": "class_name",
+    "features": {
+        "data": {
+            "astrometry": ["angDist","PQSO","PGal","PSS"],
+            "flux": ["nW1","FW1pm","e_FW1pm","nW2","FW2pm","e_FW2pm","o_Gmag","FG","e_FG","o_BPmag","FBP","e_FBP","o_RPmag","FRP","e_FRP"],
+            "photometry": ["W1mproPM","e_W1mproPM","W2mproPM","e_W2mproPM","Gmag","e_Gmag","BPmag","e_BPmag","RPmag","e_RPmag"]
+            },
+        "mod":"all",
+        "//comment_features_mod":["standart","all"],
+        "range": {
+            "photometry": [[11,19],[11,19],[14,22],[14,21],[14,21]]},
+        "train": {
+            "astrometry": [],
+            "flux": ["var"],
+            "photometry": ["color"]},
+        "//comment_train": {
+            "astrometry": ["raw"],
+            "flux": ["var","flux_color"],
+            "photometry": ["color","mags","err_color","err_mags"]}
+        },
+    "name_class": ["qso","agn","sbg","sfg","gal","star"]
+}
