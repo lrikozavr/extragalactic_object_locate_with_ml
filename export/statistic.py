@@ -138,7 +138,7 @@ def argmax(data,config):
     """
     Функція визначає найбільше значення для передбачення класу не користуючись пороговим значенням
     """
-    arg_rez = data.loc[:,config.name_class_prob].apply(np.argmax,axis=1)
+    arg_rez = np.argmax(data.loc[:,config.name_class_prob],axis=1)
     temp = np.zeros((data.shape[0],len(config.name_class_prob)))
     temp[np.arange(data.shape[0]), arg_rez] = 1
     data.loc[:,config.name_class_prob] = temp
@@ -235,16 +235,18 @@ def main_metrics(argmax_flag,config):
     name = make_custom_index('00',config.hyperparam["model_variable"]["neuron_count"])
     data = pd.read_csv(f"{config.path_eval}_custom_sm_{name}_prob.csv", header=0, sep=",")
     if(argmax_flag):
-        data = argmax(data,config)
+        data_temp = argmax(data,config)
+    else:
+        data_temp = data
     #print(data.shape[0])
     for n, name in enumerate(config.name_class):
-        stat = metric_sklearn( data.loc[:,config.name_class_cls[n]],
-                                data.loc[:,config.name_class_prob[n]])
+        stat = metric_sklearn( data_temp.loc[:,config.name_class_cls[n]],
+                                data_temp.loc[:,config.name_class_prob[n]])
         #stat.to_csv(f"{config.path_stat}/{config.name_sample}_{name}_main_metric.csv")
         one_ml_cycle_main.loc[:,name] = stat.loc[0, :]
 
-        one_ml_cycle_main_metr.loc[:,name] = metric_( data.loc[:,config.name_class_cls[n]],
-                                                data.loc[:,config.name_class_prob[n]])
+        one_ml_cycle_main_metr.loc[:,name] = metric_( data_temp.loc[:,config.name_class_cls[n]],
+                                                data_temp.loc[:,config.name_class_prob[n]])
 
         roc_curve, pr_curve = curve_sklearn(data.loc[:,config.name_class_cls[n]],
                                             data.loc[:,config.name_class_prob[n]])
